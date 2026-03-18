@@ -898,6 +898,20 @@ async function loadIssues(){
           '<span>⏳ '+esc(r.duration)+'</span>'+
           '<span>→ 전환: <strong style="color:#64b5f6">'+esc(r.pivot_to)+'</strong></span>'+
         '</div>'+
+        // 채널별 언급량
+        (r.channels?'<div style="display:flex;gap:6px;margin-top:6px;font-size:.75em;flex-wrap:wrap">'+
+          '<span style="background:#1976d2;color:#fff;padding:2px 6px;border-radius:3px">뉴스 '+(r.channels.news||0)+'</span>'+
+          '<span style="background:#42a5f5;color:#fff;padding:2px 6px;border-radius:3px">블로그 '+(r.channels.blog||0)+'</span>'+
+          '<span style="background:#66bb6a;color:#fff;padding:2px 6px;border-radius:3px">카페 '+(r.channels.cafe||0)+'</span>'+
+          '<span style="background:#ef5350;color:#fff;padding:2px 6px;border-radius:3px">동영상 '+(r.channels.video||0)+'</span>'+
+          '<span style="color:#78909c">총 '+(r.channels.total||0)+'건</span>'+
+        '</div>':'')+
+        // 소셜 샘플
+        ((r.top_blogs&&r.top_blogs.length)||(r.top_cafe&&r.top_cafe.length)?
+          '<div style="margin-top:4px;font-size:.73em;color:#78909c">'+
+          (r.top_blogs&&r.top_blogs[0]?'<div>📝 블로그: '+esc(r.top_blogs[0])+'</div>':'')+
+          (r.top_cafe&&r.top_cafe[0]?'<div>💬 카페: '+esc(r.top_cafe[0])+'</div>':'')+
+          '</div>':'')+
         // 시나리오 (접기)
         '<details style="margin-top:6px;font-size:.78em"><summary style="cursor:pointer;color:#546e7f">시나리오 보기</summary>'+
           '<div style="padding:4px 0;color:#a5d6a7">최선: '+esc(r.scenario_best)+'</div>'+

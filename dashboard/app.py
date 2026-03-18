@@ -412,18 +412,26 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
         from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
         from engines.issue_scoring import calculate_issue_score
         from engines.issue_response import IssueResponseEngine
-        from collectors.naver_news import collect_issue_signals
+        from collectors.unified_collector import collect_unified_signals
 
         config = SAMPLE_GYEONGNAM_CONFIG
-        signals = collect_issue_signals(
-            ["경남도지사 선거", f"{config.candidate_name} 경남", "부울경 행정통합",
-             "경남 조선업 일자리", "경남 청년 정책", "경남 우주항공",
-             f"{config.opponents[0]} 경남" if config.opponents else "경남"],
+        keywords = [
+            "경남도지사 선거", f"{config.candidate_name} 경남", "부울경 행정통합",
+            "경남 조선업 일자리", "경남 청년 정책", "경남 우주항공",
+            f"{config.opponents[0]} 경남" if config.opponents else "경남",
+        ]
+        unified = collect_unified_signals(
+            keywords,
             candidate_name=config.candidate_name,
             opponents=config.opponents,
+            include_social=True,
         )
+        if not unified:
+            return {"error": "수집 실패", "responses": [], "guide": {}}
+
+        signals = [u.issue_signal for u in unified if u.issue_signal]
         if not signals:
-            return {"error": "뉴스 수집 실패", "responses": [], "guide": {}}
+            return {"error": "시그널 생성 실패", "responses": [], "guide": {}}
 
         scores = sorted(
             [calculate_issue_score(s, config) for s in signals],
@@ -454,6 +462,16 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
                     "duration": r.estimated_duration,
                     "scenario_best": r.scenario_best,
                     "scenario_worst": r.scenario_worst,
+                    # 채널별 데이터 (통합 수집기)
+                    "channels": {
+                        "news": u.news_mentions,
+                        "blog": u.blog_recent,
+                        "cafe": u.cafe_recent,
+                        "video": u.video_recent,
+                        "total": u.total_mentions,
+                    } if (u := next((x for x in unified if x.keyword == r.keyword), None)) else {},
+                    "top_blogs": [b.get("title", "")[:50] for b in (u.top_blogs if u else [])],
+                    "top_cafe": [c.get("title", "")[:50] for c in (u.top_cafe_posts if u else [])],
                 }
                 for r in responses
             ],
