@@ -967,11 +967,9 @@ async function loadIssues(){
       var cafeW=ch.cafe?ch.cafe/maxBuzz*100:0;
       var videoW=ch.video?ch.video/maxBuzz*100:0;
       var toneColor=r.tone==='↑상승'?'#f44336':r.tone==='↓하락'?'#4caf50':'#ff9800';
-      var lv=(r.level||'NORMAL').toLowerCase();
       buzzHtml+='<div style="background:#141b2d;border:1px solid #1e3a5f;border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer" onclick="showKeywordDetail(\''+encodeURIComponent(r.keyword)+'\')">';
       buzzHtml+='<div style="display:flex;justify-content:space-between;align-items:center">';
       buzzHtml+='<div><span style="color:#64b5f6;font-size:1.1em;font-weight:bold;margin-right:6px">#'+(idx+1)+'</span>';
-      buzzHtml+='<span class="level-badge '+lv+'" style="font-size:.7em">'+r.level+'</span> ';
       buzzHtml+='<strong>'+esc(r.keyword)+'</strong></div>';
       buzzHtml+='<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+total.toLocaleString()+'</span><span style="font-size:.75em;color:#78909c"> 건</span></div>';
       buzzHtml+='</div>';
@@ -988,7 +986,6 @@ async function loadIssues(){
       buzzHtml+='<span style="color:#42a5f5">블로그 '+(ch.blog||0)+'</span>';
       buzzHtml+='<span style="color:#66bb6a">카페 '+(ch.cafe||0)+'</span>';
       buzzHtml+='<span style="color:#ef5350">동영상 '+(ch.video||0)+'</span>';
-      buzzHtml+='<span>| 스코어 '+r.score.toFixed(1)+'</span>';
       buzzHtml+='<span style="color:'+toneColor+'">'+esc(r.trend||'')+'</span>';
       buzzHtml+='<span>'+esc(r.lifecycle||'')+'</span>';
       buzzHtml+='</div>';
