@@ -351,6 +351,16 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
     <!-- PAGE: Issues -->
     <div class="page" id="page-issues">
+      <!-- 로직 가이드 (접기/펼치기) -->
+      <div class="card" style="border-color:#1976d2;margin-bottom:10px">
+        <h3 style="cursor:pointer" onclick="document.getElementById('guide-panel').style.display=document.getElementById('guide-panel').style.display==='none'?'block':'none'">
+          ℹ 이슈 대응 로직 가이드 <span style="font-size:.75em;color:#78909c">(클릭하여 펼치기/접기)</span>
+        </h3>
+        <div id="guide-panel" style="display:none;font-size:.82em;line-height:1.8">
+          <div id="guide-content">로딩 중...</div>
+        </div>
+      </div>
+      <!-- 이슈 대응 카드 목록 -->
       <div id="i-detail"><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block" style="margin-top:6px"></div></div>
     </div>
 
@@ -812,29 +822,92 @@ async function loadExecSummary(){
 /* ===== Load Issues (cached scores) ===== */
 async function loadIssues(){
   try{
-    var r=await fetch('/api/scores');
+    var r=await fetch('/api/issue-responses');
     if(r.status===401){window.location='/login';return}
-    if(!r.ok) return;
-    var sc=await r.json();
-    if(!sc||!sc.length) return;
+    if(!r.ok){
+      // fallback to basic scores
+      var r2=await fetch('/api/scores');if(!r2.ok)return;var sc=await r2.json();
+      pageLoaded.issues=true;
+      document.getElementById('i-detail').innerHTML=(sc||[]).map(function(i){
+        var lv=(i.crisis_level||'normal').toLowerCase();
+        return '<div class="issue-card"><div class="issue-header"><span class="level-badge '+lv+'">'+(i.crisis_level||'NORMAL')+'</span><span class="keyword">'+esc(i.keyword)+'</span><span class="score">'+i.score.toFixed(1)+'</span></div></div>';
+      }).join('');
+      return;
+    }
+    var data=await r.json();
+    if(data.error){document.getElementById('i-detail').textContent=data.error;return}
     pageLoaded.issues=true;
-    var html=sc.map(function(i){
-      var lv=(i.crisis_level||i.level||'normal').toLowerCase();
-      var neg=i.negative_ratio!==undefined?(i.negative_ratio*100).toFixed(0)+'%':'-';
-      var speed=i.velocity!==undefined?i.velocity.toFixed(1)+'x':'-';
-      return '<div class="issue-card">'+
-        '<div class="issue-header">'+
-        '<span class="level-badge '+lv+'">'+(i.level||i.crisis_level||'NORMAL')+'</span>'+
-        '<span class="keyword">'+esc(i.keyword)+'</span>'+
-        '<span class="score">'+i.score.toFixed(1)+'</span>'+
+
+    // 가이드 렌더링
+    var g=data.guide||{};
+    var guideHtml='';
+    if(g.how_it_works){
+      guideHtml+='<div style="background:#0d1117;padding:10px;border-radius:6px;margin-bottom:10px"><strong style="color:#64b5f6">작동 원리</strong><pre style="white-space:pre-wrap;color:#90caf9;margin-top:4px;font-family:inherit">'+esc(g.how_it_works)+'</pre></div>';
+    }
+    // 입장 가이드
+    var stances=g.stances||{};
+    guideHtml+='<div style="margin-bottom:10px"><strong style="color:#64b5f6">5가지 대응 입장</strong><table style="width:100%;margin-top:6px;border-collapse:collapse">';
+    for(var sk in stances){var sv=stances[sk];
+      guideHtml+='<tr style="border-bottom:1px solid #1e3a5f"><td style="padding:5px;width:80px"><span style="color:'+sv.color+'">'+sv.icon+' '+sv.label+'</span></td><td style="padding:5px;color:#b0bec5">'+esc(sv.desc)+'</td></tr>';}
+    guideHtml+='</table></div>';
+    // 생명주기 가이드
+    var lc=g.lifecycle||{};
+    guideHtml+='<div style="margin-bottom:10px"><strong style="color:#64b5f6">이슈 생명주기</strong><div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">';
+    var lcOrder=['emerging','growing','peak','declining','dormant'];
+    var lcColors={'emerging':'#2196f3','growing':'#ff9800','peak':'#f44336','declining':'#78909c','dormant':'#455a64'};
+    var lcLabels={'emerging':'태동','growing':'성장','peak':'정점','declining':'하락','dormant':'소멸'};
+    for(var li=0;li<lcOrder.length;li++){var lk=lcOrder[li];
+      guideHtml+='<div style="background:'+lcColors[lk]+';color:#fff;padding:4px 10px;border-radius:4px;font-size:.8em">'+lcLabels[lk];
+      if(li<lcOrder.length-1)guideHtml+=' →';
+      guideHtml+='</div>';}
+    guideHtml+='</div><div style="margin-top:6px">';
+    for(var lk in lc){guideHtml+='<div style="padding:2px 0;color:#b0bec5"><span style="color:'+lcColors[lk]+'">●</span> '+esc(lc[lk])+'</div>';}
+    guideHtml+='</div></div>';
+    // 긴급도 가이드
+    var ug=g.urgency||{};
+    guideHtml+='<div><strong style="color:#64b5f6">긴급도 기준</strong><div style="margin-top:4px">';
+    for(var uk in ug){guideHtml+='<div style="padding:2px 0;color:#b0bec5"><strong>'+esc(uk)+'</strong>: '+esc(ug[uk])+'</div>';}
+    guideHtml+='</div></div>';
+    document.getElementById('guide-content').innerHTML=guideHtml;
+
+    // 이슈 대응 카드 렌더링
+    var resp=data.responses||[];
+    var stanceStyles={'push':{bg:'rgba(76,175,80,.15)',border:'#4caf50',icon:'🟢',label:'밀기'},'counter':{bg:'rgba(244,67,54,.15)',border:'#f44336',icon:'🔴',label:'반박'},'avoid':{bg:'rgba(97,97,97,.15)',border:'#616161',icon:'⚫',label:'회피'},'monitor':{bg:'rgba(255,235,59,.1)',border:'#ffeb3b',icon:'🟡',label:'모니터링'},'pivot':{bg:'rgba(33,150,243,.15)',border:'#2196f3',icon:'🔵',label:'전환'}};
+    var html=resp.map(function(r){
+      var st=stanceStyles[r.stance]||stanceStyles.monitor;
+      var lv=(r.level||'NORMAL').toLowerCase();
+      var lcColor=lcColors[r.lifecycle]||'#78909c';
+      return '<div class="issue-card" style="background:'+st.bg+';border-left:4px solid '+st.border+';margin-bottom:8px;padding:12px;border-radius:6px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+          '<div><span class="level-badge '+lv+'">'+r.level+'</span> <strong>'+esc(r.keyword)+'</strong></div>'+
+          '<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+r.score.toFixed(1)+'</span><br><span style="font-size:.75em;color:'+st.border+'">'+st.icon+' '+st.label+'</span></div>'+
         '</div>'+
-        '<div class="issue-stats">24h 언급 '+(i.mention_count||0)+'건 | 부정 '+neg+' | 속도 '+speed+'</div>'+
-        '<div class="issue-trend" id="trend-'+encodeURIComponent(i.keyword)+'"></div>'+
-        '</div>';
+        '<div style="font-size:.8em;color:#90caf9;margin-bottom:4px">'+esc(r.stance_reason)+'</div>'+
+        // 대응 메시지
+        '<div style="background:#0d1117;padding:8px;border-radius:4px;margin:6px 0;font-size:.85em">'+
+          '<div style="color:#e0e0e0"><strong>대응:</strong> '+esc(r.response_message)+'</div>'+
+          '<div style="margin-top:4px">'+(r.talking_points||[]).map(function(t){return '<div style="color:#a5d6a7;padding:1px 0">• '+esc(t)+'</div>'}).join('')+'</div>'+
+          (r.do_not_say&&r.do_not_say.length?'<div style="margin-top:4px;color:#ef9a9a;font-size:.85em">🚫 금지: '+(r.do_not_say.slice(0,3).map(function(d){return esc(d)}).join(' / '))+'</div>':'')+
+        '</div>'+
+        // 메타 정보
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.78em;color:#78909c;margin-top:6px">'+
+          '<span>👤 담당: <strong style="color:#e0e0e0">'+esc(r.owner)+'</strong></span>'+
+          '<span>⏰ 긴급: <strong style="color:'+(r.urgency==='즉시'?'#f44336':r.urgency==='당일'?'#ff9800':'#78909c')+'">'+esc(r.urgency)+'</strong></span>'+
+          '<span>⏱ 골든타임: '+r.golden_time+'h</span>'+
+          '<span style="color:'+lcColor+'">● '+esc(r.lifecycle)+' '+esc(r.trend)+'</span>'+
+          '<span>⏳ '+esc(r.duration)+'</span>'+
+          '<span>→ 전환: <strong style="color:#64b5f6">'+esc(r.pivot_to)+'</strong></span>'+
+        '</div>'+
+        // 시나리오 (접기)
+        '<details style="margin-top:6px;font-size:.78em"><summary style="cursor:pointer;color:#546e7f">시나리오 보기</summary>'+
+          '<div style="padding:4px 0;color:#a5d6a7">최선: '+esc(r.scenario_best)+'</div>'+
+          '<div style="padding:4px 0;color:#ef9a9a">최악: '+esc(r.scenario_worst)+'</div>'+
+          (r.related_pledges&&r.related_pledges.length?'<div style="padding:4px 0;color:#90caf9">연관 공약: '+r.related_pledges.map(function(p){return esc(p)}).join(', ')+'</div>':'')+
+        '</details>'+
+      '</div>';
     }).join('');
-    document.getElementById('i-detail').innerHTML=html;
-    loadIssueTrends(sc);
-  }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패</div>'}
+    document.getElementById('i-detail').innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
+  }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
 }
 
 /* ===== Load Issue Trends ===== */

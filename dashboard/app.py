@@ -397,6 +397,114 @@ async def api_list_polls(session_token: str = Cookie(default=None)):
 
 
 # ---------------------------------------------------------------------------
+# Issue Response — 이슈별 대응 전략
+# ---------------------------------------------------------------------------
+
+@app.get("/api/issue-responses")
+async def api_issue_responses(session_token: str = Cookie(default=None)):
+    """이슈별 대응 패키지 전체 목록"""
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    def _run():
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        from engines.issue_scoring import calculate_issue_score
+        from engines.issue_response import IssueResponseEngine
+        from collectors.naver_news import collect_issue_signals
+
+        config = SAMPLE_GYEONGNAM_CONFIG
+        signals = collect_issue_signals(
+            ["경남도지사 선거", f"{config.candidate_name} 경남", "부울경 행정통합",
+             "경남 조선업 일자리", "경남 청년 정책", "경남 우주항공",
+             f"{config.opponents[0]} 경남" if config.opponents else "경남"],
+            candidate_name=config.candidate_name,
+            opponents=config.opponents,
+        )
+        if not signals:
+            return {"error": "뉴스 수집 실패", "responses": [], "guide": {}}
+
+        scores = sorted(
+            [calculate_issue_score(s, config) for s in signals],
+            key=lambda x: x.score, reverse=True,
+        )
+
+        engine = IssueResponseEngine(config)
+        responses = engine.analyze_all(scores, signals)
+
+        return {
+            "responses": [
+                {
+                    "keyword": r.keyword,
+                    "score": r.score,
+                    "level": r.level.name,
+                    "stance": r.stance,
+                    "stance_reason": r.stance_reason,
+                    "owner": r.owner,
+                    "urgency": r.urgency,
+                    "golden_time": r.golden_time_hours,
+                    "response_message": r.response_message,
+                    "talking_points": r.talking_points,
+                    "do_not_say": r.do_not_say,
+                    "related_pledges": r.related_pledges,
+                    "pivot_to": r.pivot_to,
+                    "lifecycle": r.lifecycle,
+                    "trend": r.trend_direction,
+                    "duration": r.estimated_duration,
+                    "scenario_best": r.scenario_best,
+                    "scenario_worst": r.scenario_worst,
+                }
+                for r in responses
+            ],
+            "guide": {
+                "stances": {
+                    "push": {"label": "밀기", "color": "#4caf50", "icon": "🟢",
+                             "desc": "우리에게 유리한 이슈 → 적극 확산, 미디어 노출 극대화"},
+                    "counter": {"label": "반박", "color": "#f44336", "icon": "🔴",
+                                "desc": "우리에게 불리하지만 대응 필요 → 팩트 반박 후 의제 전환"},
+                    "avoid": {"label": "회피", "color": "#616161", "icon": "⚫",
+                              "desc": "대응할수록 손해 → 침묵. 질문 시 핵심 메시지로 전환"},
+                    "monitor": {"label": "모니터링", "color": "#ffeb3b", "icon": "🟡",
+                                "desc": "아직 작은 이슈 → 확산 감시. 스코어 50 넘으면 대응 격상"},
+                    "pivot": {"label": "전환", "color": "#2196f3", "icon": "🔵",
+                              "desc": "중립 이슈 → 우리 공약 프레임으로 전환. 이슈를 우리 것으로 만들기"},
+                },
+                "lifecycle": {
+                    "emerging": "태동 — 아직 작지만 성장 가능성. 선점 기회.",
+                    "growing": "성장 — 확산 중. 지금 대응하면 프레임 장악 가능.",
+                    "peak": "정점 — 최대 관심. 대응이 가장 큰 효과/위험.",
+                    "declining": "하락 — 관심 감소 중. 불필요한 재점화 주의.",
+                    "dormant": "소멸 — 관심 거의 없음. 모니터링만.",
+                },
+                "urgency": {
+                    "즉시": "발견 즉시 대응 (1-2시간 내)",
+                    "당일": "오늘 중 대응 완료 (6시간 내)",
+                    "48시간": "2일 내 대응 준비",
+                    "모니터링": "특별 대응 불요, 추적만",
+                },
+                "how_it_works": (
+                    "이슈 대응 엔진은 다음 순서로 판단합니다:\n"
+                    "1. 뉴스에서 이슈 키워드 수집 (네이버 API)\n"
+                    "2. 24시간 내 언급량, 부정 비율, 방송 보도 여부로 스코어링 (0~100)\n"
+                    "3. 이슈가 우리에게 유리한지/불리한지 판단 (감성 분석)\n"
+                    "4. 5가지 입장 중 하나를 결정 (밀기/반박/회피/모니터링/전환)\n"
+                    "5. 카테고리별 사전 준비된 템플릿에서 대응 메시지 생성\n"
+                    "6. 위기 플레이북 매칭 (사법 리스크, 재원, 포퓰리즘 등)\n"
+                    "7. DB 과거 데이터와 비교하여 이슈 생명주기 판단\n"
+                    "8. 담당 팀 + 긴급도 + 골든타임 자동 배정"
+                ),
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
 # Executive Summary — 9 KPIs for war room
 # ---------------------------------------------------------------------------
 
