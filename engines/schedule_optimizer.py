@@ -9,9 +9,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from itertools import permutations
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from config.tenant_config import TenantConfig
 from models.schemas import VoterSegment, IssueScore, CrisisLevel
 
@@ -1018,68 +1015,3 @@ class ScheduleOptimizer:
         lines.append("  * 일별 상세 일정은 format_daily_report()로 확인")
         lines.append(sep)
         return "\n".join(lines)
-
-
-# ======================================================================
-# __main__ 테스트
-# ======================================================================
-if __name__ == "__main__":
-    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
-
-    # ── Mock 데이터 ──────────────────────────────────────────────────
-    mock_voter_segments = [
-        VoterSegment("창원시", 87, 0.62, 0.9, 0.83, 0.803),
-        VoterSegment("김해시", 37, 0.70, 0.78, 0.15, 0.570),
-        VoterSegment("양산시", 23, 0.65, 0.73, 0.00, 0.475),
-        VoterSegment("진주시", 28, 0.55, 0.76, 0.00, 0.452),
-        VoterSegment("거제시", 18, 0.58, 0.54, 0.00, 0.386),
-        VoterSegment("통영시", 11, 0.45, 0.40, 0.00, 0.290),
-        VoterSegment("사천시", 10, 0.50, 0.35, 0.00, 0.280),
-        VoterSegment("밀양시", 9,  0.40, 0.30, 0.00, 0.230),
-    ]
-
-    mock_issue_scores = [
-        IssueScore("경남 조선업 일자리", 28.0, CrisisLevel.WATCH, {}, 12.0),
-        IssueScore("경남 교통 BRT", 30.1, CrisisLevel.WATCH, {}, 10.0),
-        IssueScore("부울경 행정통합", 69.3, CrisisLevel.ALERT, {}, 18.0),
-    ]
-
-    optimizer = ScheduleOptimizer(SAMPLE_GYEONGNAM_CONFIG)
-
-    # ── 1. 내일 일정 생성 ────────────────────────────────────────────
-    tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
-    print(f"\n{'#' * 64}")
-    print(f"  내일({tomorrow}) 유세 일정 생성")
-    print(f"{'#' * 64}\n")
-
-    daily = optimizer.generate_daily_schedule(
-        target_date=tomorrow,
-        voter_segments=mock_voter_segments,
-        issue_scores=mock_issue_scores,
-        campaign_mode="선점",
-    )
-    print(optimizer.format_daily_report(daily))
-
-    # ── 2. 주간 계획 생성 ────────────────────────────────────────────
-    # 이번 주 월요일 기준
-    today = date.today()
-    monday = today - timedelta(days=today.weekday())
-    start_date = monday.strftime("%Y-%m-%d")
-
-    print(f"\n{'#' * 64}")
-    print(f"  주간 유세 계획 ({start_date} ~)")
-    print(f"{'#' * 64}\n")
-
-    weekly = optimizer.generate_weekly_plan(
-        start_date=start_date,
-        voter_segments=mock_voter_segments,
-        issue_scores=mock_issue_scores,
-        campaign_mode="선점",
-    )
-    print(optimizer.format_weekly_report(weekly))
-
-    # ── 3. 일별 상세 (첫째 날) ───────────────────────────────────────
-    print(f"\n{'#' * 64}")
-    print(f"  주간 첫째 날 상세 일정")
-    print(f"{'#' * 64}\n")
-    print(optimizer.format_daily_report(weekly.daily_schedules[0]))

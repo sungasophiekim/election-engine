@@ -218,31 +218,3 @@ def monitor_instagram() -> InstagramMetrics:
     else:
         username = os.getenv("INSTAGRAM_USERNAME", "")
         return _fallback_instagram(username)
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    # 토큰 상태 확인
-    print(f"Instagram Token: {'있음' if _has_token() else '없음 (fallback 모드)'}")
-    print()
-
-    result = monitor_instagram()
-    print(f"=== Instagram 모니터링 ===")
-    print(f"소스: {result.source}")
-    print(f"계정: {result.username}")
-    if result.followers:
-        print(f"팔로워: {result.followers:,}")
-        print(f"게시물: {result.media_count}")
-        print(f"참여율: {result.engagement_rate}%")
-    if result.recent_posts:
-        print(f"\n최근 게시물:")
-        for p in result.recent_posts[:5]:
-            eng = f" ({p.engagement:,})" if p.engagement else ""
-            print(f"  · {p.caption[:50]}{eng}")
-    if result.error:
-        print(f"\n{result.error}")

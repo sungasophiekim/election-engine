@@ -131,21 +131,3 @@ def compare_trends(keywords: list[str], geo: str = "KR") -> dict:
             results[kw] = get_search_trend(kw)
             time.sleep(1)  # rate limit 방지
     return results
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    print("=== Google Trends 테스트 ===")
-
-    result = get_search_trend("경남도지사")
-    print(f"\n'{result.keyword}'")
-    print(f"  현재 관심도: {result.interest_now}/100")
-    print(f"  7일 평균: {result.interest_7d_avg} | 30일 평균: {result.interest_30d_avg}")
-    print(f"  변화: {result.change_7d:+.1f}% {result.trend_direction}")
-    print(f"  연관 검색어: {result.related_queries[:5]}")
-
-    if result.timeline:
-        print(f"\n  추이 (최근 7일):")
-        for t in result.timeline[-7:]:
-            bar = "█" * (t["value"] // 5)
-            print(f"    {t['date']} {t['value']:>3} {bar}")

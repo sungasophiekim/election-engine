@@ -274,21 +274,3 @@ def scan_multiple_keywords(keywords: list[str]) -> dict:
     for kw in keywords:
         results[kw] = scan_all_communities(kw)
     return results
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    report = scan_all_communities("경남도지사")
-    print(f"=== '{report.keyword}' 커뮤니티 스캔 ===")
-    print(f"총 {report.total_mentions:,}건 | 최활발: {report.hottest_community} | 톤: {report.overall_tone}")
-    print()
-    for s in report.signals:
-        print(f"  {s.icon} {s.name:10s} | {s.result_count:>6,}건 | {s.tone}")
-        for t in s.recent_titles[:2]:
-            print(f"     · {t[:55]}")
-        print()

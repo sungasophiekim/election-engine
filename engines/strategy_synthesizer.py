@@ -6,9 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, date
 from enum import Enum
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from config.tenant_config import TenantConfig
 from models.schemas import IssueScore, CrisisLevel, OpponentSignal, VoterSegment
 
@@ -815,65 +812,3 @@ class StrategySynthesizer:
 
         lines.append(sep)
         return "\n".join(lines)
-
-
-# ======================================================================
-# __main__ 테스트
-# ======================================================================
-if __name__ == "__main__":
-    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
-
-    # Mock data simulating current situation
-    mock_issue_scores = [
-        IssueScore("경남도지사 선거", 85.8, CrisisLevel.CRISIS, {}, 24.0),
-        IssueScore("박완수 경남", 91.8, CrisisLevel.CRISIS, {}, 30.0),
-        IssueScore("부울경 행정통합", 69.3, CrisisLevel.ALERT, {}, 18.0),
-        IssueScore("경남 조선업 일자리", 28.0, CrisisLevel.WATCH, {}, 12.0),
-        IssueScore("경남 교통 BRT", 30.1, CrisisLevel.WATCH, {}, 10.0),
-    ]
-
-    mock_opponent_signals = [
-        OpponentSignal("김경수", 9, "주요 메시지: 경제, 교육", 0.67, "[모니터링 강화]"),
-        OpponentSignal("전희영", 1, "주요 메시지: 교육", 0.59, "[모니터링 강화]"),
-    ]
-
-    mock_voter_segments = [
-        VoterSegment("창원시", 87, 0.62, 0.9, 0.83, 0.803),
-        VoterSegment("김해시", 37, 0.70, 0.78, 0.15, 0.570),
-        VoterSegment("양산시", 23, 0.65, 0.73, 0.00, 0.475),
-        VoterSegment("진주시", 28, 0.55, 0.76, 0.00, 0.452),
-        VoterSegment("거제시", 18, 0.58, 0.54, 0.00, 0.386),
-    ]
-
-    mock_polling = {
-        "win_prob": 0.52,
-        "our_avg": 40.1,
-        "opponent_avg": {"김경수": 39.2},
-        "gap": 0.9,
-        "confidence": "low",
-        "assessment": "초박빙 접전"
-    }
-
-    mock_attacks = [
-        {"target": "김경수", "pledge": "경남도민 10만원", "attack_angle": "재원",
-         "talking_point": "3,300억 재원 방안 없는 표 매수 공약", "severity": "high", "regions": ["전체"]},
-        {"target": "김경수", "pledge": "조선·방산 부활", "attack_angle": "실적",
-         "talking_point": "전 도지사 4년간 거제 인구 2만 감소", "severity": "high", "regions": ["거제시"]},
-    ]
-
-    mock_defense = [
-        {"our_pledge": "경남형 스마트산단", "potential_attack": "1조 2천억 재원은?",
-         "defense_logic": "국비 70% + 도비 20% + 민간 10%", "severity": "medium"},
-    ]
-
-    synth = StrategySynthesizer(SAMPLE_GYEONGNAM_CONFIG)
-    strategy = synth.synthesize(
-        issue_scores=mock_issue_scores,
-        opponent_signals=mock_opponent_signals,
-        voter_segments=mock_voter_segments,
-        polling_data=mock_polling,
-        attack_points=mock_attacks,
-        defense_points=mock_defense,
-    )
-
-    print(synth.format_strategy_report(strategy))

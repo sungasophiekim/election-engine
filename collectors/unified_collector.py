@@ -264,20 +264,3 @@ def format_unified_report(signals: list[UnifiedSignal]) -> str:
         lines.append("")
 
     return "\n".join(lines)
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG as c
-
-    signals = collect_unified_signals(
-        ["경남도지사 선거", f"{c.candidate_name} 경남", "부울경 행정통합", "경남 청년 정책"],
-        candidate_name=c.candidate_name,
-        opponents=c.opponents,
-    )
-    print(format_unified_report(signals))

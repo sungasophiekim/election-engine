@@ -345,25 +345,3 @@ class KeywordEngine:
         lines.append(f"  총 {len(self.keywords)}개 키워드"
                      f" ({sum(1 for k in self.keywords if k.active)}개 활성)")
         return "\n".join(lines)
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
-    engine = KeywordEngine(SAMPLE_GYEONGNAM_CONFIG)
-
-    print("=== Seed 키워드 ===")
-    print(f"총 {len(engine.keywords)}개")
-    for k in engine.keywords:
-        print(f"  P{k.priority} [{k.category}] {k.keyword}")
-
-    print(f"\n=== 키워드 자동 발굴 실행 ===")
-    discovered = engine.discover()
-    print(f"발굴 후 총 {len(engine.keywords)}개")
-
-    print(f"\n{engine.format_report()}")

@@ -351,7 +351,9 @@ async def api_add_poll(request: Request, session_token: str = Cookie(default=Non
         poll_date = body.get("poll_date", "")
         pollster = body.get("pollster", "")
         our_support = float(body.get("our_support", 0))
-        opponent_name = body.get("opponent_name", "박완수")
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        default_opp = SAMPLE_GYEONGNAM_CONFIG.opponents[0] if SAMPLE_GYEONGNAM_CONFIG.opponents else "상대"
+        opponent_name = body.get("opponent_name", default_opp)
         opponent_support = float(body.get("opponent_support", 0))
         sample_size = int(body.get("sample_size", 1000))
         margin_of_error = float(body.get("margin_of_error", 3.0))
@@ -1213,6 +1215,9 @@ def _run_strategy_sync():
 
     # --- Build response ---
     return {
+        "candidate": config.candidate_name,
+        "election_type": config.election_type,
+        "main_opponent": config.opponents[0] if config.opponents else "",
         "strategy": {
             "mode": strategy.campaign_mode.value,
             "mode_reasoning": strategy.mode_reasoning,

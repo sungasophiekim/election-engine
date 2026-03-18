@@ -193,14 +193,3 @@ def format_report(metrics: list[ChannelMetrics]) -> str:
         lines.append("")
 
     return "\n".join(lines)
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    metrics = monitor_all_channels()
-    print(format_report(metrics))

@@ -8,9 +8,6 @@ import math
 from datetime import datetime, timedelta
 from typing import Optional
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from models.schemas import PollingData
 
 # ---------------------------------------------------------------------------
@@ -321,81 +318,3 @@ class PollingTracker:
         if den == 0:
             return 0.0
         return num / den
-
-
-# ======================================================================
-# __main__ 테스트
-# ======================================================================
-if __name__ == "__main__":
-    tracker = PollingTracker()
-
-    # --- 1. 여론조사 추이 테이블 ---
-    print("=" * 65)
-    print("  📊 여론조사 추이")
-    print("=" * 65)
-    print(f"{'날짜':<14} {'조사기관':<26} {'우리':>6} {'박완수':>6} {'차이':>6}")
-    print("-" * 65)
-    for p in tracker.polls:
-        opp = p.opponent_support.get("박완수", 0.0)
-        diff = p.our_support - opp
-        sign = "+" if diff > 0 else ""
-        print(f"{p.poll_date:<14} {p.pollster:<26} {p.our_support:>5.1f}% {opp:>5.1f}% {sign}{diff:>5.1f}")
-    print()
-
-    # --- 2. 트렌드 분석 ---
-    trend = tracker.calculate_trend(days=60)
-    print("=" * 65)
-    print("  📈 트렌드 분석")
-    print("=" * 65)
-    print(f"  우리 후보 일별 변화율: {trend['our_trend']:+.4f}%p/일")
-    for name, slope in trend["opponent_trends"].items():
-        print(f"  {name} 일별 변화율: {slope:+.4f}%p/일")
-    print(f"  모멘텀: {trend['momentum']}")
-    print(f"  요약: {trend['trend_summary']}")
-    print()
-
-    # --- 3. 승률 계산 ---
-    prob = tracker.calculate_win_probability()
-    print("=" * 65)
-    print("  🎯 승률 분석")
-    print("=" * 65)
-    print(f"  승리 확률: {prob['win_prob']*100:.1f}%")
-    print(f"  우리 가중평균: {prob['our_avg']}%")
-    print(f"  상대 가중평균: {prob['opponent_avg']}")
-    print(f"  격차: {prob['gap']:+.1f}%p")
-    print(f"  신뢰도: {prob['confidence']}")
-    print(f"  판정: {prob['assessment']}")
-    print()
-
-    # --- 4. 부동층 분석 ---
-    swing = tracker.analyze_swing_voters()
-    print("=" * 65)
-    print("  🗳️  부동층 분석")
-    print("=" * 65)
-    print(f"  미정 유권자 비율: {swing['undecided_pct']}%")
-    print(f"  역전에 필요한 부동층 확보율: {swing['needed_from_undecided']}%")
-    print(f"  전략 권고: {swing['strategy']}")
-    print()
-
-    # --- 5. 전략 권고 ---
-    print("=" * 65)
-    print("  💡 전략 권고")
-    print("=" * 65)
-    if prob["gap"] > 3.0:
-        print("  ▸ 리드 유지 전략: 실점 방지 + 안정적 메시지 반복")
-        print("  ▸ 상대 공격 대비 방어 시나리오 준비")
-    elif prob["gap"] > 0:
-        print("  ▸ 소폭 우세: 부동층 공략으로 격차 확대 필요")
-        print("  ▸ 지역별 맞춤 메시지 + 현장 유세 강화")
-    elif prob["gap"] > -3.0:
-        print("  ▸ 초접전: 미시타겟팅 + 부동층 집중 공략")
-        print("  ▸ 차별화 이슈 선점으로 모멘텀 전환 시도")
-    else:
-        print("  ▸ 열세 반전 필요: 파격적 공약 + 이슈 선점")
-        print("  ▸ 상대 약점 부각 + 네거티브 대응 준비")
-    print()
-
-    # --- 전체 요약 ---
-    print("=" * 65)
-    print(tracker.get_polling_summary())
-    print("=" * 65)

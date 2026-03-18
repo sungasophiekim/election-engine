@@ -475,7 +475,7 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
             <div><label style="color:#78909c">조사기관</label><input type="text" id="poll-org" placeholder="예: KBS/한국리서치" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
             <div><label style="color:#78909c">표본수</label><input type="number" id="poll-sample" value="1000" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
             <div><label style="color:#4caf50">김경수 지지율(%)</label><input type="number" id="poll-our" step="0.1" placeholder="44.2" style="width:100%;padding:5px;background:#0d1117;color:#4caf50;border:1px solid #2e7d32;border-radius:4px;font-weight:bold"></div>
-            <div><label style="color:#f44336">박완수 지지율(%)</label><input type="number" id="poll-opp" step="0.1" placeholder="41.8" style="width:100%;padding:5px;background:#0d1117;color:#f44336;border:1px solid #c62828;border-radius:4px;font-weight:bold"></div>
+            <div><label style="color:#f44336">상대 후보 지지율(%)</label><input type="number" id="poll-opp" step="0.1" placeholder="41.8" style="width:100%;padding:5px;background:#0d1117;color:#f44336;border:1px solid #c62828;border-radius:4px;font-weight:bold"></div>
             <div><label style="color:#78909c">오차범위(±%p)</label><input type="number" id="poll-moe" step="0.1" value="3.1" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
             <div><label style="color:#78909c">미정(%)</label><input type="number" id="poll-und" step="0.1" value="0" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
             <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="submitPoll()" style="width:100%;padding:8px">저장</button></div>
@@ -1495,7 +1495,7 @@ async function submitPoll(){
   var res=document.getElementById('poll-result');
   if(!pd||!org||!our){res.textContent='필수 필드를 입력하세요';res.style.color='#f44336';return}
   try{
-    var r=await fetch('/api/polls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({poll_date:pd,pollster:org,our_support:our,opponent_name:'박완수',opponent_support:opp||0,sample_size:sz,margin_of_error:moe,undecided:und})});
+    var r=await fetch('/api/polls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({poll_date:pd,pollster:org,our_support:our,opponent_name:(window._mainOpponent||'상대'),opponent_support:opp||0,sample_size:sz,margin_of_error:moe,undecided:und})});
     var d=await r.json();
     if(d.ok){res.textContent='저장 완료! 여론조사 갱신 중...';res.style.color='#4caf50';pageLoaded.polling=false;loadPolling();loadSavedPolls()}
     else{res.textContent='오류: '+(d.error||'');res.style.color='#f44336'}
@@ -1508,7 +1508,7 @@ async function loadSavedPolls(){
     if(!polls.length){document.getElementById('saved-polls').textContent='저장된 추가 여론조사 없음';return}
     document.getElementById('saved-polls').innerHTML=polls.map(function(p){
       var opp=p.opponent_support?Object.values(p.opponent_support)[0]:0;
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #1e3a5f"><span>'+esc(p.poll_date)+' '+esc(p.pollster)+' | <span style="color:#4caf50">김경수 '+p.our_support+'%</span> vs <span style="color:#f44336">박완수 '+opp+'%</span> (±'+p.margin_of_error+')</span><button class="btn btn-secondary" onclick="deletePoll('+p.id+')" style="padding:2px 8px;font-size:.72em">삭제</button></div>'
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #1e3a5f"><span>'+esc(p.poll_date)+' '+esc(p.pollster)+' | <span style="color:#4caf50">우리 '+p.our_support+'%</span> vs <span style="color:#f44336">상대 '+opp+'%</span> (±'+p.margin_of_error+')</span><button class="btn btn-secondary" onclick="deletePoll('+p.id+')" style="padding:2px 8px;font-size:.72em">삭제</button></div>'
     }).join('');
   }catch(e){}
 }
@@ -1729,8 +1729,11 @@ function updateKPIsFromStrategy(data){
 /* ===== Render Strategy Tab ===== */
 function renderStrategy(d){
   var s=d.strategy;
-  document.getElementById('hdr-name').textContent='박완수';
-  document.getElementById('hdr-type').textContent='경상남도 광역단체장';
+  // 후보/상대 이름을 전역 저장 (다른 UI에서 동적 참조)
+  window._candidate=d.candidate||'';
+  window._mainOpponent=d.main_opponent||'';
+  document.getElementById('hdr-name').textContent=d.candidate||'';
+  document.getElementById('hdr-type').textContent=d.election_type||'';
   // Priority
   document.getElementById('priority').textContent='\u00bb\u00bb\u00bb '+s.top_priority;
   // Crisis bar

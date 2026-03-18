@@ -203,23 +203,3 @@ def search_youtube_bulk(keywords: list[str], max_per_kw: int = 10) -> dict:
     for kw in keywords:
         results[kw] = search_youtube(kw, max_results=max_per_kw)
     return results
-
-
-# ── 테스트 ───────────────────────────────────────────────────
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-
-    # API 키 상태
-    key = os.getenv("YOUTUBE_API_KEY", "")
-    print(f"YouTube API Key: {'있음' if key else '없음 (fallback 모드)'}")
-
-    result = search_youtube("경남도지사 선거", max_results=10)
-    print(f"\n=== '{result.keyword}' ===")
-    print(f"검색 결과: {result.total_results}건 | 최근 7일: {result.recent_count}건")
-    print(f"총 조회수: {result.total_views:,} | 평균: {result.avg_views:,}")
-    print(f"\nTOP 영상:")
-    for v in result.top_videos[:5]:
-        print(f"  {v.view_count:>10,}회 | {v.title[:50]}")
