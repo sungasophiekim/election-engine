@@ -951,18 +951,93 @@ async def api_social_buzz(session_token: str = Cookie(default=None)):
     def _run():
         from dotenv import load_dotenv
         load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
-        from collectors.social_collector import compare_candidate_buzz, collect_social_signals
+        from collectors.social_collector import compare_candidate_buzz
+        from collectors.youtube_collector import search_youtube
+        from collectors.trends_collector import get_search_trend
         from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
         config = SAMPLE_GYEONGNAM_CONFIG
 
+        all_candidates = [config.candidate_name] + config.opponents
+
+        # 1. 블로그/카페 버즈 비교
         buzz = compare_candidate_buzz(config.candidate_name, config.opponents)
-        signals = collect_social_signals(
-            ["경남도지사 선거", "부울경 행정통합", "경남 우주항공"],
-            candidate_name=config.candidate_name,
-            opponents=config.opponents,
-        )
-        summary = signals.get("summary", {})
-        return {"buzz": buzz, "summary": summary}
+
+        # 2. 후보별 YouTube 데이터
+        yt_data = {}
+        for name in all_candidates:
+            try:
+                yt = search_youtube(name, max_results=5)
+                yt_data[name] = {
+                    "total": yt.total_results,
+                    "views": yt.total_views,
+                    "top_videos": [
+                        {"title": v.title[:50], "views": v.view_count,
+                         "channel": v.channel, "published": v.published}
+                        for v in yt.top_videos[:3]
+                    ],
+                }
+            except Exception:
+                yt_data[name] = {"total": 0, "views": 0, "top_videos": []}
+
+        # 3. 후보별 Google Trends
+        trends_data = {}
+        for name in all_candidates:
+            try:
+                tr = get_search_trend(name)
+                trends_data[name] = {
+                    "interest": tr.interest_now,
+                    "change_7d": tr.change_7d,
+                    "direction": tr.trend_direction,
+                    "related": tr.related_queries[:5],
+                }
+            except Exception:
+                trends_data[name] = {"interest": 0, "change_7d": 0, "direction": "", "related": []}
+
+        # 4. 종합 비교 테이블
+        candidates = {}
+        for name in all_candidates:
+            bz = buzz.get(name, {}) if isinstance(buzz.get(name), dict) else {}
+            yt = yt_data.get(name, {})
+            tr = trends_data.get(name, {})
+            candidates[name] = {
+                "blog": bz.get("blog", 0),
+                "cafe": bz.get("cafe", 0),
+                "video": bz.get("video", 0),
+                "social_total": bz.get("total", 0),
+                "sentiment": bz.get("sentiment", 0),
+                "youtube_count": yt.get("total", 0),
+                "youtube_views": yt.get("views", 0),
+                "youtube_top": yt.get("top_videos", []),
+                "trend_interest": tr.get("interest", 0),
+                "trend_change": tr.get("change_7d", 0),
+                "trend_direction": tr.get("direction", ""),
+                "trend_related": tr.get("related", []),
+                "total_buzz": bz.get("total", 0) + yt.get("views", 0),
+            }
+
+        # 5. 요약 통계
+        our = candidates.get(config.candidate_name, {})
+        opp = candidates.get(config.opponents[0], {}) if config.opponents else {}
+        summary = {
+            "our_total": our.get("total_buzz", 0),
+            "opp_total": opp.get("total_buzz", 0),
+            "buzz_ratio": round(our.get("total_buzz", 0) / max(opp.get("total_buzz", 0), 1), 2),
+            "our_sentiment": our.get("sentiment", 0),
+            "opp_sentiment": opp.get("sentiment", 0),
+            "sentiment_advantage": round(our.get("sentiment", 0) - opp.get("sentiment", 0), 2),
+            "our_trend": our.get("trend_interest", 0),
+            "opp_trend": opp.get("trend_interest", 0),
+            "trend_advantage": our.get("trend_interest", 0) - opp.get("trend_interest", 0),
+            "buzz_leader": buzz.get("buzz_leader", ""),
+            "sentiment_leader": buzz.get("sentiment_leader", ""),
+        }
+
+        return {
+            "candidates": candidates,
+            "summary": summary,
+            "buzz_leader": buzz.get("buzz_leader", ""),
+            "sentiment_leader": buzz.get("sentiment_leader", ""),
+        }
 
     try:
         result = await run_in_threadpool(_run)

@@ -1241,34 +1241,102 @@ async function loadSocialBuzz(){
     var d=await r.json();
     if(d.error){document.getElementById('soc-buzz').textContent=d.error;return}
     pageLoaded.social=true;
-    // 자체 채널 + 커뮤니티 로드
     loadOwnedChannels();
     loadCommunity();
-    if(d&&typeof d==='object'){
-      var buzzData=d.candidates||d;
-      document.getElementById('soc-buzz').innerHTML=buzzChart(buzzData);
-      // Sentiment
-      var names=Object.keys(buzzData).filter(function(k){return typeof buzzData[k]==='object'&&buzzData[k].sentiment!==undefined});
-      if(names.length){
-        var sentHtml='';
-        names.forEach(function(name){
-          var s=buzzData[name].sentiment||0;
-          var pct=((s+1)/2*100).toFixed(0);
-          var color=s>=0?'#4caf50':'#f44336';
-          sentHtml+='<div class="sent-bar"><div class="sent-name">'+esc(name)+' <span style="color:'+color+'">'+(s>=0?'+':'')+s.toFixed(2)+'</span></div>';
-          sentHtml+='<div class="sent-track"><div class="sent-fill" style="width:'+pct+'%"></div></div></div>';
-        });
-        document.getElementById('soc-sentiment').innerHTML=sentHtml;
+
+    var cands=d.candidates||{};
+    var names=Object.keys(cands);
+    if(!names.length){document.getElementById('soc-buzz').textContent='데이터 없음';return}
+
+    var maxBuzz=Math.max.apply(null,names.map(function(n){return cands[n].total_buzz||1}))||1;
+
+    // === 후보별 소셜 버즈 ===
+    var html='';
+    names.forEach(function(name,idx){
+      var c=cands[name];
+      var pct=(c.total_buzz||0)/maxBuzz*100;
+      var sentColor=c.sentiment>=0?'#4caf50':'#f44336';
+      var isOur=idx===0;
+      var border=isOur?'border:1px solid #1976d2':'';
+
+      html+='<div style="background:#0d1117;padding:12px;border-radius:8px;margin-bottom:8px;'+border+'">';
+
+      // 이름 + 총 버즈
+      html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+      html+='<div style="font-size:1.1em"><strong>'+esc(name)+'</strong>';
+      if(isOur)html+=' <span style="font-size:.7em;background:#1976d2;color:#fff;padding:1px 6px;border-radius:3px">우리</span>';
+      html+='</div>';
+      html+='<div style="text-align:right"><span style="font-size:1.4em;font-weight:bold">'+(c.total_buzz||0).toLocaleString()+'</span><span style="color:#78909c;font-size:.8em"> 총 버즈</span></div>';
+      html+='</div>';
+
+      // 채널별 스택 바
+      var blogW=c.blog/maxBuzz*100,cafeW=c.cafe/maxBuzz*100,ytW=(c.youtube_views||0)/maxBuzz*100;
+      html+='<div style="display:flex;height:22px;border-radius:4px;overflow:hidden;margin:8px 0;background:#1e3a5f">';
+      if(blogW>0)html+='<div style="width:'+blogW.toFixed(1)+'%;background:#42a5f5" title="블로그 '+c.blog.toLocaleString()+'"></div>';
+      if(cafeW>0)html+='<div style="width:'+cafeW.toFixed(1)+'%;background:#66bb6a" title="카페 '+c.cafe.toLocaleString()+'"></div>';
+      if(ytW>0)html+='<div style="width:'+Math.min(ytW,30).toFixed(1)+'%;background:#ff0000" title="YouTube '+c.youtube_views.toLocaleString()+'조회"></div>';
+      html+='</div>';
+
+      // 채널별 수치
+      html+='<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.78em">';
+      html+='<span style="color:#42a5f5">블로그 '+c.blog.toLocaleString()+'</span>';
+      html+='<span style="color:#66bb6a">카페 '+c.cafe.toLocaleString()+'</span>';
+      html+='<span style="color:#ff0000">YouTube '+(c.youtube_count||0)+'건 '+(c.youtube_views||0).toLocaleString()+'조회</span>';
+      html+='<span style="color:'+sentColor+'">감성 '+(c.sentiment>=0?'+':'')+c.sentiment.toFixed(2)+'</span>';
+      html+='</div>';
+
+      // Google Trends
+      if(c.trend_interest){
+        var trColor=c.trend_change>0?'#f44336':c.trend_change<0?'#4caf50':'#78909c';
+        html+='<div style="font-size:.78em;margin-top:4px">';
+        html+='<span style="color:#ff9800">📊 Trends '+c.trend_interest+'/100</span> ';
+        html+='<span style="color:'+trColor+'">7일 '+(c.trend_change>0?'+':'')+c.trend_change.toFixed(1)+'%</span> ';
+        html+=esc(c.trend_direction);
+        if(c.trend_related&&c.trend_related.length)html+=' | 연관: '+c.trend_related.slice(0,3).map(function(q){return esc(q)}).join(', ');
+        html+='</div>';
       }
-      // Summary
-      var totalMentions=0;
-      names.forEach(function(n){totalMentions+=(buzzData[n].total||0)});
-      var parts=['총 언급량: <strong>'+totalMentions.toLocaleString()+'</strong>건'];
-      if(d.period) parts.push('기간: '+esc(d.period));
-      if(d.summary) parts.push(esc(d.summary));
-      document.getElementById('soc-summary').innerHTML='<div class="msg">'+parts.join(' | ')+'</div>';
-    }
-  }catch(e){document.getElementById('soc-buzz').textContent='로딩 실패'}
+
+      // YouTube TOP
+      if(c.youtube_top&&c.youtube_top.length){
+        html+='<div style="font-size:.75em;margin-top:4px;color:#90caf9">';
+        c.youtube_top.slice(0,2).forEach(function(v){
+          html+='<div>▶ '+esc(v.title)+(v.views?' ('+v.views.toLocaleString()+'회)':'')+'</div>';
+        });
+        html+='</div>';
+      }
+
+      html+='</div>';
+    });
+
+    document.getElementById('soc-buzz').innerHTML=html;
+
+    // === 감성 비교 ===
+    var sentHtml='<div style="font-size:.85em">';
+    names.forEach(function(name){
+      var c=cands[name];
+      var s=c.sentiment||0;
+      var pct=((s+1)/2*100).toFixed(0);
+      var color=s>=0?'#4caf50':'#f44336';
+      sentHtml+='<div style="margin:6px 0"><div style="display:flex;justify-content:space-between"><span>'+esc(name)+'</span><strong style="color:'+color+'">'+(s>=0?'+':'')+s.toFixed(2)+'</strong></div>';
+      sentHtml+='<div style="height:10px;background:#1e3a5f;border-radius:5px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#f44336,#ffeb3b 50%,#4caf50);border-radius:5px"></div></div></div>';
+    });
+    sentHtml+='<div style="display:flex;justify-content:space-between;font-size:.7em;color:#546e7f;margin-top:4px"><span>부정 ←</span><span>→ 긍정</span></div>';
+    sentHtml+='</div>';
+    document.getElementById('soc-sentiment').innerHTML=sentHtml;
+
+    // === 요약 통계 ===
+    var sm=d.summary||{};
+    var sumHtml='<div style="font-size:.85em">';
+    sumHtml+='<div class="msg" style="border-color:#1976d2">총 버즈: 우리 <strong>'+(sm.our_total||0).toLocaleString()+'</strong> vs 상대 <strong>'+(sm.opp_total||0).toLocaleString()+'</strong> (비율 '+(sm.buzz_ratio||0)+'x)</div>';
+    var saColor=sm.sentiment_advantage>=0?'#4caf50':'#f44336';
+    sumHtml+='<div class="msg" style="border-color:'+saColor+'">감성: 우리 <strong>'+(sm.our_sentiment>=0?'+':'')+(sm.our_sentiment||0).toFixed(2)+'</strong> vs 상대 <strong>'+(sm.opp_sentiment>=0?'+':'')+(sm.opp_sentiment||0).toFixed(2)+'</strong> (차이 '+(sm.sentiment_advantage>=0?'+':'')+(sm.sentiment_advantage||0).toFixed(2)+')</div>';
+    var taColor=sm.trend_advantage>=0?'#4caf50':'#f44336';
+    sumHtml+='<div class="msg" style="border-color:'+taColor+'">Trends: 우리 <strong>'+(sm.our_trend||0)+'/100</strong> vs 상대 <strong>'+(sm.opp_trend||0)+'/100</strong></div>';
+    sumHtml+='<div class="msg">버즈 리더: <strong>'+esc(d.buzz_leader||'-')+'</strong> | 감성 리더: <strong>'+esc(d.sentiment_leader||'-')+'</strong></div>';
+    sumHtml+='</div>';
+    document.getElementById('soc-summary').innerHTML=sumHtml;
+
+  }catch(e){document.getElementById('soc-buzz').textContent='로딩 실패: '+e.message}
 }
 
 /* ===== Load Pledges ===== */
