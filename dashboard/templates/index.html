@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<title>Election Engine — War Room</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.5;font-size:13px;display:flex;flex-direction:column;min-height:100vh}
+a{color:#64b5f6;text-decoration:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0a0e17}
+::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2e5a8f}
+
+/* Header */
+.header{background:linear-gradient(135deg,#0d1117,#1a237e);padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1e3a5f;flex-wrap:wrap;gap:8px}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-left h1{font-size:1.15em;color:#fff;white-space:nowrap}
+.hdr-left .slogan{color:#90caf9;font-size:.8em}
+.hdr-left .election-type{color:#546e7f;font-size:.72em}
+.hdr-center{display:flex;align-items:center;gap:12px}
+.mode-badge{display:inline-block;padding:4px 16px;border-radius:20px;font-weight:bold;font-size:.85em;color:#fff}
+.mode-badge.attack{background:#c62828}
+.mode-badge.defense{background:#2e7d32}
+.mode-badge.preempt{background:#e65100}
+.mode-badge.crisis{background:#b71c1c;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.win-big{font-size:1.6em;font-weight:bold;line-height:1}
+.dday-big-hdr{font-size:1.1em;font-weight:bold;color:#64b5f6}
+.btn{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font-size:.8em;color:#fff;transition:background .2s}
+.btn-primary{background:#1976d2}.btn-primary:hover{background:#1565c0}
+.btn-secondary{background:#263238}.btn-secondary:hover{background:#37474f}
+.btn:disabled{background:#333;cursor:wait;opacity:.7}
+select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;padding:4px;border-radius:4px;font-size:.8em}
+
+/* Executive Bar */
+.exec-bar{display:flex;background:#0a0e17;border-bottom:1px solid #1e3a5f;padding:6px 12px;gap:2px;overflow-x:auto}
+.kpi{flex:1;min-width:70px;text-align:center;padding:4px;border-right:1px solid #1e3a5f}
+.kpi:last-child{border-right:none}
+.kpi-val{display:block;font-size:1.1em;font-weight:bold}
+.kpi-lbl{display:block;font-size:.65em;color:#546e7f;margin-top:1px}
+
+/* Crisis bar */
+.crisis-bar{display:none;background:#b71c1c;color:#fff;text-align:center;padding:8px;font-weight:bold;font-size:.9em;animation:pulse 2s infinite}
+
+/* Layout */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* Left Nav */
+.left-nav{width:56px;background:#0d1117;border-right:1px solid #1e3a5f;display:flex;flex-direction:column;padding:8px 0;flex-shrink:0;overflow-y:auto}
+.nav-item{padding:12px 0;text-align:center;color:#546e7f;cursor:pointer;font-size:10px;border-left:3px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{color:#90caf9;background:rgba(25,118,210,.05)}
+.nav-item.active{color:#64b5f6;border-left-color:#64b5f6;background:rgba(25,118,210,.1)}
+.nav-item .nav-icon{font-size:18px;display:block;margin-bottom:2px}
+.nav-item .nav-label{display:block;font-size:9px;letter-spacing:-.3px}
+
+/* Main Area */
+.main-area{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+
+/* Right Panel */
+.right-panel{width:280px;background:#0d1117;border-left:1px solid #1e3a5f;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0}
+.right-section{padding:10px;border-bottom:1px solid #1e3a5f}
+.right-section h4{font-size:.8em;color:#64b5f6;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Alert items */
+.alert-item{display:flex;gap:8px;padding:8px;margin-bottom:6px;background:#141b2d;border-radius:4px;border-left:3px solid #2196f3;font-size:.82em}
+.alert-item.critical{border-left-color:#f44336}
+.alert-item.warning{border-left-color:#ff9800}
+.alert-item.info{border-left-color:#2196f3}
+.alert-severity{font-size:10px;margin-top:2px}
+.alert-item.critical .alert-severity{color:#f44336;animation:pulse 2s infinite}
+.alert-item.warning .alert-severity{color:#ff9800}
+.alert-item.info .alert-severity{color:#2196f3}
+.alert-title{font-weight:bold;margin-bottom:2px}
+.alert-detail{color:#78909c;font-size:.9em}
+.alert-owner{color:#ff9800;font-size:.85em;margin-top:2px}
+
+/* Calendar */
+.dday-big{font-size:2em;font-weight:bold;color:#64b5f6;text-align:center;margin:6px 0}
+.cal-event{padding:4px 8px;font-size:.8em;margin:3px 0;border-radius:3px}
+.cal-event.done{color:#4caf50;text-decoration:line-through;opacity:.7}
+.cal-event.upcoming{color:#90caf9}
+.cal-event.today{color:#ff9800;font-weight:bold}
+.blackout-warning{background:#b71c1c;color:#fff;padding:6px 8px;border-radius:4px;font-size:.8em;text-align:center;margin-top:6px}
+
+/* Cards */
+.card{background:#141b2d;border:1px solid #1e3a5f;border-radius:6px;padding:12px;transition:border-color .2s}
+.card:hover{border-color:#1976d2}
+.card h3{font-size:.88em;color:#64b5f6;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center}
+.card h3 .fresh{margin-left:auto}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.card.fw{grid-column:1/-1}
+.card.w2{grid-column:span 2}
+
+/* Score bars */
+.sb{display:flex;align-items:center;margin:3px 0}
+.sb .l{width:130px;font-size:.8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb .bar{flex:1;height:16px;background:#1e3a5f;border-radius:3px;overflow:hidden}
+.sb .fill{height:100%;border-radius:3px;transition:width .4s}
+.sb .v{width:42px;text-align:right;font-size:.8em;font-weight:bold}
+.fill.crisis{background:#f44336}.fill.alert{background:#ff9800}.fill.watch{background:#ffeb3b;color:#000}.fill.normal{background:#4caf50}
+
+/* Messages */
+.msg{padding:6px 10px;margin:4px 0;background:#1a2332;border-left:3px solid #1976d2;border-radius:0 4px 4px 0;font-size:.84em}
+
+/* Attack items */
+.atk{padding:5px 8px;margin:3px 0;font-size:.82em;background:#1a2332;border-radius:4px}
+.atk.high{border-left:3px solid #f44336}.atk.medium{border-left:3px solid #ff9800}
+
+/* Opponent */
+.opp{padding:8px;margin:4px 0;background:#1a2332;border-radius:5px}
+.opp .p{font-size:1.1em;font-weight:bold}
+.p.hi{color:#f44336}.p.md{color:#ff9800}.p.lo{color:#4caf50}
+
+/* Issue cards */
+.issue-card{background:#141b2d;border:1px solid #1e3a5f;border-radius:6px;padding:10px;margin:6px 0;transition:border-color .2s}
+.issue-card:hover{border-color:#1976d2}
+.issue-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.level-badge{padding:2px 8px;border-radius:3px;font-size:.72em;font-weight:bold;text-transform:uppercase}
+.level-badge.crisis{background:#f44336;color:#fff}
+.level-badge.alert{background:#ff9800;color:#fff}
+.level-badge.watch{background:#ffeb3b;color:#000}
+.level-badge.normal{background:#4caf50;color:#fff}
+.issue-header .keyword{font-weight:bold;flex:1}
+.issue-header .score{font-size:1.2em;font-weight:bold;color:#64b5f6}
+.issue-stats{font-size:.78em;color:#78909c;margin-bottom:4px}
+.issue-trend{margin-top:3px}
+
+/* Region blocks */
+.region-map{display:flex;flex-direction:column;align-items:center;gap:4px;margin:10px 0}
+.region-map-row{display:flex;gap:4px;justify-content:center}
+.region-block{width:72px;height:52px;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;border:1px solid rgba(255,255,255,.1);font-size:.78em}
+.region-block:hover{transform:scale(1.08);border-color:#64b5f6}
+.region-block .rname{font-weight:bold}
+.region-block .rscore{font-size:.7em;opacity:.8}
+
+/* Region detail */
+.ri{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1e3a5f;font-size:.82em}
+
+/* Debate */
+.q-card{background:#1a2332;border-radius:5px;padding:9px;margin:5px 0}
+.q-card .topic{color:#64b5f6;font-weight:bold;font-size:.88em}
+.q-card .question{margin:3px 0}
+.q-card .resp{color:#a5d6a7;font-size:.84em;margin-top:3px}
+.q-card .trap{color:#ef9a9a;font-size:.8em}
+
+/* Schedule */
+.ev{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #1e3a5f}
+.ev .time{width:90px;color:#64b5f6;font-weight:bold;font-size:.88em}
+.ev .detail{flex:1;font-size:.84em}
+.ev .region-tag{background:#1976d2;color:#fff;padding:2px 6px;border-radius:3px;font-size:.78em}
+.ev .move{color:#78909c;font-style:italic}
+.sched-toggle{display:flex;gap:8px;margin-bottom:10px}
+.sched-toggle button{padding:5px 12px;border:1px solid #1e3a5f;background:none;color:#78909c;border-radius:4px;cursor:pointer;font-size:.82em;transition:all .2s}
+.sched-toggle button.active{background:#1976d2;color:#fff;border-color:#1976d2}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.week-col{background:#141b2d;border:1px solid #1e3a5f;border-radius:5px;padding:6px;min-height:70px}
+.week-col .day-label{font-size:.78em;color:#64b5f6;font-weight:bold;margin-bottom:3px;text-align:center}
+.week-col .day-date{font-size:.68em;color:#78909c;text-align:center;margin-bottom:5px}
+.week-col .day-tag{display:block;background:#1976d2;color:#fff;padding:2px 5px;border-radius:3px;font-size:.72em;margin:2px 0;text-align:center}
+.week-col .day-tag.rest{background:#37474f}
+
+/* Polling chart */
+.poll-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em}
+
+/* Pledge table */
+.pledge-table{width:100%;border-collapse:collapse;font-size:.82em}
+.pledge-table th{background:#1e3a5f;color:#e0e0e0;padding:7px;text-align:left;font-weight:600;position:sticky;top:0}
+.pledge-table td{padding:7px;border-bottom:1px solid #1e3a5f;vertical-align:top}
+.pledge-table tr:hover td{background:#1a2332}
+.pledge-cat{font-weight:bold;color:#64b5f6}
+
+/* Freshness */
+.fresh{font-size:.65em}
+.fresh.live{color:#4caf50}
+.fresh.recent{color:#90caf9}
+.fresh.old{color:#ff9800}
+.fresh.stale{color:#f44336}
+
+/* Skeleton */
+.skeleton{background:linear-gradient(90deg,#141b2d 25%,#1a2332 50%,#141b2d 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:16px;margin:4px 0}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-block{height:50px}
+
+/* Toast */
+.toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#37474f;color:#fff;padding:10px 24px;border-radius:6px;font-size:.88em;z-index:999;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* Page transitions */
+.page{display:none;animation:pageIn .2s ease}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Priority bar */
+.priority-bar{padding:8px 14px;background:linear-gradient(90deg,#1a237e,#0d1117);font-size:.92em;font-weight:bold;color:#ff9800;text-align:center;border-bottom:1px solid #1e3a5f}
+
+/* Footer */
+.footer{text-align:center;padding:8px 16px;color:#546e7f;font-size:.75em;border-top:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center;background:#0a0e17;flex-wrap:wrap;gap:6px}
+.mode-sel{padding:4px 12px;border:1px solid #1e3a5f;background:none;color:#78909c;border-radius:4px;cursor:pointer;font-size:.85em;transition:all .15s}
+.mode-sel.on{background:#1976d2;color:#fff;border-color:#1976d2}
+
+/* Buzz chart */
+.buzz-bar-wrap{margin:4px 0}
+.buzz-bar-label{font-size:.82em;margin-bottom:2px}
+.buzz-bar-track{height:22px;background:#1e3a5f;border-radius:3px;overflow:hidden;display:flex}
+.buzz-bar-seg{height:100%;transition:width .4s}
+
+/* Social sentiment */
+.sent-bar{margin:6px 0}
+.sent-name{font-size:.82em;margin-bottom:2px}
+.sent-track{height:10px;background:#1e3a5f;border-radius:3px;overflow:hidden}
+.sent-fill{height:100%;background:linear-gradient(90deg,#f44336,#ffeb3b,#4caf50);border-radius:3px;transition:width .4s}
+
+/* Print */
+@media print{
+  body{background:#fff;color:#000;font-size:11px}
+  .header{background:#1a237e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .left-nav,.right-panel,.footer,.toast,.crisis-bar,.exec-bar,.nav-item,.mode-sel,.btn,.sched-toggle{display:none!important}
+  .layout{display:block}
+  .main-area{overflow:visible;padding:10px}
+  .page{display:block!important;page-break-before:auto}
+  .page:not(.active){display:none!important}
+  .page.active ~ .page{display:none!important}
+  .card{border:1px solid #ccc;break-inside:avoid;background:#fff}
+  .card h3{color:#1a237e}
+  .msg{background:#f5f5f5;border-left-color:#1a237e}
+  .fill.crisis{background:#d32f2f!important}.fill.alert{background:#f57c00!important}
+  .issue-card{background:#fff;border:1px solid #ccc}
+  .pledge-table th{background:#e0e0e0;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-header{display:block!important;text-align:center;padding:10px;border-bottom:2px solid #000;margin-bottom:10px}
+  .print-header h2{font-size:1.4em}
+}
+.print-header{display:none}
+
+/* Mobile */
+@media(max-width:900px){
+  .right-panel{display:none}
+  .left-nav{display:none}
+  .mobile-nav{display:flex!important}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .card.w2,.card.fw{grid-column:1}
+  .header{flex-direction:column;text-align:center;padding:8px}
+  .week-grid{grid-template-columns:repeat(3,1fr)}
+  .region-block{width:60px;height:44px;font-size:.7em}
+}
+@media(max-width:600px){
+  .week-grid{grid-template-columns:1fr 1fr}
+  .exec-bar{flex-wrap:wrap}
+  .kpi{min-width:60px;flex:0 0 auto}
+}
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #1e3a5f;z-index:100;justify-content:space-around;padding:4px 0}
+.mobile-nav .nav-item{border-left:none;padding:6px 0;flex:1;border-bottom:3px solid transparent}
+.mobile-nav .nav-item.active{border-bottom-color:#64b5f6;border-left:none}
+</style>
+</head>
+<body>
+
+<!-- Crisis Banner -->
+<div class="crisis-bar" id="crisis-bar"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="hdr-left">
+    <div>
+      <h1 id="hdr-name">Election Engine</h1>
+      <div class="election-type" id="hdr-type">-</div>
+      <div class="slogan" id="hdr-slogan">-</div>
+    </div>
+    <select class="role-sel" id="role-sel" onchange="setRole(this.value)">
+      <option value="all">전체 보기</option>
+      <option value="candidate">후보 뷰</option>
+      <option value="manager">선대위원장 뷰</option>
+      <option value="comms">대변인 뷰</option>
+      <option value="analyst">여론분석 뷰</option>
+      <option value="field">현장 뷰</option>
+    </select>
+  </div>
+  <div class="hdr-center">
+    <span class="mode-badge" id="mode-badge">대기</span>
+  </div>
+  <div class="hdr-right">
+    <div style="text-align:center">
+      <div class="win-big" id="hdr-win">--%</div>
+      <div style="font-size:.65em;color:#546e7f">승률</div>
+    </div>
+    <div style="text-align:center">
+      <div class="dday-big-hdr" id="hdr-dday">D-??</div>
+    </div>
+    <button class="btn btn-primary" id="run-btn" onclick="runStrategy()">전략 갱신</button>
+    <button class="btn btn-secondary" onclick="window.print()">인쇄</button>
+    <a href="/logout" class="btn btn-secondary">로그아웃</a>
+  </div>
+</div>
+
+<!-- Executive Bar -->
+<div class="exec-bar">
+  <div class="kpi"><span class="kpi-val" id="ex-fav">--</span><span class="kpi-lbl">지지율</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-gap">--</span><span class="kpi-lbl">격차</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-wp">--</span><span class="kpi-lbl">승률</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-iss">-</span><span class="kpi-lbl">위기이슈</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-media">-</span><span class="kpi-lbl">미디어</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-buzz">-</span><span class="kpi-lbl">디지털</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-risk">-</span><span class="kpi-lbl">지역리스크</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-rapid">--</span><span class="kpi-lbl">긴급</span></div>
+  <div class="kpi"><span class="kpi-val" id="ex-mom">●</span><span class="kpi-lbl">모멘텀</span></div>
+</div>
+
+<!-- 3-Column Layout -->
+<div class="layout">
+
+  <!-- Left Nav -->
+  <div class="left-nav">
+    <div class="nav-item active" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
+    <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span><span class="nav-label">이슈</span></div>
+    <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span><span class="nav-label">지역</span></div>
+    <div class="nav-item" onclick="switchNav('opponents')"><span class="nav-icon">👥</span><span class="nav-label">상대</span></div>
+    <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span><span class="nav-label">소셜</span></div>
+    <div class="nav-item" onclick="switchNav('pledges')"><span class="nav-icon">📋</span><span class="nav-label">공약</span></div>
+    <div class="nav-item" onclick="switchNav('debate')"><span class="nav-icon">🎤</span><span class="nav-label">토론</span></div>
+    <div class="nav-item" onclick="switchNav('schedule')"><span class="nav-icon">📅</span><span class="nav-label">일정</span></div>
+    <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span><span class="nav-label">여론</span></div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <!-- Priority Bar -->
+    <div class="priority-bar" id="priority">전략 갱신 버튼을 눌러 실시간 분석을 시작하세요</div>
+
+    <!-- Print header -->
+    <div class="print-header">
+      <h2 id="print-title">선거 전략 브리핑</h2>
+      <div id="print-date"></div>
+    </div>
+
+    <!-- PAGE: Strategy (default) -->
+    <div class="page active" id="page-strategy">
+      <div class="grid-2">
+        <div class="card"><h3>핵심 메시지</h3><div id="s-msg"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card"><h3>이슈 스코어</h3><div id="s-issues"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card"><h3>지역 우선순위</h3><div id="s-regions"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card"><h3>상대 후보</h3><div id="s-opp"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card fw"><h3>공격 포인트</h3><div id="s-atk"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card fw"><h3>리스크</h3><div id="s-risk"><div class="msg">갱신 후 표시</div></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Issues -->
+    <div class="page" id="page-issues">
+      <div id="i-detail"><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block" style="margin-top:6px"></div></div>
+    </div>
+
+    <!-- PAGE: Regions -->
+    <div class="page" id="page-regions">
+      <div class="card" style="margin-bottom:10px"><h3>경남 지역 맵</h3>
+        <div class="region-map" id="region-map">
+          <div class="region-map-row">
+            <div class="region-block" id="rb-밀양" onclick="showRegionDetail('밀양')"><span class="rname">밀양</span><span class="rscore">-</span></div>
+            <div class="region-block" id="rb-양산" onclick="showRegionDetail('양산')"><span class="rname">양산</span><span class="rscore">-</span></div>
+          </div>
+          <div class="region-map-row">
+            <div class="region-block" id="rb-진주" onclick="showRegionDetail('진주')"><span class="rname">진주</span><span class="rscore">-</span></div>
+            <div class="region-block" id="rb-창원" onclick="showRegionDetail('창원')" style="width:90px"><span class="rname">창원</span><span class="rscore">-</span></div>
+            <div class="region-block" id="rb-김해" onclick="showRegionDetail('김해')"><span class="rname">김해</span><span class="rscore">-</span></div>
+          </div>
+          <div class="region-map-row">
+            <div class="region-block" id="rb-사천" onclick="showRegionDetail('사천')"><span class="rname">사천</span><span class="rscore">-</span></div>
+            <div class="region-block" id="rb-거제" onclick="showRegionDetail('거제')"><span class="rname">거제</span><span class="rscore">-</span></div>
+            <div class="region-block" id="rb-통영" onclick="showRegionDetail('통영')"><span class="rname">통영</span><span class="rscore">-</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><h3>지역 상세</h3><div id="region-detail-table"><div class="skeleton"></div></div></div>
+      <div class="card" id="region-detail-card" style="display:none"><h3 id="region-detail-title">지역 선택</h3><div id="region-detail-content"></div></div>
+    </div>
+
+    <!-- PAGE: Opponents -->
+    <div class="page" id="page-opponents">
+      <div id="opp-detail"><div class="skeleton skeleton-block"></div></div>
+    </div>
+
+    <!-- PAGE: Social -->
+    <div class="page" id="page-social">
+      <div class="grid-2">
+        <div class="card w2"><h3>후보별 소셜 버즈</h3><div id="soc-buzz"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card"><h3>감성 비교</h3><div id="soc-sentiment"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>요약 통계</h3><div id="soc-summary"><div class="skeleton"></div></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Pledges -->
+    <div class="page" id="page-pledges">
+      <div class="grid-2">
+        <div class="card fw"><h3>공약 비교 매트릭스</h3><div id="pl-matrix" style="overflow-x:auto"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card"><h3>공격 포인트</h3><div id="pl-attacks"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>방어 포인트</h3><div id="pl-defenses"><div class="skeleton"></div></div></div>
+        <div class="card fw"><h3>지역별 토킹포인트</h3><div id="pl-regional"><div class="skeleton"></div></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Debate -->
+    <div class="page" id="page-debate">
+      <div class="grid-2">
+        <div class="card fw"><h3>오프닝 / 클로징</h3><div id="d-statements"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card fw"><h3>예상 질문 (15개)</h3><div id="d-questions"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>공격 스크립트</h3><div id="d-attacks"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>방어 스크립트</h3><div id="d-defenses"><div class="skeleton"></div></div></div>
+        <div class="card fw"><h3>레드라인</h3><div id="d-redlines"><div class="skeleton"></div></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Schedule -->
+    <div class="page" id="page-schedule">
+      <div class="sched-toggle">
+        <button class="active" id="sched-daily-btn" onclick="setSchedMode('daily')">일일</button>
+        <button id="sched-weekly-btn" onclick="setSchedMode('weekly')">주간</button>
+      </div>
+      <div id="sched-daily-view">
+        <div style="margin-bottom:10px">
+          <label style="color:#90caf9;font-size:.85em">날짜: </label>
+          <input type="date" id="sched-date" style="background:#141b2d;color:#e0e0e0;border:1px solid #1e3a5f;padding:5px;border-radius:4px;font-size:.85em" onchange="loadSchedule()">
+        </div>
+        <div class="card"><h3 id="sched-title">유세 일정</h3><div id="sched-events">날짜를 선택하세요</div></div>
+      </div>
+      <div id="sched-weekly-view" style="display:none">
+        <div style="margin-bottom:10px">
+          <label style="color:#90caf9;font-size:.85em">시작일: </label>
+          <input type="date" id="sched-week-start" style="background:#141b2d;color:#e0e0e0;border:1px solid #1e3a5f;padding:5px;border-radius:4px;font-size:.85em" onchange="loadWeekSchedule()">
+        </div>
+        <div id="week-grid-container"><div class="skeleton skeleton-block"></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Polling -->
+    <div class="page" id="page-polling">
+      <div class="grid-2">
+        <div class="card w2"><h3>여론조사 추이</h3><div id="p-chart"><div class="skeleton skeleton-block"></div></div><div id="p-table"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>분석</h3><div id="p-analysis"><div class="skeleton"></div></div></div>
+        <div class="card"><h3>승률 게이지</h3><div id="p-gauge" style="text-align:center"><div class="skeleton"></div></div></div>
+        <div class="card w2" style="border:1px solid #1976d2">
+          <h3 style="color:#90caf9">여론조사 입력</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:.82em">
+            <div><label style="color:#78909c">조사일</label><input type="date" id="poll-date" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
+            <div><label style="color:#78909c">조사기관</label><input type="text" id="poll-org" placeholder="예: KBS/한국리서치" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
+            <div><label style="color:#78909c">표본수</label><input type="number" id="poll-sample" value="1000" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
+            <div><label style="color:#4caf50">김경수 지지율(%)</label><input type="number" id="poll-our" step="0.1" placeholder="44.2" style="width:100%;padding:5px;background:#0d1117;color:#4caf50;border:1px solid #2e7d32;border-radius:4px;font-weight:bold"></div>
+            <div><label style="color:#f44336">박완수 지지율(%)</label><input type="number" id="poll-opp" step="0.1" placeholder="41.8" style="width:100%;padding:5px;background:#0d1117;color:#f44336;border:1px solid #c62828;border-radius:4px;font-weight:bold"></div>
+            <div><label style="color:#78909c">오차범위(±%p)</label><input type="number" id="poll-moe" step="0.1" value="3.1" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
+            <div><label style="color:#78909c">미정(%)</label><input type="number" id="poll-und" step="0.1" value="0" style="width:100%;padding:5px;background:#0d1117;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px"></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="submitPoll()" style="width:100%;padding:8px">저장</button></div>
+            <div style="display:flex;align-items:flex-end"><div id="poll-result" style="font-size:.85em;color:#90caf9"></div></div>
+          </div>
+          <div style="margin-top:10px">
+            <h4 style="font-size:.82em;color:#546e7f;margin-bottom:4px">DB 저장 목록 <button class="btn btn-secondary" onclick="loadSavedPolls()" style="padding:2px 8px;font-size:.75em">새로고침</button></h4>
+            <div id="saved-polls" style="font-size:.8em">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="right-section">
+      <h4>긴급 대응</h4>
+      <div id="alert-feed">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </div>
+    <div class="right-section" style="flex:1">
+      <h4>선거 일정</h4>
+      <div class="dday-big" id="cal-dday">D-??</div>
+      <div id="cal-events">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+      <div class="blackout-warning" id="blackout" style="display:none">
+        ⚠ 여론조사 공표 금지 기간
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Mobile Bottom Nav -->
+<div class="mobile-nav">
+  <div class="nav-item active" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
+  <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span></div>
+  <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span></div>
+  <div class="nav-item" onclick="switchNav('opponents')"><span class="nav-icon">👥</span></div>
+  <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span></div>
+  <div class="nav-item" onclick="switchNav('pledges')"><span class="nav-icon">📋</span></div>
+  <div class="nav-item" onclick="switchNav('debate')"><span class="nav-icon">🎤</span></div>
+  <div class="nav-item" onclick="switchNav('schedule')"><span class="nav-icon">📅</span></div>
+  <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Footer -->
+<div class="footer">
+  <div>마지막 갱신: <span id="last-up">-</span></div>
+  <div id="timer" style="color:#64b5f6">-</div>
+  <div>
+    <button class="mode-sel on" onclick="setMode('normal',this)">일상</button>
+    <button class="mode-sel" onclick="setMode('debate',this)">토론일</button>
+    <button class="mode-sel" onclick="setMode('election',this)">선거일</button>
+  </div>
+</div>
+
+<script>
+/* ===== State ===== */
+var strategyData = null;
+var refreshTimer = null;
+var nextRefresh = 0;
+var currentMode = 'normal';
+var currentRole = 'all';
+var currentNav = 'strategy';
+var cachedRegions = [];
+var cachedAlerts = [];
+var alertRefreshInterval = null;
+var REFRESH_INTERVAL = 5 * 60 * 1000;
+var MODE_CSS = {'공격':'attack','수비':'defense','선점':'preempt','위기대응':'crisis'};
+var pageLoaded = {strategy:false,issues:false,regions:false,opponents:false,social:false,pledges:false,debate:false,schedule:false,polling:false};
+
+/* ===== XSS Escape ===== */
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+
+/* ===== Toast ===== */
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none'},5000)}
+
+/* ===== Freshness label ===== */
+function freshness(timestamp){
+  if(!timestamp) return '<span class="fresh stale">데이터 없음</span>';
+  var mins=Math.floor((Date.now()-new Date(timestamp).getTime())/60000);
+  if(mins<5) return '<span class="fresh live">\u25cf LIVE</span>';
+  if(mins<30) return '<span class="fresh recent">'+mins+'분 전</span>';
+  if(mins<60) return '<span class="fresh old">'+mins+'분 전</span>';
+  return '<span class="fresh stale">'+Math.floor(mins/60)+'시간 전</span>';
+}
+
+/* ===== Sparkline SVG ===== */
+function sparkline(values,w,h,color){
+  w=w||120;h=h||28;color=color||'#64b5f6';
+  if(!values||values.length<2) return '<span style="color:#78909c;font-size:.78em">데이터 없음</span>';
+  var mn=Math.min.apply(null,values),mx=Math.max.apply(null,values),rng=mx-mn||1;
+  var step=w/(values.length-1);
+  var pts=values.map(function(v,i){return(i*step).toFixed(1)+','+(h-((v-mn)/rng)*(h-4)-2).toFixed(1)});
+  return '<svg width="'+w+'" height="'+h+'" style="display:block"><polyline points="'+pts.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="1.5"/></svg>';
+}
+
+/* ===== Gauge Arc ===== */
+function gaugeArc(pct,size){
+  size=size||80;var r=size/2-5;
+  var angle=Math.PI*pct;
+  var x=size/2+r*Math.cos(Math.PI-angle);
+  var y=size/2-r*Math.sin(Math.PI-angle);
+  var large=pct>0.5?1:0;
+  var color=pct>=0.5?'#4caf50':'#f44336';
+  return '<svg width="'+size+'" height="'+(size/2+5)+'" viewBox="0 0 '+size+' '+(size/2+5)+'">'+
+    '<path d="M 5 '+size/2+' A '+r+' '+r+' 0 0 1 '+(size-5)+' '+size/2+'" fill="none" stroke="#1e3a5f" stroke-width="8" stroke-linecap="round"/>'+
+    '<path d="M 5 '+size/2+' A '+r+' '+r+' 0 '+large+' 1 '+x.toFixed(1)+' '+y.toFixed(1)+'" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<text x="'+size/2+'" y="'+(size/2-5)+'" text-anchor="middle" fill="'+color+'" font-size="16" font-weight="bold">'+(pct*100).toFixed(1)+'%</text></svg>';
+}
+
+/* ===== Buzz Chart ===== */
+function buzzChart(buzzData){
+  var names=Object.keys(buzzData).filter(function(k){return typeof buzzData[k]==='object'&&buzzData[k].total!==undefined});
+  if(!names.length) return '<span style="color:#78909c">데이터 없음</span>';
+  var maxTotal=Math.max.apply(null,names.map(function(n){return buzzData[n].total}));
+  if(maxTotal===0) return '<span style="color:#78909c">데이터 없음</span>';
+  var html='';
+  names.forEach(function(name){
+    var d=buzzData[name];
+    var blogPct=((d.blog||0)/maxTotal*100).toFixed(1);
+    var cafePct=((d.cafe||0)/maxTotal*100).toFixed(1);
+    var videoPct=((d.video||0)/maxTotal*100).toFixed(1);
+    html+='<div class="buzz-bar-wrap"><div class="buzz-bar-label">'+esc(name)+' <span style="color:#78909c">'+d.total.toLocaleString()+'</span></div>';
+    html+='<div class="buzz-bar-track">';
+    html+='<div class="buzz-bar-seg" style="width:'+blogPct+'%;background:#42a5f5"></div>';
+    html+='<div class="buzz-bar-seg" style="width:'+cafePct+'%;background:#66bb6a"></div>';
+    html+='<div class="buzz-bar-seg" style="width:'+videoPct+'%;background:#ef5350"></div>';
+    html+='</div></div>';
+  });
+  html+='<div style="margin-top:6px;font-size:.78em;color:#78909c"><span style="color:#42a5f5">&#9632;</span> 블로그 <span style="color:#66bb6a">&#9632;</span> 카페 <span style="color:#ef5350">&#9632;</span> 동영상</div>';
+  return html;
+}
+
+/* ===== Region Heat Color ===== */
+function heatColor(heat){
+  if(heat>0.6) return 'rgba(244,67,54,'+Math.max(heat,0.5)+')';
+  if(heat>0.3) return 'rgba(255,152,0,'+Math.min(heat+0.3,0.8)+')';
+  return 'rgba(76,175,80,0.4)';
+}
+
+/* ===== Region Heat Map (inline blocks) ===== */
+function regionHeatMap(regions){
+  return regions.map(function(r){
+    var bg=heatColor(r.heat||0);
+    var voters=r.voters?r.voters+'만':'';
+    var swing=r.swing?(r.swing*100).toFixed(0)+'%경합':'';
+    var sub=[voters,swing].filter(Boolean).join(' | ');
+    return '<div style="display:inline-block;margin:3px;padding:5px 9px;background:'+bg+';border-radius:4px;font-size:.8em">'+
+      '<div style="font-weight:bold">'+esc(r.region)+'</div>'+
+      (sub?'<div style="font-size:.72em">'+esc(sub)+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+
+/* ===== Nav Switch ===== */
+function switchNav(name){
+  currentNav=name;
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  var page=document.getElementById('page-'+name);
+  if(page) page.classList.add('active');
+  // Activate nav items in both left-nav and mobile-nav
+  var navItems=document.querySelectorAll('.nav-item');
+  var navNames=['strategy','issues','regions','opponents','social','pledges','debate','schedule','polling'];
+  var idx=navNames.indexOf(name);
+  navItems.forEach(function(n,i){if(i%navNames.length===idx) n.classList.add('active')});
+  // Lazy load
+  if(name==='issues'&&!pageLoaded.issues) loadIssues();
+  if(name==='regions'&&!pageLoaded.regions) loadRegions();
+  if(name==='opponents'&&!pageLoaded.opponents) loadOpponents();
+  if(name==='social'&&!pageLoaded.social) loadSocialBuzz();
+  if(name==='pledges'&&!pageLoaded.pledges) loadPledges();
+  if(name==='debate'&&!pageLoaded.debate) loadDebate();
+  if(name==='schedule') initSchedule();
+  if(name==='polling'&&!pageLoaded.polling) loadPolling();
+}
+
+/* ===== Mode Selector ===== */
+function setMode(mode,btn){
+  currentMode=mode;
+  document.querySelectorAll('.mode-sel').forEach(function(b){b.classList.remove('on')});
+  if(btn) btn.classList.add('on');
+  if(mode==='debate') switchNav('debate');
+  if(mode==='election') switchNav('regions');
+}
+
+/* ===== Role Selector ===== */
+function setRole(role){
+  currentRole=role;
+  // Future: highlight relevant sections per role
+}
+
+/* ===== Executive Summary ===== */
+function updateExecBar(data){
+  if(!data) return;
+  var k=data.kpis||data;
+  // Favorability
+  var fav=k.favorability||k.our_avg;
+  if(fav!==undefined){
+    var favEl=document.getElementById('ex-fav');
+    favEl.textContent=(typeof fav==='number'?fav.toFixed(1)+'%':fav);
+  }
+  // Gap
+  var gap=k.gap;
+  if(gap!==undefined){
+    var gapEl=document.getElementById('ex-gap');
+    gapEl.textContent=(gap>0?'+':'')+gap.toFixed(1);
+    gapEl.style.color=gap>0?'#4caf50':'#f44336';
+  }
+  // Win probability
+  var wp=k.win_probability||k.win_prob;
+  if(wp!==undefined){
+    var wpVal=typeof wp==='number'?(wp<=1?wp*100:wp):parseFloat(wp);
+    var wpEl=document.getElementById('ex-wp');
+    wpEl.textContent=wpVal.toFixed(1)+'%';
+    wpEl.style.color=wpVal>=50?'#4caf50':'#f44336';
+    document.getElementById('hdr-win').textContent=wpVal.toFixed(1)+'%';
+    document.getElementById('hdr-win').style.color=wpVal>=50?'#4caf50':'#f44336';
+  }
+  // Crisis issues
+  var iss=k.crisis_issues!==undefined?k.crisis_issues:k.crisis_count;
+  if(iss!==undefined){
+    var issEl=document.getElementById('ex-iss');
+    issEl.textContent=iss;
+    issEl.style.color=iss>0?'#f44336':'#4caf50';
+  }
+  // Media sentiment
+  var media=k.media_sentiment;
+  if(media!==undefined){
+    var mediaEl=document.getElementById('ex-media');
+    mediaEl.textContent=(media>0?'+':'')+media.toFixed(2);
+    mediaEl.style.color=media>=0?'#4caf50':'#f44336';
+  }
+  // Digital buzz
+  var buzz=k.digital_buzz||k.social_buzz;
+  if(buzz!==undefined){
+    document.getElementById('ex-buzz').textContent=typeof buzz==='number'?buzz.toLocaleString():buzz;
+  }
+  // Region risk
+  var rr=k.region_risk!==undefined?k.region_risk:k.region_risk_count;
+  if(rr!==undefined){
+    var rrEl=document.getElementById('ex-risk');
+    rrEl.textContent=rr;
+    rrEl.style.color=rr>3?'#f44336':rr>0?'#ff9800':'#4caf50';
+  }
+  // Rapid response
+  var rapid=k.rapid_response||k.alert_level;
+  if(rapid!==undefined){
+    var rpEl=document.getElementById('ex-rapid');
+    rpEl.textContent=rapid;
+    var rpColors={RED:'#f44336',ORANGE:'#ff9800',YELLOW:'#ffeb3b',GREEN:'#4caf50'};
+    rpEl.style.color=rpColors[rapid]||'#78909c';
+  }
+  // Momentum
+  var mom=k.momentum;
+  if(mom!==undefined){
+    var momEl=document.getElementById('ex-mom');
+    if(mom==='gaining'||mom==='up'||mom>0){momEl.textContent='\u25b2';momEl.style.color='#4caf50'}
+    else if(mom==='losing'||mom==='down'||mom<0){momEl.textContent='\u25bc';momEl.style.color='#f44336'}
+    else{momEl.textContent='\u25cf';momEl.style.color='#ffeb3b'}
+  }
+  // D-day
+  var dday=k.days_left||data.days_left;
+  if(dday!==undefined){
+    document.getElementById('hdr-dday').textContent='D-'+dday;
+    document.getElementById('cal-dday').textContent='D-'+dday;
+    if(dday<=7){document.getElementById('hdr-dday').style.color='#f44336'}
+    else if(dday<=14){document.getElementById('hdr-dday').style.color='#ff9800'}
+  }
+  // Meta
+  if(data.candidate){document.getElementById('hdr-name').textContent=esc(data.candidate)}
+  if(data.election_type){document.getElementById('hdr-type').textContent=esc(data.election_type)}
+  if(data.slogan){document.getElementById('hdr-slogan').textContent=esc(data.slogan)}
+  // Mode badge
+  var mode=k.mode||data.mode;
+  if(mode){
+    var badge=document.getElementById('mode-badge');
+    badge.textContent=mode;
+    badge.className='mode-badge '+(MODE_CSS[mode]||'preempt');
+  }
+  // Timestamp
+  if(data.timestamp||data.updated_at){
+    document.getElementById('last-up').innerHTML=freshness(data.timestamp||data.updated_at);
+  }
+}
+
+/* ===== Load Alerts ===== */
+async function loadAlerts(){
+  try{
+    var r=await fetch('/api/alerts');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var d=await r.json();
+    cachedAlerts=d.alerts||d||[];
+    var html='';
+    (Array.isArray(cachedAlerts)?cachedAlerts:[]).forEach(function(a){
+      var sev=a.severity||'info';
+      html+='<div class="alert-item '+esc(sev)+'">';
+      html+='<div class="alert-severity">\u25cf</div>';
+      html+='<div class="alert-content">';
+      html+='<div class="alert-title">'+esc(a.title||a.keyword||a.message||'')+'</div>';
+      if(a.detail||a.score) html+='<div class="alert-detail">'+(a.detail?esc(a.detail):'스코어 '+a.score)+'</div>';
+      if(a.owner||a.assigned) html+='<div class="alert-owner">'+esc(a.owner||a.assigned)+'</div>';
+      html+='</div></div>';
+    });
+    document.getElementById('alert-feed').innerHTML=html||'<div style="color:#78909c;font-size:.82em">알림 없음</div>';
+  }catch(e){document.getElementById('alert-feed').innerHTML='<div style="color:#78909c;font-size:.82em">로딩 실패</div>'}
+}
+
+/* ===== Load Calendar ===== */
+async function loadCalendar(){
+  try{
+    var r=await fetch('/api/calendar');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var d=await r.json();
+    var events=d.events||d.milestones||[];
+    var html='';
+    events.forEach(function(e){
+      var cls='upcoming';
+      if(e.done||e.completed) cls='done';
+      if(e.today) cls='today';
+      var icon=cls==='done'?'\u2713':cls==='today'?'\u25b6':'\u25cb';
+      var ddayStr=e.dday?' (D'+e.dday+')':'';
+      html+='<div class="cal-event '+cls+'">'+icon+' '+esc(e.title||e.name||e.event||'')+ddayStr+'</div>';
+    });
+    document.getElementById('cal-events').innerHTML=html||'<div style="color:#78909c;font-size:.82em">일정 없음</div>';
+    // D-day
+    if(d.days_left!==undefined){
+      document.getElementById('cal-dday').textContent='D-'+d.days_left;
+      document.getElementById('hdr-dday').textContent='D-'+d.days_left;
+    }
+    // Blackout
+    if(d.blackout||d.survey_blackout){
+      document.getElementById('blackout').style.display='block';
+    }
+  }catch(e){}
+}
+
+/* ===== Load Executive Summary ===== */
+async function loadExecSummary(){
+  try{
+    var r=await fetch('/api/executive-summary');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var d=await r.json();
+    updateExecBar(d);
+  }catch(e){}
+}
+
+/* ===== Load Issues (cached scores) ===== */
+async function loadIssues(){
+  try{
+    var r=await fetch('/api/scores');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var sc=await r.json();
+    if(!sc||!sc.length) return;
+    pageLoaded.issues=true;
+    var html=sc.map(function(i){
+      var lv=(i.crisis_level||i.level||'normal').toLowerCase();
+      var neg=i.negative_ratio!==undefined?(i.negative_ratio*100).toFixed(0)+'%':'-';
+      var speed=i.velocity!==undefined?i.velocity.toFixed(1)+'x':'-';
+      return '<div class="issue-card">'+
+        '<div class="issue-header">'+
+        '<span class="level-badge '+lv+'">'+(i.level||i.crisis_level||'NORMAL')+'</span>'+
+        '<span class="keyword">'+esc(i.keyword)+'</span>'+
+        '<span class="score">'+i.score.toFixed(1)+'</span>'+
+        '</div>'+
+        '<div class="issue-stats">24h 언급 '+(i.mention_count||0)+'건 | 부정 '+neg+' | 속도 '+speed+'</div>'+
+        '<div class="issue-trend" id="trend-'+encodeURIComponent(i.keyword)+'"></div>'+
+        '</div>';
+    }).join('');
+    document.getElementById('i-detail').innerHTML=html;
+    loadIssueTrends(sc);
+  }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패</div>'}
+}
+
+/* ===== Load Issue Trends ===== */
+async function loadIssueTrends(issues){
+  var top=issues.slice(0,10);
+  for(var idx=0;idx<top.length;idx++){
+    var issue=top[idx];
+    try{
+      var r=await fetch('/api/trend/'+encodeURIComponent(issue.keyword)+'?days=7');
+      if(!r.ok) continue;
+      var d=await r.json();
+      var el=document.getElementById('trend-'+encodeURIComponent(issue.keyword));
+      if(el&&d.scores&&d.scores.length>1){
+        var color=(issue.level||issue.crisis_level)==='CRISIS'?'#f44336':(issue.level||issue.crisis_level)==='ALERT'?'#ff9800':'#64b5f6';
+        el.innerHTML='<div style="font-size:.72em;color:#78909c;margin-bottom:2px">7일 추이</div>'+sparkline(d.scores,180,28,color);
+      }
+    }catch(e){}
+  }
+}
+
+/* ===== Load Regions ===== */
+async function loadRegions(){
+  try{
+    var r=await fetch('/api/regions');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var rg=await r.json();
+    cachedRegions=rg;
+    pageLoaded.regions=true;
+    // Update map blocks
+    rg.forEach(function(reg){
+      var name=reg.region||'';
+      // Try exact match then partial
+      var el=document.getElementById('rb-'+name);
+      if(!el){
+        // Try partial match
+        var blocks=document.querySelectorAll('.region-block');
+        blocks.forEach(function(b){if(name.indexOf(b.id.replace('rb-',''))>=0||b.id.replace('rb-','').indexOf(name)>=0) el=b});
+      }
+      if(el){
+        el.style.background=heatColor(reg.heat||0);
+        var scoreEl=el.querySelector('.rscore');
+        if(scoreEl) scoreEl.textContent=(reg.priority_score||reg.heat||0).toFixed?((reg.priority_score||reg.heat||0)*10).toFixed(0):'';
+      }
+    });
+    // Detail table
+    var tbl='<table style="width:100%;font-size:.82em;border-collapse:collapse">';
+    tbl+='<tr style="border-bottom:1px solid #1e3a5f;color:#64b5f6"><th style="text-align:left;padding:4px">지역</th><th>유권자</th><th>경합도</th><th>Heat</th><th>우선순위</th></tr>';
+    rg.forEach(function(reg){
+      var heat=reg.heat||0;
+      tbl+='<tr style="border-bottom:1px solid #1e3a5f"><td style="padding:4px;font-weight:bold">'+esc(reg.region)+'</td>';
+      tbl+='<td style="text-align:center">'+(reg.voters?reg.voters+'만':'-')+'</td>';
+      tbl+='<td style="text-align:center">'+(reg.swing?(reg.swing*100).toFixed(0)+'%':'-')+'</td>';
+      tbl+='<td style="text-align:center"><span style="color:'+heatColor(heat)+'">'+heat.toFixed(2)+'</span></td>';
+      tbl+='<td style="text-align:center">'+(reg.priority_score||'-')+'</td></tr>';
+    });
+    tbl+='</table>';
+    document.getElementById('region-detail-table').innerHTML=tbl;
+  }catch(e){document.getElementById('region-detail-table').innerHTML='<div style="color:#78909c">로딩 실패</div>'}
+}
+
+/* ===== Show Region Detail ===== */
+function showRegionDetail(name){
+  var card=document.getElementById('region-detail-card');
+  card.style.display='block';
+  document.getElementById('region-detail-title').textContent=name+' 상세';
+  var reg=cachedRegions.find(function(r){return r.region&&r.region.indexOf(name)>=0});
+  if(!reg){document.getElementById('region-detail-content').innerHTML='<div style="color:#78909c">데이터 없음</div>';return}
+  var html='<div style="font-size:.85em">';
+  html+='<div class="ri"><span>유권자</span><strong>'+(reg.voters?reg.voters+'만':'-')+'</strong></div>';
+  html+='<div class="ri"><span>경합도</span><strong>'+(reg.swing?(reg.swing*100).toFixed(0)+'%':'-')+'</strong></div>';
+  html+='<div class="ri"><span>Heat</span><strong style="color:'+heatColor(reg.heat||0)+'">'+(reg.heat||0).toFixed(2)+'</strong></div>';
+  html+='<div class="ri"><span>우선순위 점수</span><strong>'+(reg.priority_score||'-')+'</strong></div>';
+  if(reg.key_issues) html+='<div style="margin-top:6px"><strong>핵심 이슈:</strong> '+esc(Array.isArray(reg.key_issues)?reg.key_issues.join(', '):reg.key_issues)+'</div>';
+  if(reg.strategy) html+='<div style="margin-top:4px"><strong>전략:</strong> '+esc(reg.strategy)+'</div>';
+  html+='</div>';
+  document.getElementById('region-detail-content').innerHTML=html;
+}
+
+/* ===== Load Opponents ===== */
+async function loadOpponents(){
+  try{
+    var r=await fetch('/api/opponents');
+    if(r.status===401){window.location='/login';return}
+    if(!r.ok) return;
+    var opps=await r.json();
+    pageLoaded.opponents=true;
+    var html=(opps||[]).map(function(o){
+      var prob=(o.attack_prob||0)*100;
+      var probColor=prob>=70?'#f44336':prob>=40?'#ff9800':'#4caf50';
+      var sentColor=(o.sentiment||0)>=0?'#4caf50':'#f44336';
+      var card='<div class="card" style="margin-bottom:10px">';
+      card+='<h3>'+esc(o.name)+' <span style="font-size:.75em;color:'+probColor+'">공격확률 '+prob.toFixed(0)+'%</span></h3>';
+      // Attack probability gauge
+      card+='<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">';
+      card+='<div style="flex:1;height:8px;background:#1e3a5f;border-radius:4px;overflow:hidden"><div style="width:'+prob+'%;height:100%;background:'+probColor+';border-radius:4px"></div></div>';
+      card+='<span style="font-weight:bold;color:'+probColor+'">'+prob.toFixed(0)+'%</span></div>';
+      // Stats
+      card+='<div style="display:flex;gap:12px;font-size:.82em;margin-bottom:6px">';
+      card+='<span>언급 '+(o.mentions||0)+'건</span>';
+      if(o.sentiment!==undefined) card+='<span>감성: <span style="color:'+sentColor+'">'+(o.sentiment>=0?'+':'')+((o.sentiment||0)*100).toFixed(0)+'</span></span>';
+      card+='</div>';
+      if(o.message_shift) card+='<div style="font-size:.8em;color:#ff9800;margin-bottom:6px">메시지 전환: '+esc(o.message_shift)+'</div>';
+      // Attack points
+      if(o.attack_points&&o.attack_points.length){
+        card+='<div style="margin-top:6px"><strong style="font-size:.82em">공격 포인트:</strong>';
+        o.attack_points.forEach(function(ap){card+='<div class="atk high">'+esc(typeof ap==='string'?ap:ap.point||ap.content||'')+'</div>'});
+        card+='</div>';
+      }
+      // Articles
+      if(o.sample_articles&&o.sample_articles.length){
+        card+='<div style="margin-top:6px"><strong style="font-size:.82em">최근 기사:</strong>';
+        o.sample_articles.slice(0,3).forEach(function(a){
+          card+='<div style="font-size:.78em;color:#78909c;border-left:2px solid #1e3a5f;padding-left:6px;margin:3px 0">'+esc(typeof a==='string'?a:a.title||'')+'</div>';
+        });
+        card+='</div>';
+      }
+      card+='</div>';
+      return card;
+    }).join('');
+    document.getElementById('opp-detail').innerHTML=html||'<div style="color:#78909c">상대 후보 데이터 없음</div>';
+  }catch(e){document.getElementById('opp-detail').innerHTML='<div style="color:#78909c">로딩 실패</div>'}
+}
+
+/* ===== Load Social Buzz ===== */
+async function loadSocialBuzz(){
+  try{
+    var r=await fetch('/api/social-buzz');
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('soc-buzz').textContent=d.error;return}
+    pageLoaded.social=true;
+    if(d&&typeof d==='object'){
+      var buzzData=d.candidates||d;
+      document.getElementById('soc-buzz').innerHTML=buzzChart(buzzData);
+      // Sentiment
+      var names=Object.keys(buzzData).filter(function(k){return typeof buzzData[k]==='object'&&buzzData[k].sentiment!==undefined});
+      if(names.length){
+        var sentHtml='';
+        names.forEach(function(name){
+          var s=buzzData[name].sentiment||0;
+          var pct=((s+1)/2*100).toFixed(0);
+          var color=s>=0?'#4caf50':'#f44336';
+          sentHtml+='<div class="sent-bar"><div class="sent-name">'+esc(name)+' <span style="color:'+color+'">'+(s>=0?'+':'')+s.toFixed(2)+'</span></div>';
+          sentHtml+='<div class="sent-track"><div class="sent-fill" style="width:'+pct+'%"></div></div></div>';
+        });
+        document.getElementById('soc-sentiment').innerHTML=sentHtml;
+      }
+      // Summary
+      var totalMentions=0;
+      names.forEach(function(n){totalMentions+=(buzzData[n].total||0)});
+      var parts=['총 언급량: <strong>'+totalMentions.toLocaleString()+'</strong>건'];
+      if(d.period) parts.push('기간: '+esc(d.period));
+      if(d.summary) parts.push(esc(d.summary));
+      document.getElementById('soc-summary').innerHTML='<div class="msg">'+parts.join(' | ')+'</div>';
+    }
+  }catch(e){document.getElementById('soc-buzz').textContent='로딩 실패'}
+}
+
+/* ===== Load Pledges ===== */
+async function loadPledges(){
+  try{
+    var r=await fetch('/api/pledges');
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('pl-matrix').textContent=d.error;return}
+    pageLoaded.pledges=true;
+    var matrix=d.matrix||d.comparison||[];
+    if(matrix.length){
+      var candidates=d.candidates||[];
+      var tbl='<table class="pledge-table"><thead><tr><th>분야</th>';
+      candidates.forEach(function(c){tbl+='<th>'+esc(c)+'</th>'});
+      tbl+='</tr></thead><tbody>';
+      matrix.forEach(function(row){
+        tbl+='<tr><td class="pledge-cat">'+esc(row.category||row.field||'')+'</td>';
+        candidates.forEach(function(c){
+          var val=row[c]||row.pledges&&row.pledges[c]||'-';
+          tbl+='<td>'+esc(typeof val==='string'?val:JSON.stringify(val))+'</td>';
+        });
+        tbl+='</tr>';
+      });
+      tbl+='</tbody></table>';
+      document.getElementById('pl-matrix').innerHTML=tbl;
+    }else{document.getElementById('pl-matrix').innerHTML='<span style="color:#78909c">공약 비교 데이터 없음</span>'}
+    document.getElementById('pl-attacks').innerHTML=(d.attacks||[]).map(function(a){
+      return '<div class="atk '+(a.severity||'medium')+'"><strong>['+esc(a.attack_angle||a.angle||'')+']</strong> '+esc(a.content||a.talking_point||a.pledge||'')+'</div>';
+    }).join('')||'<span style="color:#78909c">-</span>';
+    document.getElementById('pl-defenses').innerHTML=(d.defenses||[]).map(function(df){
+      return '<div class="msg" style="border-color:#4caf50"><strong>'+esc(df.attack||df.topic||'')+'</strong><br>'+esc(df.response||df.defense||'')+'</div>';
+    }).join('')||'<span style="color:#78909c">-</span>';
+    var regional=d.regional_talking_points||d.regional||[];
+    if(regional.length){
+      document.getElementById('pl-regional').innerHTML=regional.slice(0,5).map(function(rr){
+        return '<div class="msg"><strong>'+esc(rr.region||'')+'</strong>: '+esc(rr.points?rr.points.join(', '):rr.talking_point||rr.content||'')+'</div>';
+      }).join('');
+    }else{document.getElementById('pl-regional').innerHTML='<span style="color:#78909c">-</span>'}
+  }catch(e){document.getElementById('pl-matrix').textContent='로딩 실패'}
+}
+
+/* ===== Load Debate ===== */
+async function loadDebate(){
+  try{
+    var r=await fetch('/api/debate-prep');
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('d-statements').textContent=d.error;return}
+    pageLoaded.debate=true;
+    document.getElementById('d-statements').innerHTML=
+      '<div class="msg" style="border-color:#4caf50"><strong>[오프닝]</strong><br>'+esc(d.opening).replace(/\n/g,'<br>')+'</div>'+
+      '<div class="msg" style="border-color:#ff9800"><strong>[클로징]</strong><br>'+esc(d.closing).replace(/\n/g,'<br>')+'</div>';
+    document.getElementById('d-questions').innerHTML=(d.questions||[]).map(function(q){
+      var dc={easy:'#4caf50',medium:'#ffeb3b',hard:'#f44336'}[q.difficulty]||'#78909c';
+      return '<div class="q-card"><div class="topic"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+dc+';margin-right:5px"></span>['+esc(q.source)+'] '+esc(q.topic)+'</div>'+
+        '<div class="question"><strong>Q:</strong> '+esc(q.question)+'</div>'+
+        '<div class="resp"><strong>A:</strong> '+esc(q.response)+'</div>'+
+        (q.trap?'<div class="trap">\u26a0 함정: '+esc(q.trap)+'</div>':'')+
+        '<div style="color:#78909c;font-size:.78em">\u2192 피벗: '+esc(q.pivot)+'</div></div>'
+    }).join('');
+    document.getElementById('d-attacks').innerHTML=(d.attacks||[]).map(function(a){
+      return '<div class="q-card"><div class="topic">'+esc(a.topic)+'</div>'+
+        '<div>'+esc(a.opening)+'</div>'+
+        '<div style="margin-top:3px"><strong>킬러Q:</strong> '+esc(a.killer_q)+'</div></div>'
+    }).join('');
+    document.getElementById('d-defenses').innerHTML=(d.defenses||[]).map(function(df){
+      return '<div class="q-card"><div class="topic">'+esc(df.attack||df.potential_attack||'')+'</div>'+
+        '<div class="resp">'+esc(df.response||df.defense_logic||'')+'</div>'+
+        '<div style="color:#78909c;font-size:.78em">\u2192 피벗: '+esc(df.pivot||df.pivot_to||'')+'</div></div>'
+    }).join('');
+    document.getElementById('d-redlines').innerHTML=(d.red_lines||[]).map(function(rl){
+      return '<div class="msg" style="border-color:#f44336">\u26d4 '+esc(rl)+'</div>'
+    }).join('');
+  }catch(e){document.getElementById('d-statements').textContent='로딩 실패'}
+}
+
+/* ===== Schedule ===== */
+var schedMode='daily';
+function setSchedMode(mode){
+  schedMode=mode;
+  document.getElementById('sched-daily-btn').classList.toggle('active',mode==='daily');
+  document.getElementById('sched-weekly-btn').classList.toggle('active',mode==='weekly');
+  document.getElementById('sched-daily-view').style.display=mode==='daily'?'block':'none';
+  document.getElementById('sched-weekly-view').style.display=mode==='weekly'?'block':'none';
+  if(mode==='daily') initScheduleDaily();
+  if(mode==='weekly') initScheduleWeekly();
+}
+function initSchedule(){if(schedMode==='daily') initScheduleDaily();else initScheduleWeekly()}
+function initScheduleDaily(){
+  var el=document.getElementById('sched-date');
+  if(!el.value){var t=new Date();t.setDate(t.getDate()+1);el.value=t.toISOString().split('T')[0];loadSchedule()}
+}
+function initScheduleWeekly(){
+  var el=document.getElementById('sched-week-start');
+  if(!el.value){var t=new Date();var day=t.getDay();var diff=t.getDate()-day+(day===0?-6:1);t.setDate(diff);el.value=t.toISOString().split('T')[0];loadWeekSchedule()}
+}
+async function loadSchedule(){
+  var dt=document.getElementById('sched-date').value;
+  if(!dt) return;
+  try{
+    var r=await fetch('/api/schedule/'+dt);
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('sched-events').textContent=d.error;return}
+    document.getElementById('sched-title').textContent=d.date+' | '+d.theme+' ('+d.total_regions+'개 지역, 이동 '+d.total_travel+'분)';
+    document.getElementById('sched-events').innerHTML=(d.events||[]).map(function(e){
+      if(e.type==='이동') return '<div class="ev"><div class="time">'+esc(e.time)+'</div><div class="detail move">\u00bb '+esc(e.notes||e.region)+'</div></div>';
+      return '<div class="ev"><div class="time">'+esc(e.time)+'</div><div class="detail">'+
+        '<span class="region-tag">'+esc(e.region)+'</span> <strong>'+esc(e.type)+'</strong> ['+esc(e.priority)+']'+
+        '<div style="color:#90caf9;font-size:.8em">'+esc(e.location)+'</div>'+
+        (e.talking_points||[]).map(function(t){return '<div style="color:#a5d6a7;font-size:.8em">\u2022 '+esc(t)+'</div>'}).join('')+
+        '</div></div>'
+    }).join('');
+  }catch(e){document.getElementById('sched-events').textContent='로딩 실패'}
+}
+async function loadWeekSchedule(){
+  var start=document.getElementById('sched-week-start').value;
+  if(!start) return;
+  try{
+    var r=await fetch('/api/schedule-week/'+start);
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('week-grid-container').textContent=d.error;return}
+    var dayNames=['월','화','수','목','금','토','일'];
+    var days=d.days||d.schedule||[];
+    var html='<div class="week-grid">';
+    days.forEach(function(day,i){
+      html+='<div class="week-col"><div class="day-label">'+esc(dayNames[i]||'')+'</div>';
+      html+='<div class="day-date">'+esc(day.date||'')+'</div>';
+      var regions=day.regions||day.events||[];
+      if(regions.length){
+        regions.forEach(function(rr){
+          var name=typeof rr==='string'?rr:(rr.region||rr.name||'');
+          var isRest=name.includes('준비')||name.includes('휴식');
+          html+='<span class="day-tag'+(isRest?' rest':'')+'">'+esc(name)+'</span>';
+        });
+      }else{html+='<span class="day-tag rest">-</span>'}
+      html+='</div>';
+    });
+    for(var i=days.length;i<7;i++) html+='<div class="week-col"><div class="day-label">'+dayNames[i]+'</div><span class="day-tag rest">-</span></div>';
+    html+='</div>';
+    document.getElementById('week-grid-container').innerHTML=html;
+  }catch(e){document.getElementById('week-grid-container').textContent='로딩 실패'}
+}
+
+/* ===== Load Polling ===== */
+async function submitPoll(){
+  var pd=document.getElementById('poll-date').value;
+  var org=document.getElementById('poll-org').value;
+  var our=parseFloat(document.getElementById('poll-our').value);
+  var opp=parseFloat(document.getElementById('poll-opp').value);
+  var sz=parseInt(document.getElementById('poll-sample').value)||1000;
+  var moe=parseFloat(document.getElementById('poll-moe').value)||3.0;
+  var und=parseFloat(document.getElementById('poll-und').value)||0;
+  var res=document.getElementById('poll-result');
+  if(!pd||!org||!our){res.textContent='필수 필드를 입력하세요';res.style.color='#f44336';return}
+  try{
+    var r=await fetch('/api/polls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({poll_date:pd,pollster:org,our_support:our,opponent_name:'박완수',opponent_support:opp||0,sample_size:sz,margin_of_error:moe,undecided:und})});
+    var d=await r.json();
+    if(d.ok){res.textContent='저장 완료! 여론조사 갱신 중...';res.style.color='#4caf50';pageLoaded.polling=false;loadPolling();loadSavedPolls()}
+    else{res.textContent='오류: '+(d.error||'');res.style.color='#f44336'}
+  }catch(e){res.textContent='서버 오류';res.style.color='#f44336'}
+}
+async function loadSavedPolls(){
+  try{
+    var r=await fetch('/api/polls');if(!r.ok)return;
+    var polls=await r.json();
+    if(!polls.length){document.getElementById('saved-polls').textContent='저장된 추가 여론조사 없음';return}
+    document.getElementById('saved-polls').innerHTML=polls.map(function(p){
+      var opp=p.opponent_support?Object.values(p.opponent_support)[0]:0;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #1e3a5f"><span>'+esc(p.poll_date)+' '+esc(p.pollster)+' | <span style="color:#4caf50">김경수 '+p.our_support+'%</span> vs <span style="color:#f44336">박완수 '+opp+'%</span> (±'+p.margin_of_error+')</span><button class="btn btn-secondary" onclick="deletePoll('+p.id+')" style="padding:2px 8px;font-size:.72em">삭제</button></div>'
+    }).join('');
+  }catch(e){}
+}
+async function deletePoll(id){
+  if(!confirm('이 여론조사를 삭제하시겠습니까?'))return;
+  try{
+    var r=await fetch('/api/polls/'+id,{method:'DELETE'});
+    var d=await r.json();
+    if(d.ok){pageLoaded.polling=false;loadPolling();loadSavedPolls();toast('삭제 완료')}
+  }catch(e){toast('삭제 실패')}
+}
+async function loadPolling(){
+  try{
+    var r=await fetch('/api/polling-history');
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error) return;
+    pageLoaded.polling=true;
+    loadSavedPolls();
+    var polls=d.polls||[];
+    if(polls.length>1){
+      var w=460,h=180,pad=40;
+      var ours=polls.map(function(p){return p.our});
+      var opps=polls.map(function(p){var v=p.opponent||{};return Object.values(v)[0]||0});
+      var all=ours.concat(opps);
+      var mn=Math.min.apply(null,all)-3,mx=Math.max.apply(null,all)+3,rng=mx-mn||1;
+      var xStep=(w-pad*2)/(polls.length-1||1);
+      function yPos(v){return pad+(1-(v-mn)/rng)*(h-pad*2)}
+      var ourPts=ours.map(function(v,i){return(pad+i*xStep)+','+yPos(v)}).join(' ');
+      var oppPts=opps.map(function(v,i){return(pad+i*xStep)+','+yPos(v)}).join(' ');
+      var svg='<svg width="'+w+'" height="'+h+'" style="background:#141b2d;border-radius:5px;display:block;max-width:100%">';
+      for(var v=Math.ceil(mn);v<=mx;v+=2) svg+='<line x1="'+pad+'" y1="'+yPos(v)+'" x2="'+(w-pad)+'" y2="'+yPos(v)+'" stroke="#1e3a5f" stroke-width="0.5"/><text x="'+(pad-4)+'" y="'+(yPos(v)+4)+'" fill="#78909c" font-size="9" text-anchor="end">'+v+'</text>';
+      svg+='<polyline points="'+ourPts+'" fill="none" stroke="#4caf50" stroke-width="2"/>';
+      svg+='<polyline points="'+oppPts+'" fill="none" stroke="#f44336" stroke-width="2"/>';
+      ours.forEach(function(v,i){svg+='<circle cx="'+(pad+i*xStep)+'" cy="'+yPos(v)+'" r="3" fill="#4caf50"/>'});
+      opps.forEach(function(v,i){svg+='<circle cx="'+(pad+i*xStep)+'" cy="'+yPos(v)+'" r="3" fill="#f44336"/>'});
+      svg+='<text x="'+(w-pad)+'" y="14" fill="#4caf50" font-size="10" text-anchor="end">\u25cf 우리</text>';
+      svg+='<text x="'+(w-pad)+'" y="26" fill="#f44336" font-size="10" text-anchor="end">\u25cf 상대</text>';
+      svg+='</svg>';
+      document.getElementById('p-chart').innerHTML=svg;
+    }
+    document.getElementById('p-table').innerHTML='<div style="margin-top:8px">'+polls.map(function(p){
+      var opp=p.opponent?Object.values(p.opponent)[0]:0;
+      return '<div class="poll-row"><span>'+esc(p.date)+' '+esc(p.pollster)+'</span><span style="color:#4caf50">'+p.our.toFixed(1)+'%</span> vs <span style="color:#f44336">'+(opp||0).toFixed(1)+'%</span> (\u00b1'+p.moe+')</div>'
+    }).join('')+'</div>';
+    // Analysis
+    var wp=d.win_prob||{};
+    var tr=d.trend||{};
+    var sw=d.swing||{};
+    document.getElementById('p-analysis').innerHTML=
+      '<div class="msg" style="border-color:#4caf50">승률: <strong>'+(wp.win_prob*100||0).toFixed(1)+'%</strong></div>'+
+      '<div class="msg">추세: <strong>'+(tr.momentum||'-')+'</strong> ('+(tr.our_trend>=0?'+':'')+((tr.our_trend||0).toFixed(2))+'%p/일)</div>'+
+      '<div class="msg">'+esc(wp.assessment||'')+'</div>'+
+      '<div class="msg">미정: '+(sw.undecided_pct||0).toFixed(1)+'% | '+esc(sw.strategy||'')+'</div>';
+    // Gauge
+    var wpVal=wp.win_prob||0;
+    document.getElementById('p-gauge').innerHTML=gaugeArc(wpVal,100);
+  }catch(e){console.log(e)}
+}
+
+/* ===== Run Strategy ===== */
+async function runStrategy(){
+  var btn=document.getElementById('run-btn');
+  btn.disabled=true;btn.textContent='분석 중...';
+  try{
+    var r=await fetch('/api/run-strategy',{method:'POST'});
+    if(r.status===401){window.location='/login';return}
+    if(r.status===429){var d=await r.json();toast(d.error);return}
+    if(!r.ok){toast('서버 오류');return}
+    var data=await r.json();
+    if(data.error){toast(data.error);return}
+    strategyData=data;
+    renderStrategy(data);
+    renderIssueDetail(data);
+    updateKPIsFromStrategy(data);
+    document.getElementById('last-up').textContent=new Date().toLocaleTimeString('ko-KR');
+    scheduleNextRefresh();
+    loadIssueTrends(data.issues||[]);
+    // Refresh right panel
+    loadAlerts();
+  }catch(e){toast('서버 연결 실패')}
+  finally{btn.disabled=false;btn.textContent='전략 갱신'}
+}
+
+/* ===== Update KPIs from Strategy data ===== */
+function updateKPIsFromStrategy(data){
+  var s=data.strategy||{};
+  var wp=s.win_probability||0;
+  var wpPct=wp<=1?wp*100:wp;
+  document.getElementById('ex-wp').textContent=wpPct.toFixed(1)+'%';
+  document.getElementById('ex-wp').style.color=wpPct>=50?'#4caf50':'#f44336';
+  document.getElementById('hdr-win').textContent=wpPct.toFixed(1)+'%';
+  document.getElementById('hdr-win').style.color=wpPct>=50?'#4caf50':'#f44336';
+  var dday=s.days_left||0;
+  document.getElementById('hdr-dday').textContent='D-'+dday;
+  document.getElementById('cal-dday').textContent='D-'+dday;
+  if(dday<=7) document.getElementById('hdr-dday').style.color='#f44336';
+  else if(dday<=14) document.getElementById('hdr-dday').style.color='#ff9800';
+  var crisisCount=(data.issues||[]).filter(function(i){return i.level==='CRISIS'}).length;
+  document.getElementById('ex-iss').textContent=crisisCount;
+  document.getElementById('ex-iss').style.color=crisisCount>0?'#f44336':'#4caf50';
+  var opponents=data.opponents||[];
+  var maxAtk=0;
+  opponents.forEach(function(o){var p=(o.attack_prob||0)*100;if(p>maxAtk) maxAtk=p});
+  // Polling data
+  if(data.polling){
+    var p=data.polling;
+    if(p.our_avg!==undefined){document.getElementById('ex-fav').textContent=p.our_avg.toFixed(1)+'%'}
+    if(p.gap!==undefined){
+      var gapEl=document.getElementById('ex-gap');
+      gapEl.textContent=(p.gap>0?'+':'')+p.gap.toFixed(1);
+      gapEl.style.color=p.gap>0?'#4caf50':'#f44336';
+    }
+  }
+  // Mode
+  if(s.mode){
+    var badge=document.getElementById('mode-badge');
+    badge.textContent=s.mode;
+    badge.className='mode-badge '+(MODE_CSS[s.mode]||'preempt');
+  }
+}
+
+/* ===== Render Strategy Tab ===== */
+function renderStrategy(d){
+  var s=d.strategy;
+  document.getElementById('hdr-name').textContent='박완수';
+  document.getElementById('hdr-type').textContent='경상남도 광역단체장';
+  // Priority
+  document.getElementById('priority').textContent='\u00bb\u00bb\u00bb '+s.top_priority;
+  // Crisis bar
+  var crisisIssues=(d.issues||[]).filter(function(i){return i.level==='CRISIS'});
+  var cb=document.getElementById('crisis-bar');
+  if(crisisIssues.length){cb.style.display='block';cb.textContent='\u26a0 위기 이슈 '+crisisIssues.length+'건: '+crisisIssues.map(function(i){return i.keyword}).join(', ')}
+  else{cb.style.display='none'}
+  // Messages
+  document.getElementById('s-msg').innerHTML=(s.key_messages||[]).map(function(m){return '<div class="msg">'+esc(m)+'</div>'}).join('')||'<span style="color:#78909c">-</span>';
+  // Issues
+  document.getElementById('s-issues').innerHTML=(d.issues||[]).map(function(i){
+    var lv=(i.level||'NORMAL').toLowerCase();
+    return '<div class="sb"><span class="l">'+esc(i.keyword)+'</span><div class="bar"><div class="fill '+lv+'" style="width:'+Math.min(i.score,100)+'%"></div></div><span class="v">'+i.score.toFixed(1)+'</span></div>'
+  }).join('')||'<span style="color:#78909c">-</span>';
+  // Regions
+  var regions=d.regions||[];
+  cachedRegions=regions;
+  if(regions.length){
+    document.getElementById('s-regions').innerHTML=regionHeatMap(regions);
+  }else{document.getElementById('s-regions').innerHTML='<span style="color:#78909c">-</span>'}
+  // Opponents
+  document.getElementById('s-opp').innerHTML=(d.opponents||[]).map(function(o){
+    var p=(o.attack_prob*100).toFixed(0),c=p>=70?'hi':p>=40?'md':'lo';
+    var sentColor=(o.sentiment||0)>=0?'#4caf50':'#f44336';
+    var html='<div class="opp"><strong>'+esc(o.name)+'</strong>';
+    html+='<div style="display:flex;gap:10px;margin-top:3px;font-size:.82em">';
+    html+='<span>언급 '+o.mentions+'건</span>';
+    html+='<span>공격: <span class="p '+c+'">'+p+'%</span></span>';
+    if(o.sentiment!==undefined) html+='<span>감성: <span style="color:'+sentColor+'">'+(o.sentiment>=0?'+':'')+((o.sentiment||0)*100).toFixed(0)+'</span></span>';
+    html+='</div>';
+    if(o.message_shift) html+='<div style="font-size:.78em;color:#ff9800;margin-top:2px">메시지 전환: '+esc(o.message_shift)+'</div>';
+    if(o.sample_articles&&o.sample_articles.length){
+      html+='<div style="margin-top:3px">';
+      o.sample_articles.slice(0,2).forEach(function(a){
+        html+='<div style="font-size:.76em;color:#78909c;border-left:2px solid #1e3a5f;padding-left:5px;margin:2px 0">'+esc(typeof a==='string'?a:a.title||'')+'</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+    return html;
+  }).join('')||'<span style="color:#78909c">-</span>';
+  // Attacks
+  document.getElementById('s-atk').innerHTML=(d.attacks||[]).map(function(a){
+    return '<div class="atk '+(a.severity||'medium')+'"><strong>['+esc(a.attack_angle)+']</strong> '+esc(a.pledge)+': '+esc(a.talking_point)+'</div>'
+  }).join('')||'<span style="color:#78909c">-</span>';
+  // Risk
+  var rc=s.risk_level==='매우높음'?'#f44336':s.risk_level==='높음'?'#ff9800':'#4caf50';
+  document.getElementById('s-risk').innerHTML='<div class="msg" style="border-color:'+rc+'">리스크: <strong>'+esc(s.risk_level)+'</strong></div>';
+}
+
+/* ===== Render Issue Detail (from strategy) ===== */
+function renderIssueDetail(d){
+  if(!d||!d.issues) return;
+  pageLoaded.issues=true;
+  var html=d.issues.map(function(i){
+    var lv=(i.level||'NORMAL').toLowerCase();
+    var neg=i.negative_ratio!==undefined?(i.negative_ratio*100).toFixed(0)+'%':'-';
+    var speed=i.velocity!==undefined?i.velocity.toFixed(1)+'x':'-';
+    return '<div class="issue-card">'+
+      '<div class="issue-header">'+
+      '<span class="level-badge '+lv+'">'+i.level+'</span>'+
+      '<span class="keyword">'+esc(i.keyword)+'</span>'+
+      '<span class="score">'+i.score.toFixed(1)+'</span>'+
+      '</div>'+
+      '<div class="issue-stats">24h 언급 '+(i.mention_count||0)+'건 | 부정 '+neg+' | 속도 '+speed+'</div>'+
+      '<div class="issue-trend" id="trend-'+encodeURIComponent(i.keyword)+'"></div>'+
+      '</div>';
+  }).join('');
+  document.getElementById('i-detail').innerHTML=html;
+}
+
+/* ===== Status Check ===== */
+async function checkStatus(){
+  try{
+    var r=await fetch('/api/status');
+    if(!r.ok) return;
+    var d=await r.json();
+    if(d.crisis_count>0){
+      var cb=document.getElementById('crisis-bar');
+      cb.style.display='block';
+      cb.textContent='\u26a0 위기 감지 '+d.crisis_count+'건 \u2014 즉시 전략 갱신 권장';
+    }
+  }catch(e){}
+}
+
+/* ===== Auto-refresh ===== */
+function scheduleNextRefresh(){
+  nextRefresh=Date.now()+REFRESH_INTERVAL;
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer=setInterval(function(){
+    var left=Math.max(0,Math.round((nextRefresh-Date.now())/1000));
+    var m=Math.floor(left/60),s=left%60;
+    document.getElementById('timer').textContent='자동 갱신 '+m+':'+(s<10?'0':'')+s;
+    if(left<=0){clearInterval(refreshTimer);runStrategy()}
+  },1000);
+}
+
+/* ===== Print setup ===== */
+function setupPrint(){
+  var now=new Date();
+  document.getElementById('print-date').textContent=now.toLocaleDateString('ko-KR')+' '+now.toLocaleTimeString('ko-KR');
+}
+
+/* ===== Init ===== */
+window.onload=async function(){
+  setupPrint();
+  checkStatus();
+  // Parallel initial loads
+  Promise.all([
+    loadExecSummary(),
+    loadAlerts(),
+    loadCalendar(),
+    // Load cached scores for strategy page
+    fetch('/api/scores').then(function(r){return r.ok?r.json():[]}).then(function(sc){
+      if(sc&&sc.length){
+        document.getElementById('s-issues').innerHTML=sc.map(function(i){
+          var lv=(i.crisis_level||'normal').toLowerCase();
+          return '<div class="sb"><span class="l">'+esc(i.keyword)+'</span><div class="bar"><div class="fill '+lv+'" style="width:'+Math.min(i.score,100)+'%"></div></div><span class="v">'+i.score.toFixed(1)+'</span></div>'
+        }).join('');
+      }
+    }).catch(function(){}),
+    fetch('/api/opponents').then(function(r){return r.ok?r.json():[]}).then(function(opps){
+      if(opps&&opps.length){
+        document.getElementById('s-opp').innerHTML=opps.map(function(o){
+          var p=((o.attack_prob||0)*100).toFixed(0),c=p>=70?'hi':p>=40?'md':'lo';
+          return '<div class="opp"><strong>'+esc(o.name)+'</strong> <span class="p '+c+'">'+p+'%</span></div>';
+        }).join('');
+      }
+    }).catch(function(){}),
+    fetch('/api/regions').then(function(r){return r.ok?r.json():[]}).then(function(rg){
+      cachedRegions=rg||[];
+      if(rg&&rg.length){
+        document.getElementById('s-regions').innerHTML=regionHeatMap(
+          rg.map(function(r){return{region:r.region,heat:r.heat||0,priority:r.priority_score||0,voters:r.voters,swing:r.swing}})
+        );
+      }
+    }).catch(function(){})
+  ]).catch(function(){console.log('Some initial loads failed')});
+  // Refresh alerts every 60 seconds
+  alertRefreshInterval=setInterval(loadAlerts,60000);
+  // Auto-refresh strategy every 5 minutes
+  scheduleNextRefresh();
+};
+</script>
+</body>
+</html>
