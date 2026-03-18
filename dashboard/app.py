@@ -467,6 +467,49 @@ async def api_add_keyword(request: Request, session_token: str = Cookie(default=
 
 
 # ---------------------------------------------------------------------------
+# Owned Channels — 자체 SNS 채널 모니터링
+# ---------------------------------------------------------------------------
+
+@app.get("/api/owned-channels")
+async def api_owned_channels(session_token: str = Cookie(default=None)):
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    def _run():
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from collectors.owned_channels import monitor_all_channels, KIM_CHANNELS
+        metrics = monitor_all_channels(KIM_CHANNELS)
+        return {
+            "candidate": KIM_CHANNELS.candidate_name,
+            "channels": [
+                {
+                    "channel": m.channel,
+                    "url": m.url,
+                    "status": m.status,
+                    "followers": m.followers,
+                    "recent_posts": m.recent_posts,
+                    "engagement": m.recent_engagement,
+                    "top_content": m.top_content[:5],
+                    "note": m.note,
+                    "last_updated": m.last_updated,
+                }
+                for m in metrics
+            ],
+            "config": {
+                "facebook": KIM_CHANNELS.facebook_id or "미설정",
+                "youtube": KIM_CHANNELS.youtube_channel or "미설정",
+                "instagram": KIM_CHANNELS.instagram_id or "미확인",
+            },
+        }
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
 # Keyword Deep Analysis — 키워드 클릭 시 상세 분석
 # ---------------------------------------------------------------------------
 
