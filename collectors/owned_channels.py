@@ -123,20 +123,39 @@ def monitor_youtube(config: ChannelConfig) -> ChannelMetrics:
 
 
 def monitor_instagram(config: ChannelConfig) -> ChannelMetrics:
-    """인스타그램 (API 제한으로 수동 입력 안내)"""
-    if not config.instagram_id:
+    """인스타그램 (Graph API 또는 fallback)"""
+    try:
+        from collectors.instagram_collector import monitor_instagram as _ig_monitor
+        ig = _ig_monitor()
+
+        status = "connected" if ig.source == "graph_api" else "manual"
+        url = ig.profile_url or (f"https://www.instagram.com/{config.instagram_id}/" if config.instagram_id else "")
+
+        top = []
+        for p in ig.recent_posts[:5]:
+            entry = {"title": p.caption[:50] if p.caption else "(이미지)"}
+            if p.engagement:
+                entry["views"] = p.engagement
+            top.append(entry)
+
         return ChannelMetrics(
             channel="instagram",
-            url="",
-            status="manual",
-            note="인스타그램 계정 미확인. 확인 후 설정에 추가해주세요.",
+            url=url,
+            status=status,
+            followers=ig.followers,
+            recent_posts=len(ig.recent_posts),
+            recent_engagement=ig.total_recent_likes + ig.total_recent_comments,
+            top_content=top,
+            last_updated=ig.last_updated,
+            note=ig.error if ig.error else f"참여율 {ig.engagement_rate}% | {ig.source}",
         )
-    return ChannelMetrics(
-        channel="instagram",
-        url=f"https://www.instagram.com/{config.instagram_id}/",
-        status="manual",
-        note="Instagram API 제한으로 수동 확인 필요",
-    )
+    except Exception as e:
+        return ChannelMetrics(
+            channel="instagram",
+            url=f"https://www.instagram.com/{config.instagram_id}/" if config.instagram_id else "",
+            status="manual",
+            note=f"수집 실패: {str(e)[:50]}",
+        )
 
 
 def monitor_all_channels(config: ChannelConfig = None) -> list[ChannelMetrics]:
