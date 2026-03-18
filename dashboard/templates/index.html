@@ -351,17 +351,30 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
     <!-- PAGE: Issues -->
     <div class="page" id="page-issues">
-      <!-- 로직 가이드 (접기/펼치기) -->
-      <div class="card" style="border-color:#1976d2;margin-bottom:10px">
-        <h3 style="cursor:pointer" onclick="document.getElementById('guide-panel').style.display=document.getElementById('guide-panel').style.display==='none'?'block':'none'">
-          ℹ 이슈 대응 로직 가이드 <span style="font-size:.75em;color:#78909c">(클릭하여 펼치기/접기)</span>
-        </h3>
-        <div id="guide-panel" style="display:none;font-size:.82em;line-height:1.8">
-          <div id="guide-content">로딩 중...</div>
+      <!-- 탭 토글: 화제순위 vs 대응순서 -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="btn btn-primary" id="iss-tab-buzz" onclick="switchIssueView('buzz')" style="opacity:1">🔥 화제/관심도 순위</button>
+        <button class="btn btn-secondary" id="iss-tab-resp" onclick="switchIssueView('response')">🎯 스코어링별 대응</button>
+        <button class="btn btn-secondary" id="iss-tab-guide" onclick="switchIssueView('guide')">ℹ 로직 가이드</button>
+      </div>
+
+      <!-- 화제/관심도 순위 -->
+      <div id="iss-view-buzz">
+        <div id="i-buzz"><div class="skeleton skeleton-block"></div></div>
+      </div>
+
+      <!-- 스코어링별 대응순서 -->
+      <div id="iss-view-response" style="display:none">
+        <div id="i-detail"><div class="skeleton skeleton-block"></div></div>
+      </div>
+
+      <!-- 로직 가이드 -->
+      <div id="iss-view-guide" style="display:none">
+        <div class="card" style="border-color:#1976d2">
+          <h3>이슈 대응 로직 가이드</h3>
+          <div id="guide-content" style="font-size:.82em;line-height:1.8">로딩 중...</div>
         </div>
       </div>
-      <!-- 이슈 대응 카드 목록 -->
-      <div id="i-detail"><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block" style="margin-top:6px"></div></div>
     </div>
 
     <!-- PAGE: Regions -->
@@ -828,6 +841,14 @@ async function loadExecSummary(){
 }
 
 /* ===== Load Issues (cached scores) ===== */
+/* ===== Issue View Toggle ===== */
+function switchIssueView(view){
+  ['buzz','response','guide'].forEach(function(v){
+    document.getElementById('iss-view-'+v).style.display=v===view?'block':'none';
+    document.getElementById('iss-tab-'+v).className=v===view?'btn btn-primary':'btn btn-secondary';
+  });
+}
+
 async function loadIssues(){
   try{
     var r=await fetch('/api/issue-responses');
@@ -929,6 +950,56 @@ async function loadIssues(){
       '</div>';
     }).join('');
     document.getElementById('i-detail').innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
+
+    // === 화제/관심도 순위 (채널 총합 기준 정렬) ===
+    var buzzSorted=resp.slice().sort(function(a,b){
+      var at=(a.channels||{}).total||0, bt=(b.channels||{}).total||0;
+      return bt-at;
+    });
+    var maxBuzz=Math.max.apply(null,buzzSorted.map(function(r){return (r.channels||{}).total||1}))||1;
+    var buzzHtml='<div style="font-size:.78em;color:#78909c;margin-bottom:8px">뉴스 + 블로그 + 카페 + 동영상 총 언급량 기준 정렬</div>';
+    buzzSorted.forEach(function(r,idx){
+      var ch=r.channels||{};
+      var total=ch.total||0;
+      var pct=total/maxBuzz*100;
+      var newsW=ch.news?ch.news/maxBuzz*100:0;
+      var blogW=ch.blog?ch.blog/maxBuzz*100:0;
+      var cafeW=ch.cafe?ch.cafe/maxBuzz*100:0;
+      var videoW=ch.video?ch.video/maxBuzz*100:0;
+      var toneColor=r.tone==='↑상승'?'#f44336':r.tone==='↓하락'?'#4caf50':'#ff9800';
+      var lv=(r.level||'NORMAL').toLowerCase();
+      buzzHtml+='<div style="background:#141b2d;border:1px solid #1e3a5f;border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer" onclick="showKeywordDetail(\''+encodeURIComponent(r.keyword)+'\')">';
+      buzzHtml+='<div style="display:flex;justify-content:space-between;align-items:center">';
+      buzzHtml+='<div><span style="color:#64b5f6;font-size:1.1em;font-weight:bold;margin-right:6px">#'+(idx+1)+'</span>';
+      buzzHtml+='<span class="level-badge '+lv+'" style="font-size:.7em">'+r.level+'</span> ';
+      buzzHtml+='<strong>'+esc(r.keyword)+'</strong></div>';
+      buzzHtml+='<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+total.toLocaleString()+'</span><span style="font-size:.75em;color:#78909c"> 건</span></div>';
+      buzzHtml+='</div>';
+      // 채널별 스택 바
+      buzzHtml+='<div style="display:flex;height:20px;border-radius:3px;overflow:hidden;margin:6px 0;background:#0d1117">';
+      if(newsW>0)buzzHtml+='<div style="width:'+newsW+'%;background:#1976d2" title="뉴스 '+ch.news+'"></div>';
+      if(blogW>0)buzzHtml+='<div style="width:'+blogW+'%;background:#42a5f5" title="블로그 '+ch.blog+'"></div>';
+      if(cafeW>0)buzzHtml+='<div style="width:'+cafeW+'%;background:#66bb6a" title="카페 '+ch.cafe+'"></div>';
+      if(videoW>0)buzzHtml+='<div style="width:'+videoW+'%;background:#ef5350" title="동영상 '+ch.video+'"></div>';
+      buzzHtml+='</div>';
+      // 채널 숫자
+      buzzHtml+='<div style="display:flex;gap:10px;font-size:.75em;color:#78909c">';
+      buzzHtml+='<span style="color:#1976d2">뉴스 '+(ch.news||0)+'</span>';
+      buzzHtml+='<span style="color:#42a5f5">블로그 '+(ch.blog||0)+'</span>';
+      buzzHtml+='<span style="color:#66bb6a">카페 '+(ch.cafe||0)+'</span>';
+      buzzHtml+='<span style="color:#ef5350">동영상 '+(ch.video||0)+'</span>';
+      buzzHtml+='<span>| 스코어 '+r.score.toFixed(1)+'</span>';
+      buzzHtml+='<span style="color:'+toneColor+'">'+esc(r.trend||'')+'</span>';
+      buzzHtml+='<span>'+esc(r.lifecycle||'')+'</span>';
+      buzzHtml+='</div>';
+      // 블로그/카페 샘플
+      if(r.top_blogs&&r.top_blogs[0])buzzHtml+='<div style="font-size:.73em;color:#90caf9;margin-top:3px">📝 '+esc(r.top_blogs[0])+'</div>';
+      if(r.top_cafe&&r.top_cafe[0])buzzHtml+='<div style="font-size:.73em;color:#90caf9">💬 '+esc(r.top_cafe[0])+'</div>';
+      buzzHtml+='</div>';
+    });
+    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px"><span style="color:#1976d2">■</span>뉴스 <span style="color:#42a5f5">■</span>블로그 <span style="color:#66bb6a">■</span>카페 <span style="color:#ef5350">■</span>동영상 | 클릭하면 상세 분석</div>';
+    document.getElementById('i-buzz').innerHTML=buzzHtml;
+
   }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
 }
 

@@ -125,7 +125,9 @@ async def dashboard(request: Request, session_token: str = Cookie(default=None))
     redir = require_auth(session_token)
     if redir:
         return redir
-    return templates.TemplateResponse("index.html", {"request": request})
+    response = templates.TemplateResponse("index.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 # ---------------------------------------------------------------------------
