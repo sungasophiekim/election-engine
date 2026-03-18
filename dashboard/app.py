@@ -554,6 +554,21 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
         if not signals:
             return {"error": "시그널 생성 실패", "responses": [], "guide": {}}
 
+        # DB에서 이전 수집 데이터 조회 → 변화량 계산
+        try:
+            from storage.database import ElectionDB
+            db = ElectionDB()
+            prev_scores = db.get_latest_scores()
+            db.close()
+            prev_map = {s.get("keyword", ""): s.get("mention_count", 0) or 0 for s in prev_scores}
+            for u in unified:
+                prev = prev_map.get(u.keyword, 0)
+                u.prev_total = prev
+                u.change_count = u.total_mentions - prev if prev > 0 else 0
+                u.change_pct = round((u.total_mentions - prev) / prev * 100, 1) if prev > 0 else 0.0
+        except Exception:
+            pass
+
         scores = sorted(
             [calculate_issue_score(s, config) for s in signals],
             key=lambda x: x.score, reverse=True,
@@ -590,6 +605,9 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
                         "cafe": u.cafe_recent,
                         "video": u.video_recent,
                         "total": u.total_mentions,
+                        "prev_total": u.prev_total,
+                        "change": u.change_count,
+                        "change_pct": u.change_pct,
                     } if (u := next((x for x in unified if x.keyword == r.keyword), None)) else {},
                     "top_blogs": [b.get("title", "")[:50] for b in (u.top_blogs if u else [])],
                     "top_cafe": [c.get("title", "")[:50] for c in (u.top_cafe_posts if u else [])],

@@ -57,6 +57,11 @@ class UnifiedSignal:
     # 원본 시그널 (이슈 스코어링에 전달용)
     issue_signal: IssueSignal = None
 
+    # 24시간 변화량 (이전 수집 대비)
+    prev_total: int = 0             # 이전 수집 시 총 언급량
+    change_count: int = 0           # 변화량 (현재 - 이전)
+    change_pct: float = 0.0         # 등락률 (%)
+
     # 채널별 상위 항목
     top_articles: list = field(default_factory=list)
     top_blogs: list = field(default_factory=list)

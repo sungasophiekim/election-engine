@@ -971,7 +971,19 @@ async function loadIssues(){
       buzzHtml+='<div style="display:flex;justify-content:space-between;align-items:center">';
       buzzHtml+='<div><span style="color:#64b5f6;font-size:1.1em;font-weight:bold;margin-right:6px">#'+(idx+1)+'</span>';
       buzzHtml+='<strong>'+esc(r.keyword)+'</strong></div>';
-      buzzHtml+='<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+total.toLocaleString()+'</span><span style="font-size:.75em;color:#78909c"> 건</span></div>';
+      var chg=ch.change||0, chgPct=ch.change_pct||0, prevT=ch.prev_total||0;
+      var chgColor, chgText;
+      if(prevT===0 && total>0){
+        chgColor='#42a5f5'; chgText='🆕 신규 수집';
+      } else if(chg>0){
+        chgColor='#f44336'; chgText='▲ +'+Math.abs(chg).toLocaleString()+'건 (+'+Math.abs(chgPct).toFixed(1)+'%)';
+      } else if(chg<0){
+        chgColor='#4caf50'; chgText='▼ '+Math.abs(chg).toLocaleString()+'건 ('+chgPct.toFixed(1)+'%)';
+      } else {
+        chgColor='#78909c'; chgText='— 변동없음';
+      }
+      buzzHtml+='<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+total.toLocaleString()+'</span><span style="font-size:.75em;color:#78909c"> 건</span>';
+      buzzHtml+='<div style="font-size:.75em;color:'+chgColor+'">'+chgText+'</div></div>';
       buzzHtml+='</div>';
       // 채널별 스택 바
       buzzHtml+='<div style="display:flex;height:20px;border-radius:3px;overflow:hidden;margin:6px 0;background:#0d1117">';
