@@ -467,6 +467,51 @@ async def api_add_keyword(request: Request, session_token: str = Cookie(default=
 
 
 # ---------------------------------------------------------------------------
+# Community Monitoring — 한국 주요 커뮤니티 모니터링
+# ---------------------------------------------------------------------------
+
+@app.get("/api/community")
+async def api_community(session_token: str = Cookie(default=None)):
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    def _run():
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from collectors.community_collector import scan_all_communities, COMMUNITIES
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        config = SAMPLE_GYEONGNAM_CONFIG
+
+        report = scan_all_communities(f"{config.candidate_name}")
+        return {
+            "keyword": report.keyword,
+            "total": report.total_mentions,
+            "hottest": report.hottest_community,
+            "overall_tone": report.overall_tone,
+            "communities": [
+                {
+                    "id": s.community_id,
+                    "name": s.name,
+                    "icon": s.icon,
+                    "count": s.result_count,
+                    "tone": s.tone,
+                    "negative": s.negative_ratio,
+                    "positive": s.positive_ratio,
+                    "titles": s.recent_titles[:5],
+                    "info": COMMUNITIES.get(s.community_id, {}),
+                }
+                for s in report.signals
+            ],
+            "timestamp": report.timestamp,
+        }
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
 # Owned Channels — 자체 SNS 채널 모니터링
 # ---------------------------------------------------------------------------
 

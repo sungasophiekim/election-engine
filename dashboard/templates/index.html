@@ -412,6 +412,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         <div class="card w2"><h3>후보별 소셜 버즈</h3><div id="soc-buzz"><div class="skeleton skeleton-block"></div></div></div>
         <div class="card"><h3>감성 비교</h3><div id="soc-sentiment"><div class="skeleton"></div></div></div>
         <div class="card"><h3>요약 통계</h3><div id="soc-summary"><div class="skeleton"></div></div></div>
+        <!-- 커뮤니티 모니터링 -->
+        <div class="card w2" style="border-color:#ff9800"><h3>🏛 커뮤니티 여론</h3><div id="community-data"><div class="skeleton skeleton-block"></div></div></div>
         <!-- 자체 채널 모니터링 -->
         <div class="card w2" style="border-color:#1976d2"><h3>📱 김경수 공식 채널</h3><div id="owned-channels"><div class="skeleton skeleton-block"></div></div></div>
       </div>
@@ -1147,6 +1149,43 @@ async function loadOpponents(){
 }
 
 /* ===== Load Social Buzz ===== */
+async function loadCommunity(){
+  try{
+    var r=await fetch('/api/community');
+    if(!r.ok)return;
+    var d=await r.json();
+    var coms=d.communities||[];
+    var maxC=Math.max.apply(null,coms.map(function(c){return c.count}))||1;
+    var html='<div style="font-size:.82em">';
+    html+='<div style="margin-bottom:8px;color:#90caf9">키워드: <strong>'+esc(d.keyword)+'</strong> | 총 '+(d.total||0).toLocaleString()+'건 | 최활발: '+esc(d.hottest||'-')+' | 톤: '+esc(d.overall_tone||'-')+'</div>';
+
+    coms.forEach(function(c){
+      var pct=c.count/maxC*100;
+      var toneColor=c.tone&&c.tone.indexOf('부정')>=0?'#f44336':c.tone&&c.tone.indexOf('긍정')>=0?'#4caf50':'#78909c';
+      html+='<div style="background:#0d1117;padding:8px;border-radius:6px;margin-bottom:5px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+      html+='<div>'+esc(c.icon)+' <strong>'+esc(c.name)+'</strong>';
+      if(c.info)html+=' <span style="font-size:.72em;color:#546e7f">'+esc(c.info.demographic||'')+'</span>';
+      html+='</div>';
+      html+='<div style="text-align:right"><strong>'+c.count.toLocaleString()+'</strong>건 <span style="color:'+toneColor+';font-size:.82em">'+esc(c.tone)+'</span></div>';
+      html+='</div>';
+      // 바
+      html+='<div style="height:8px;background:#1e3a5f;border-radius:4px;margin:4px 0;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+toneColor+';border-radius:4px"></div></div>';
+      // 샘플 제목
+      if(c.titles&&c.titles.length){
+        html+='<div style="font-size:.75em;color:#90caf9">';
+        c.titles.slice(0,2).forEach(function(t){html+='<div style="padding:1px 0">· '+esc(t.substring(0,55))+'</div>'});
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+
+    html+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">검색 기반 간접 모니터링 (네이버 웹 검색 site: 필터)</div>';
+    html+='</div>';
+    document.getElementById('community-data').innerHTML=html;
+  }catch(e){document.getElementById('community-data').textContent='로딩 실패'}
+}
+
 async function loadOwnedChannels(){
   try{
     var r=await fetch('/api/owned-channels');
@@ -1202,8 +1241,9 @@ async function loadSocialBuzz(){
     var d=await r.json();
     if(d.error){document.getElementById('soc-buzz').textContent=d.error;return}
     pageLoaded.social=true;
-    // 자체 채널도 로드
+    // 자체 채널 + 커뮤니티 로드
     loadOwnedChannels();
+    loadCommunity();
     if(d&&typeof d==='object'){
       var buzzData=d.candidates||d;
       document.getElementById('soc-buzz').innerHTML=buzzChart(buzzData);
