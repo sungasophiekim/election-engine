@@ -1,6 +1,6 @@
 """
 Election Strategy Engine — 통합 수집기
-뉴스 + 블로그 + 카페 + 동영상을 한번에 수집하여
+뉴스 + 블로그 + 카페 + 유튜브 + Google Trends를 한번에 수집하여
 이슈별 종합 시그널을 생성합니다.
 """
 from dataclasses import dataclass, field
@@ -15,6 +15,8 @@ from collectors.social_collector import (
     search_videos,
     SocialSignal,
 )
+from collectors.youtube_collector import search_youtube
+from collectors.trends_collector import get_search_trend
 
 
 @dataclass
@@ -41,11 +43,24 @@ class UnifiedSignal:
     cafe_negative: float = 0.0
     cafe_positive: float = 0.0
 
-    # 동영상 (유튜브/네이버TV)
+    # 동영상 (네이버)
     video_total: int = 0
     video_recent: int = 0
     video_negative: float = 0.0
     video_positive: float = 0.0
+
+    # 유튜브 (YouTube Data API)
+    yt_total: int = 0
+    yt_recent_7d: int = 0
+    yt_total_views: int = 0
+    yt_avg_views: int = 0
+    yt_top_videos: list = field(default_factory=list)
+
+    # Google Trends
+    trend_interest: int = 0         # 현재 관심도 (0~100)
+    trend_change_7d: float = 0.0    # 7일 변화율 (%)
+    trend_direction: str = ""       # ↑급상승/↑상승/→유지/↓하락
+    trend_related: list = field(default_factory=list)  # 연관 검색어
 
     # 종합
     total_mentions: int = 0
@@ -73,9 +88,11 @@ def collect_unified_signals(
     candidate_name: str = "",
     opponents: list[str] = None,
     include_social: bool = True,
+    include_youtube: bool = True,
+    include_trends: bool = True,
 ) -> list[UnifiedSignal]:
     """
-    뉴스 + 소셜 통합 수집.
+    뉴스 + 소셜 + 유튜브 + Google Trends 통합 수집.
 
     Parameters:
         keywords: 검색 키워드 리스트
@@ -144,6 +161,33 @@ def collect_unified_signals(
             except Exception:
                 pass
 
+        # 유튜브 수집
+        if include_youtube:
+            try:
+                yt = search_youtube(kw, max_results=10)
+                u.yt_total = yt.total_results
+                u.yt_recent_7d = yt.recent_count
+                u.yt_total_views = yt.total_views
+                u.yt_avg_views = yt.avg_views
+                u.yt_top_videos = [
+                    {"title": v.title, "channel": v.channel, "views": v.view_count,
+                     "published": v.published}
+                    for v in yt.top_videos[:5]
+                ]
+            except Exception:
+                pass
+
+        # Google Trends 수집
+        if include_trends:
+            try:
+                tr = get_search_trend(kw)
+                u.trend_interest = tr.interest_now
+                u.trend_change_7d = tr.change_7d
+                u.trend_direction = tr.trend_direction
+                u.trend_related = tr.related_queries[:5]
+            except Exception:
+                pass
+
         # 종합 계산
         channels = []
         if u.news_mentions > 0:
@@ -152,6 +196,8 @@ def collect_unified_signals(
             channels.append(("blog", u.blog_recent or u.blog_total, u.blog_negative))
         if u.cafe_total > 0:
             channels.append(("cafe", u.cafe_recent or u.cafe_total, u.cafe_negative))
+        if u.yt_total > 0:
+            channels.append(("youtube", u.yt_recent_7d or u.yt_total, 0.0))
         if u.video_total > 0:
             channels.append(("video", u.video_recent or u.video_total, u.video_negative))
 

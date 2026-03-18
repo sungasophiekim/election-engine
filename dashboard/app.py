@@ -608,9 +608,18 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
                         "prev_total": u.prev_total,
                         "change": u.change_count,
                         "change_pct": u.change_pct,
+                        "youtube": u.yt_recent_7d,
+                        "yt_views": u.yt_total_views,
                     } if (u := next((x for x in unified if x.keyword == r.keyword), None)) else {},
                     "top_blogs": [b.get("title", "")[:50] for b in (u.top_blogs if u else [])],
                     "top_cafe": [c.get("title", "")[:50] for c in (u.top_cafe_posts if u else [])],
+                    "top_youtube": [v.get("title", "")[:50] for v in (u.yt_top_videos[:3] if u else [])],
+                    "trend": {
+                        "interest": u.trend_interest if u else 0,
+                        "change_7d": u.trend_change_7d if u else 0,
+                        "direction": u.trend_direction if u else "",
+                        "related": u.trend_related if u else [],
+                    } if u else {},
                 }
                 for r in responses
             ],

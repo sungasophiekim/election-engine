@@ -998,12 +998,22 @@ async function loadIssues(){
       buzzHtml+='<span style="color:#42a5f5">블로그 '+(ch.blog||0)+'</span>';
       buzzHtml+='<span style="color:#66bb6a">카페 '+(ch.cafe||0)+'</span>';
       buzzHtml+='<span style="color:#ef5350">동영상 '+(ch.video||0)+'</span>';
-      buzzHtml+='<span style="color:'+toneColor+'">'+esc(r.trend||'')+'</span>';
-      buzzHtml+='<span>'+esc(r.lifecycle||'')+'</span>';
+      if(ch.youtube)buzzHtml+='<span style="color:#ff0000">YouTube '+(ch.youtube||0)+'</span>';
+      if(ch.yt_views)buzzHtml+='<span style="color:#ff4444">조회 '+(ch.yt_views||0).toLocaleString()+'</span>';
       buzzHtml+='</div>';
+      // Google Trends + 생명주기
+      var tr=r.trend_data||r.trend||{};
+      if(typeof tr==='object'&&tr.interest){
+        buzzHtml+='<div style="font-size:.73em;margin-top:2px"><span style="color:#ff9800">📊 Trends '+tr.interest+'/100</span>';
+        buzzHtml+=' <span style="color:'+(tr.change_7d>0?'#f44336':'#4caf50')+'">7일 '+(tr.change_7d>0?'+':'')+tr.change_7d+'%</span>';
+        if(tr.direction)buzzHtml+=' '+esc(tr.direction);
+        if(tr.related&&tr.related.length)buzzHtml+=' | 연관: '+tr.related.slice(0,3).map(function(q){return esc(q)}).join(', ');
+        buzzHtml+='</div>';
+      }
       // 블로그/카페 샘플
       if(r.top_blogs&&r.top_blogs[0])buzzHtml+='<div style="font-size:.73em;color:#90caf9;margin-top:3px">📝 '+esc(r.top_blogs[0])+'</div>';
       if(r.top_cafe&&r.top_cafe[0])buzzHtml+='<div style="font-size:.73em;color:#90caf9">💬 '+esc(r.top_cafe[0])+'</div>';
+      if(r.top_youtube&&r.top_youtube[0])buzzHtml+='<div style="font-size:.73em;color:#ff4444">▶ '+esc(r.top_youtube[0])+'</div>';
       buzzHtml+='</div>';
     });
     buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px"><span style="color:#1976d2">■</span>뉴스 <span style="color:#42a5f5">■</span>블로그 <span style="color:#66bb6a">■</span>카페 <span style="color:#ef5350">■</span>동영상 | 클릭하면 상세 분석</div>';
