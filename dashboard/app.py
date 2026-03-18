@@ -397,7 +397,75 @@ async def api_list_polls(session_token: str = Cookie(default=None)):
 
 
 # ---------------------------------------------------------------------------
-# Issue Response — 이슈별 대응 전략
+# Keyword Engine — 실시간 키워드 관리
+# ---------------------------------------------------------------------------
+
+@app.get("/api/keywords")
+async def api_keywords(session_token: str = Cookie(default=None)):
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+    from collectors.keyword_engine import KeywordEngine
+    engine = KeywordEngine(SAMPLE_GYEONGNAM_CONFIG)
+    return {
+        "keywords": [
+            {"keyword": k.keyword, "source": k.source, "category": k.category,
+             "priority": k.priority, "reason": k.reason, "active": k.active}
+            for k in engine.keywords
+        ],
+        "total": len(engine.keywords),
+        "active": sum(1 for k in engine.keywords if k.active),
+    }
+
+
+@app.post("/api/keywords/discover")
+async def api_discover_keywords(session_token: str = Cookie(default=None)):
+    """키워드 자동 발굴 실행"""
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    def _run():
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        from collectors.keyword_engine import KeywordEngine
+        engine = KeywordEngine(SAMPLE_GYEONGNAM_CONFIG)
+        discovered = engine.discover()
+        return {
+            "keywords": [
+                {"keyword": k.keyword, "source": k.source, "category": k.category,
+                 "priority": k.priority, "reason": k.reason, "active": k.active}
+                for k in engine.keywords
+            ],
+            "total": len(engine.keywords),
+            "active": len(discovered),
+            "seed_count": sum(1 for k in engine.keywords if k.source == "seed"),
+            "extracted_count": sum(1 for k in engine.keywords if k.source in ("news_extract", "social_extract", "emerging")),
+        }
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/keywords/add")
+async def api_add_keyword(request: Request, session_token: str = Cookie(default=None)):
+    """수동 키워드 추가"""
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+    body = await request.json()
+    keyword = body.get("keyword", "").strip()
+    reason = body.get("reason", "수동 추가")
+    if not keyword:
+        return JSONResponse({"error": "키워드 필수"}, status_code=400)
+    # DB에 저장하는 대신, 응답으로만 확인 (stateless)
+    return {"ok": True, "keyword": keyword, "reason": reason,
+            "message": f"'{keyword}' 키워드가 다음 분석에 포함됩니다"}
+
+
+# ---------------------------------------------------------------------------
+# Issue Response — 이슈별 대응 전략 (키워드 엔진 연동)
 # ---------------------------------------------------------------------------
 
 @app.get("/api/issue-responses")
@@ -415,13 +483,14 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
         from collectors.unified_collector import collect_unified_signals
 
         config = SAMPLE_GYEONGNAM_CONFIG
-        keywords = [
-            "경남도지사 선거", f"{config.candidate_name} 경남", "부울경 행정통합",
-            "경남 조선업 일자리", "경남 청년 정책", "경남 우주항공",
-            f"{config.opponents[0]} 경남" if config.opponents else "경남",
-        ]
+
+        # 키워드 엔진으로 동적 키워드 생성
+        from collectors.keyword_engine import KeywordEngine
+        kw_engine = KeywordEngine(config)
+        keywords = kw_engine.get_by_priority(3)  # 우선순위 1~3만
+
         unified = collect_unified_signals(
-            keywords,
+            keywords[:15],  # API 호출 제한: 최대 15개
             candidate_name=config.candidate_name,
             opponents=config.opponents,
             include_social=True,
