@@ -100,8 +100,10 @@ class CommunityReport:
 
 
 # 감성 키워드
-_NEG = ["논란", "비판", "의혹", "반발", "실패", "문제", "거짓", "폭로", "ㅋㅋ", "답없", "망", "구라"]
-_POS = ["지지", "기대", "ㄱㄱ", "좋다", "성과", "찬성", "응원", "비전", "잘한다", "화이팅"]
+# 감성 키워드 — 커뮤니티 특화 (과잉 판정 방지)
+_NEG = ["논란", "비판", "반발", "실패", "거짓", "폭로", "구라", "답없", "무능", "탈당", "퇴진"]
+_POS = ["지지", "기대", "좋다", "성과", "찬성", "응원", "비전", "잘한다", "화이팅",
+        "대단", "대박", "레전드", "인정", "공감", "당선", "기대된다"]
 
 
 def _naver_search_site(keyword: str, domain: str, display: int = 30) -> tuple:
@@ -111,8 +113,8 @@ def _naver_search_site(keyword: str, domain: str, display: int = 30) -> tuple:
     if not client_id:
         return [], 0
 
-    # site: 검색이 네이버 API에서는 지원 안 됨 → 도메인을 키워드에 포함
-    query = f"{keyword} {domain}"
+    # site: 검색이 네이버 API에서는 지원 안 됨 → 도메인 + 2026 연도 필터
+    query = f"{keyword} {domain} 2026"
     headers = {
         "X-Naver-Client-Id": client_id,
         "X-Naver-Client-Secret": client_secret,
@@ -187,11 +189,13 @@ def _analyze_tone(titles: list[str]) -> tuple:
     neg_r = round(neg / n, 2)
     pos_r = round(pos / n, 2)
 
-    if neg_r > 0.4:
+    if neg_r > 0.5:
         tone = "부정적 🔴"
     elif pos_r > 0.3:
         tone = "긍정적 🟢"
-    elif neg_r > pos_r:
+    elif pos_r > neg_r:
+        tone = "다소 긍정 🟢"
+    elif neg_r > pos_r + 0.1:
         tone = "다소 부정 🟡"
     else:
         tone = "중립 ⚪"
