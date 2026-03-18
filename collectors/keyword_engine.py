@@ -77,6 +77,40 @@ class KeywordEngine:
             if key_issue:
                 self._add("seed", "지역", 3, f"{region_name.replace('시','')} {key_issue}", f"{region_name} 핵심 이슈")
 
+        # 민생/경제 — 선거에 영향을 미치는 생활 이슈
+        livelihood = [
+            (f"{region_short} 물가", "물가 상승이 유권자 심리에 직접 영향"),
+            (f"{region_short} 일자리", "고용 상황 = 현직 성과 평가 지표"),
+            (f"{region_short} 부동산", "집값/전세 = 2030 표심 핵심"),
+            (f"{region_short} 인구 감소", "지방소멸 위기 → 도지사 역할론"),
+            (f"{region_short} 경기 침체", "지역 경제 상황 → 현직 책임론"),
+            (f"{region_short} 의료", "필수의료/응급실 → 지역 민생 이슈"),
+            (f"{region_short} 교육", "교육 환경 = 가족 유권자 관심"),
+            (f"{region_short} 재난 안전", "재난 대응 → 도지사 리더십 평가"),
+        ]
+        for kw, reason in livelihood:
+            self._add("seed", "민생", 3, kw, reason)
+
+        # 국정/정당 — 지방선거에 영향을 미치는 중앙 정치
+        national = [
+            ("국민의힘 경남", "여당 동향이 박완수에게 직접 영향"),
+            ("더불어민주당 경남", "우리 당 경남 조직 동향"),
+            ("대통령 경남", "대통령 지지율↔지방선거 연동"),
+            ("여야 경남", "중앙 정국이 지방선거에 미치는 영향"),
+        ]
+        for kw, reason in national:
+            self._add("seed", "국정", 3, kw, reason)
+
+        # 지역 개발/인프라
+        infra = [
+            (f"{region_short} 개발", "지역 개발 사업 → 유권자 기대/불만"),
+            (f"{region_short} 예산", "도 예산 편성 → 현직 성과 평가"),
+            ("부울경 교통", "광역교통 → 부울경 메가시티 핵심"),
+            ("경남 기업 투자", "기업 유치/이탈 → 경제 성과 지표"),
+        ]
+        for kw, reason in infra:
+            self._add("seed", "인프라", 3, kw, reason)
+
     def _add(self, source: str, category: str, priority: int, keyword: str, reason: str):
         """중복 없이 키워드 추가"""
         if any(k.keyword == keyword for k in self.keywords):

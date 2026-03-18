@@ -511,6 +511,14 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 </div>
 
 <!-- Toast -->
+<!-- Keyword Detail Modal -->
+<div id="kw-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;overflow-y:auto">
+  <div style="max-width:700px;margin:30px auto;background:#141b2d;border:1px solid #1e3a5f;border-radius:10px;padding:20px;position:relative">
+    <button onclick="document.getElementById('kw-modal').style.display='none'" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#78909c;font-size:1.5em;cursor:pointer">&times;</button>
+    <h3 style="color:#64b5f6;margin-bottom:12px" id="kw-modal-title">키워드 분석</h3>
+    <div id="kw-modal-body" style="font-size:.85em">로딩 중...</div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <!-- Footer -->
@@ -877,7 +885,7 @@ async function loadIssues(){
       var st=stanceStyles[r.stance]||stanceStyles.monitor;
       var lv=(r.level||'NORMAL').toLowerCase();
       var lcColor=lcColors[r.lifecycle]||'#78909c';
-      return '<div class="issue-card" style="background:'+st.bg+';border-left:4px solid '+st.border+';margin-bottom:8px;padding:12px;border-radius:6px">'+
+      return '<div class="issue-card" style="background:'+st.bg+';border-left:4px solid '+st.border+';margin-bottom:8px;padding:12px;border-radius:6px;cursor:pointer" onclick="showKeywordDetail(\''+encodeURIComponent(r.keyword)+'\')">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
           '<div><span class="level-badge '+lv+'">'+r.level+'</span> <strong>'+esc(r.keyword)+'</strong></div>'+
           '<div style="text-align:right"><span style="font-size:1.3em;font-weight:bold">'+r.score.toFixed(1)+'</span><br><span style="font-size:.75em;color:'+st.border+'">'+st.icon+' '+st.label+'</span></div>'+
@@ -1262,6 +1270,101 @@ async function deletePoll(id){
     if(d.ok){pageLoaded.polling=false;loadPolling();loadSavedPolls();toast('삭제 완료')}
   }catch(e){toast('삭제 실패')}
 }
+/* ===== Keyword Detail Modal ===== */
+async function showKeywordDetail(encodedKw){
+  var kw=decodeURIComponent(encodedKw);
+  var modal=document.getElementById('kw-modal');
+  modal.style.display='block';
+  document.getElementById('kw-modal-title').textContent='🔍 '+kw+' — 상세 분석';
+  document.getElementById('kw-modal-body').innerHTML='<div style="text-align:center;padding:30px;color:#64b5f6">분석 중... (뉴스+블로그+카페 수집 중)</div>';
+  try{
+    var r=await fetch('/api/keyword-analysis/'+encodedKw);
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(d.error){document.getElementById('kw-modal-body').textContent='오류: '+d.error;return}
+    var html='';
+
+    // 감정 톤
+    var toneColor=d.tone.score>0.2?'#4caf50':d.tone.score<-0.2?'#f44336':'#ff9800';
+    html+='<div style="background:#0d1117;padding:10px;border-radius:6px;margin-bottom:10px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center"><strong style="color:#64b5f6">감정 톤</strong>';
+    html+='<span style="font-size:1.2em;font-weight:bold;color:'+toneColor+'">'+d.tone.dominant+' ('+d.tone.score.toFixed(2)+')</span></div>';
+    // 톤 분포 바
+    var tones=d.tone.distribution||{};
+    var toneOrder=['지지','기대','신뢰','관심','불안','비판','분노','냉소'];
+    var toneColors={'지지':'#4caf50','기대':'#66bb6a','신뢰':'#2196f3','관심':'#42a5f5','불안':'#ff9800','비판':'#f44336','분노':'#d32f2f','냉소':'#78909c'};
+    var maxTone=Math.max(...Object.values(tones),1);
+    html+='<div style="margin-top:8px">';
+    toneOrder.forEach(function(t){var v=tones[t]||0;if(v>0){
+      html+='<div style="display:flex;align-items:center;margin:2px 0"><span style="width:40px;font-size:.78em;color:'+(toneColors[t]||'#78909c')+'">'+t+'</span><div style="flex:1;height:14px;background:#1e3a5f;border-radius:2px;overflow:hidden"><div style="width:'+(v/maxTone*100)+'%;height:100%;background:'+(toneColors[t]||'#78909c')+'"></div></div><span style="width:30px;text-align:right;font-size:.75em">'+v+'</span></div>'
+    }});
+    html+='</div></div>';
+
+    // 연관 단어
+    html+='<div style="background:#0d1117;padding:10px;border-radius:6px;margin-bottom:10px">';
+    html+='<strong style="color:#64b5f6">함께 나오는 단어</strong>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">';
+    (d.co_words||[]).forEach(function(w){
+      var size=Math.min(Math.max(w.count/3,0.7),1.5);
+      html+='<span style="background:#1e3a5f;padding:3px 8px;border-radius:12px;font-size:'+size+'em">'+esc(w.word)+' <span style="color:#78909c;font-size:.75em">'+w.count+'</span></span>'
+    });
+    html+='</div>';
+    if(d.bigrams&&d.bigrams.length){
+      html+='<div style="margin-top:6px;font-size:.8em;color:#90caf9"><strong>자주 같이 쓰이는 표현:</strong> ';
+      html+=d.bigrams.map(function(b){return esc(b.phrase)+' ('+b.count+'회)'}).join(' · ')+'</div>';
+    }
+    html+='</div>';
+
+    // 프레임/내러티브
+    if(d.narratives&&d.narratives.length){
+      html+='<div style="background:#0d1117;padding:10px;border-radius:6px;margin-bottom:10px">';
+      html+='<strong style="color:#64b5f6">감지된 프레임</strong>';
+      d.narratives.forEach(function(n){
+        html+='<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #ff9800;background:#1a2332;border-radius:0 4px 4px 0">';
+        html+='<div><strong>'+esc(n.narrative)+'</strong> <span style="color:#78909c">('+n.count+'건)</span></div>';
+        html+='<div style="font-size:.8em;color:#b0bec5">'+esc(n.sample)+'</div></div>'
+      });
+      html+='</div>';
+    }
+
+    // 주체 분석
+    html+='<div style="display:flex;gap:10px;margin-bottom:10px">';
+    html+='<div style="flex:1;background:#0d1117;padding:10px;border-radius:6px"><strong style="color:#64b5f6">언급 대상</strong>';
+    var whom=d.about_whom||{};
+    for(var name in whom){html+='<div style="margin:3px 0;font-size:.85em">'+esc(name)+': <strong>'+whom[name]+'건</strong></div>'}
+    html+='</div>';
+    html+='<div style="flex:1;background:#0d1117;padding:10px;border-radius:6px"><strong style="color:#64b5f6">채널별</strong>';
+    var who=d.who_talks||{};
+    for(var ch in who){html+='<div style="margin:3px 0;font-size:.85em">'+esc(ch)+': <strong>'+who[ch]+'건</strong></div>'}
+    html+='</div></div>';
+
+    // 샘플 기사
+    html+='<div style="background:#0d1117;padding:10px;border-radius:6px">';
+    html+='<strong style="color:#64b5f6">최근 기사/게시글</strong>';
+    var samples=d.samples||{};
+    if(samples.news&&samples.news.length){
+      html+='<div style="margin-top:4px;font-size:.8em"><span style="color:#1976d2">📰 뉴스</span>';
+      samples.news.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});
+      html+='</div>';
+    }
+    if(samples.blog&&samples.blog.length){
+      html+='<div style="margin-top:4px;font-size:.8em"><span style="color:#42a5f5">📝 블로그</span>';
+      samples.blog.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});
+      html+='</div>';
+    }
+    if(samples.cafe&&samples.cafe.length){
+      html+='<div style="margin-top:4px;font-size:.8em"><span style="color:#66bb6a">💬 카페</span>';
+      samples.cafe.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});
+      html+='</div>';
+    }
+    html+='</div>';
+
+    html+='<div style="margin-top:8px;font-size:.75em;color:#546e7f;text-align:right">분석 대상: '+d.total_analyzed+'건 | '+esc(d.data_freshness)+'</div>';
+
+    document.getElementById('kw-modal-body').innerHTML=html;
+  }catch(e){document.getElementById('kw-modal-body').textContent='분석 실패: '+e.message}
+}
+
 async function loadPolling(){
   try{
     var r=await fetch('/api/polling-history');

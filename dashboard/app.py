@@ -465,6 +465,56 @@ async def api_add_keyword(request: Request, session_token: str = Cookie(default=
 
 
 # ---------------------------------------------------------------------------
+# Keyword Deep Analysis — 키워드 클릭 시 상세 분석
+# ---------------------------------------------------------------------------
+
+@app.get("/api/keyword-analysis/{keyword}")
+async def api_keyword_analysis(keyword: str, session_token: str = Cookie(default=None)):
+    """키워드 하나에 대한 심층 분석: 연관 단어, 감정 톤, 프레임"""
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    def _run():
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from collectors.keyword_analyzer import analyze_keyword
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        config = SAMPLE_GYEONGNAM_CONFIG
+
+        result = analyze_keyword(
+            keyword,
+            candidate_name=config.candidate_name,
+            opponents=config.opponents,
+        )
+        return {
+            "keyword": result.keyword,
+            "total_analyzed": result.total_analyzed,
+            "co_words": result.co_words[:15],
+            "bigrams": result.bigrams[:8],
+            "tone": {
+                "dominant": result.dominant_tone,
+                "score": result.tone_score,
+                "distribution": result.tone_distribution,
+            },
+            "frames": result.frames,
+            "narratives": result.key_narratives[:5],
+            "who_talks": result.who_talks,
+            "about_whom": result.about_whom,
+            "samples": {
+                "news": result.news_samples[:5],
+                "blog": result.blog_samples[:5],
+                "cafe": result.cafe_samples[:5],
+            },
+            "data_freshness": result.data_freshness,
+        }
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
 # Issue Response — 이슈별 대응 전략 (키워드 엔진 연동)
 # ---------------------------------------------------------------------------
 
