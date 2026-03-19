@@ -735,6 +735,7 @@ function switchNav(name){
   navItems.forEach(function(n,i){if(i%navNames.length===idx) n.classList.add('active')});
   // Lazy load
   if(name==='warroom'&&!pageLoaded.warroom) loadWarRoom();
+  if(name==='strategy'&&!pageLoaded.strategy){pageLoaded.strategy=true;loadStrategyCache()}
   if(name==='issues'&&!pageLoaded.issues) loadIssues();
   if(name==='regions'&&!pageLoaded.regions) loadRegions();
   if(name==='opponents'&&!pageLoaded.opponents) loadOpponents();
@@ -919,15 +920,38 @@ async function loadExecSummary(){
 }
 
 /* ===== War Room (상황실 대시보드) ===== */
+function renderWarRoomSocial(socialR){
+  if(!socialR||!socialR.candidates){document.getElementById('wr-social').innerHTML='<span style="color:#546e7f;font-size:.85em">소셜 로딩 중...</span>';return}
+  var cands=socialR.candidates;
+  var names=Object.keys(cands);
+  var html='';
+  names.forEach(function(name){
+    var c=cands[name];
+    var sentColor=c.sentiment>=0?'#4caf50':'#f44336';
+    var isOur=name===(window._candidate||'');
+    html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1e3a5f;font-size:.85em">';
+    html+='<span>'+(isOur?'<strong>':'')+(esc(name))+(isOur?'</strong>':'')+'</span>';
+    html+='<span>'+c.social_total.toLocaleString()+'건 <span style="color:'+sentColor+'">'+(c.sentiment>=0?'+':'')+c.sentiment.toFixed(2)+'</span></span>';
+    html+='</div>';
+  });
+  var sm=socialR.summary||{};
+  html+='<div style="margin-top:6px;font-size:.78em;color:#78909c">버즈 '+(sm.buzz_ratio||0)+'x | 감성차 '+(sm.sentiment_advantage>=0?'+':'')+(sm.sentiment_advantage||0).toFixed(2)+'</div>';
+  document.getElementById('wr-social').innerHTML=html;
+}
+
 async function loadWarRoom(){
   pageLoaded.warroom=true;
-  // 모든 데이터를 병렬 로드
-  var [pollR,socialR,issueR,execR]=await Promise.all([
+  // 빠른 API만 로드 (social-buzz 제거 → 0.9초 절약)
+  var [pollR,issueR,execR]=await Promise.all([
     fetch('/api/polling-history').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
-    fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
     fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
     fetch('/api/executive-summary').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
   ]);
+  // 소셜은 백그라운드로 (상황실 블로킹 안 함)
+  var socialR=null;
+  fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).then(function(d){
+    socialR=d;renderWarRoomSocial(d);
+  }).catch(function(){});
 
   // 1. 여론조사 추이 차트
   if(pollR&&pollR.polls&&pollR.polls.length>1){
@@ -997,24 +1021,8 @@ async function loadWarRoom(){
     }).catch(function(){});
   }
 
-  // 3. 소셜 통계
-  if(socialR&&socialR.candidates){
-    var cands=socialR.candidates;
-    var names=Object.keys(cands);
-    var html='';
-    names.forEach(function(name){
-      var c=cands[name];
-      var sentColor=c.sentiment>=0?'#4caf50':'#f44336';
-      var isOur=name===(window._candidate||'');
-      html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1e3a5f;font-size:.85em">';
-      html+='<span>'+(isOur?'<strong>':'')+(esc(name))+(isOur?'</strong>':'')+'</span>';
-      html+='<span>'+c.social_total.toLocaleString()+'건 <span style="color:'+sentColor+'">'+(c.sentiment>=0?'+':'')+c.sentiment.toFixed(2)+'</span></span>';
-      html+='</div>';
-    });
-    var sm=socialR.summary||{};
-    html+='<div style="margin-top:6px;font-size:.78em;color:#78909c">버즈 '+(sm.buzz_ratio||0)+'x | 감성차 '+(sm.sentiment_advantage>=0?'+':'')+(sm.sentiment_advantage||0).toFixed(2)+'</div>';
-    document.getElementById('wr-social').innerHTML=html;
-  }
+  // 3. 소셜 통계 (백그라운드 로드 → renderWarRoomSocial)
+  renderWarRoomSocial(socialR);
 
   // 4. 이슈 현황
   if(issueR&&issueR.responses){
@@ -2091,15 +2099,19 @@ function setupPrint(){
 /* ===== Init ===== */
 window.onload=async function(){
   setupPrint();
-  checkStatus();
-  // 상황실 자동 로드
+  // 상황실만 로드 (다른 탭은 클릭 시 lazy load)
   loadWarRoom();
-  // Parallel initial loads
+  // 우측 패널 + KPI만 (최소한)
   Promise.all([
-    loadExecSummary(),
     loadAlerts(),
     loadCalendar(),
-    // Load cached scores for strategy page
+  ]).catch(function(){});
+  alertRefreshInterval=setInterval(loadAlerts,60000);
+};
+
+// 전략 탭 전환 시 로드되는 데이터 (lazy)
+function loadStrategyCache(){
+  Promise.all([
     fetch('/api/scores').then(function(r){return r.ok?r.json():[]}).then(function(sc){
       if(sc&&sc.length){
         document.getElementById('s-issues').innerHTML=sc.map(function(i){
@@ -2124,9 +2136,8 @@ window.onload=async function(){
         );
       }
     }).catch(function(){})
-  ]).catch(function(){console.log('Some initial loads failed')});
-  // Refresh alerts every 60 seconds
-  alertRefreshInterval=setInterval(loadAlerts,60000);
+  ]).catch(function(){});
+}
   // Auto-refresh strategy every 5 minutes
   scheduleNextRefresh();
 };
