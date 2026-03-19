@@ -1072,12 +1072,28 @@ async function loadAiHistory(){
     var d=await r.json();
     document.getElementById('ai-remaining').textContent='(오늘 남은 횟수: '+(d.remaining||0)+'/3)';
     if(!d.analyses||!d.analyses.length)return;
-    var html='<div style="color:#78909c;margin-bottom:4px">최근 분석 이력</div>';
-    d.analyses.slice(0,5).forEach(function(a){
+    var html='<div style="color:#78909c;margin-bottom:4px">최근 분석 이력 (클릭하여 상세 보기)</div>';
+    d.analyses.slice(0,5).forEach(function(a,idx){
       var out=null;try{out=JSON.parse(a.output)}catch(e){}
-      html+='<div style="padding:3px 0;border-bottom:1px solid #1e1030">'+esc(a.created_at||'').slice(0,16)+' <strong>'+esc(a.keyword)+'</strong>';
-      if(out)html+=' — '+esc(out.sentiment||'');
+      var sc=out?out.score||0:0;
+      var scColor=sc>0.2?'#4caf50':sc<-0.2?'#f44336':'#ff9800';
+      var detailId='ai-hist-'+idx;
+      html+='<div style="cursor:pointer;padding:5px 0;border-bottom:1px solid #1e1030" onclick="var el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'">';
+      html+='<span style="color:#78909c">'+esc(a.created_at||'').slice(5,16)+'</span> ';
+      html+='<strong>'+esc(a.keyword)+'</strong>';
+      if(out)html+=' <span style="color:'+scColor+'">'+esc(out.sentiment||'')+' ('+sc.toFixed(2)+')</span>';
+      html+=' <span style="color:#37474f;font-size:.8em">▼</span>';
       html+='</div>';
+      if(out){
+        html+='<div id="'+detailId+'" style="display:none;padding:8px;margin:4px 0;background:#0d0a15;border-radius:6px;border-left:2px solid #6a1b9a;font-size:.85em">';
+        if(out.summary)html+='<div style="margin-bottom:4px">'+esc(out.summary)+'</div>';
+        if(out.risk)html+='<div style="color:#ef9a9a">⚠ '+esc(out.risk)+'</div>';
+        if(out.opportunity)html+='<div style="color:#a5d6a7">✅ '+esc(out.opportunity)+'</div>';
+        if(out.recommended_action)html+='<div style="color:#64b5f6">➡ '+esc(out.recommended_action)+'</div>';
+        if(out.message_suggestion)html+='<div style="color:#fff;padding:4px 6px;background:#1e1030;border-radius:4px;margin-top:4px">"'+esc(out.message_suggestion)+'"</div>';
+        if(out.avoid)html+='<div style="color:#ef9a9a;font-size:.9em;margin-top:3px">🚫 '+esc(out.avoid)+'</div>';
+        html+='</div>';
+      }
     });
     document.getElementById('ai-history').innerHTML=html;
   }catch(e){}
