@@ -382,11 +382,14 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
             <div id="wp-detail" style="margin-top:6px;border-top:1px solid #1e3a5f;padding-top:6px"></div>
           </div>
         </div>
-        <!-- 우하: D-Day + 모드 -->
-        <div class="card" style="text-align:center">
-          <div id="wr-dday" style="font-size:2.5em;font-weight:bold;color:#64b5f6">D-??</div>
-          <div id="wr-mode" style="margin-top:6px">-</div>
-          <div id="wr-priority" style="font-size:.82em;color:#90caf9;margin-top:6px">-</div>
+        <!-- 우하: D-Day + 주요 선거일정 -->
+        <div class="card">
+          <div style="text-align:center">
+            <div id="wr-dday" style="font-size:2.2em;font-weight:bold;color:#64b5f6">D-??</div>
+          </div>
+          <div id="wr-calendar" style="margin-top:8px;font-size:.8em">
+            <div class="skeleton"></div><div class="skeleton"></div>
+          </div>
         </div>
       </div>
       <!-- 하단: 소셜 + 이슈 나란히 -->
@@ -979,7 +982,21 @@ async function loadWarRoom(){
     detail+='<div>격차: <strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong> → 승률 <strong style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</strong></div>';
     document.getElementById('wp-detail').innerHTML=detail;
     document.getElementById('wr-dday').textContent='D-'+execR.days_left;
-    document.getElementById('wr-mode').innerHTML='<span class="mode-badge '+(execR.rapid_response_level==='RED'?'crisis':execR.rapid_response_level==='ORANGE'?'preempt':'defense')+'" style="font-size:.9em">긴급 '+esc(execR.rapid_response_level)+'</span>';
+    // 주요 선거일정 로드
+    fetch('/api/calendar').then(function(r){return r.ok?r.json():null}).then(function(cal){
+      if(!cal)return;
+      var events=cal.events||[];
+      var html='';
+      events.forEach(function(ev){
+        var done=ev.done;
+        var icon=done?'✓':'○';
+        var color=done?'#546e7f':ev.type==='election'?'#f44336':ev.type==='voting'?'#ff9800':ev.type==='debate'?'#64b5f6':'#90caf9';
+        var style=done?'text-decoration:line-through;opacity:.5':'';
+        html+='<div style="padding:3px 0;color:'+color+';'+style+'">'+icon+' '+esc(ev.date.slice(5))+' '+esc(ev.event)+'</div>';
+      });
+      if(cal.poll_blackout)html+='<div style="background:#b71c1c;color:#fff;padding:4px 6px;border-radius:4px;margin-top:4px;font-size:.85em;text-align:center">⚠ 여론조사 공표금지</div>';
+      document.getElementById('wr-calendar').innerHTML=html;
+    }).catch(function(){});
   }
 
   // 3. 소셜 통계
