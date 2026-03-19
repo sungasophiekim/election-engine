@@ -918,86 +918,48 @@ async def api_social_buzz(session_token: str = Cookie(default=None)):
         from dotenv import load_dotenv
         load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
         from concurrent.futures import ThreadPoolExecutor
-        from collectors.social_collector import compare_candidate_buzz
-        from collectors.youtube_collector import search_youtube
-        from collectors.trends_collector import get_search_trend
+        from collectors.social_collector import search_blogs, search_cafes
         from collectors.unified_collector import _cached
         from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
         config = SAMPLE_GYEONGNAM_CONFIG
 
         all_candidates = [config.candidate_name] + config.opponents
 
-        # 전부 병렬 실행
-        buzz = {}
-        yt_data = {n: {"total": 0, "views": 0, "top_videos": []} for n in all_candidates}
-        trends_data = {n: {"interest": 0, "change_7d": 0, "direction": "", "related": []} for n in all_candidates}
-
-        def _fetch_buzz():
-            return compare_candidate_buzz(config.candidate_name, config.opponents)
-
-        def _fetch_yt(name):
-            yt = _cached(f"social_yt:{name}", lambda _n=name: search_youtube(_n, max_results=5))
-            if not yt:
-                return name, {"total": 0, "views": 0, "top_videos": []}
+        # 후보별 블로그+카페 병렬 수집 (YT/Trends는 제외 — 속도 우선)
+        def _fetch_one(name):
+            blog = _cached(f"sbuzz_blog:{name}", lambda _n=name: search_blogs(_n))
+            cafe = _cached(f"sbuzz_cafe:{name}", lambda _n=name: search_cafes(_n))
+            b_total = blog.total_count if blog else 0
+            c_total = cafe.total_count if cafe else 0
+            b_neg = blog.negative_ratio if blog else 0
+            b_pos = blog.positive_ratio if blog else 0
+            c_neg = cafe.negative_ratio if cafe else 0
+            c_pos = cafe.positive_ratio if cafe else 0
+            total = b_total + c_total
+            sentiment = 0.0
+            if total > 0:
+                sentiment = round(((b_pos * b_total + c_pos * c_total) -
+                                   (b_neg * b_total + c_neg * c_total)) / total, 2)
             return name, {
-                "total": yt.total_results, "views": yt.total_views,
-                "top_videos": [{"title": v.title[:50], "views": v.view_count,
-                                "channel": v.channel, "published": v.published}
-                               for v in yt.top_videos[:3]],
+                "blog": b_total, "cafe": c_total, "video": 0,
+                "social_total": total, "sentiment": sentiment,
+                "blog_neg": round(b_neg, 2), "blog_pos": round(b_pos, 2),
+                "cafe_neg": round(c_neg, 2), "cafe_pos": round(c_pos, 2),
+                "youtube_count": 0, "youtube_views": 0, "youtube_top": [],
+                "trend_interest": 0, "trend_change": 0,
+                "trend_direction": "", "trend_related": [],
+                "total_buzz": total,
             }
 
-        def _fetch_trends(name):
-            tr = _cached(f"social_tr:{name}", lambda _n=name: get_search_trend(_n))
-            if not tr:
-                return name, {"interest": 0, "change_7d": 0, "direction": "", "related": []}
-            return name, {
-                "interest": tr.interest_now, "change_7d": tr.change_7d,
-                "direction": tr.trend_direction, "related": tr.related_queries[:5],
-            }
-
-        with ThreadPoolExecutor(max_workers=5) as pool:
-            f_buzz = pool.submit(_fetch_buzz)
-            f_yts = [pool.submit(_fetch_yt, n) for n in all_candidates]
-            f_trs = [pool.submit(_fetch_trends, n) for n in all_candidates]
-
-            try:
-                buzz = f_buzz.result(timeout=8)
-            except Exception:
-                buzz = {}
-            for f in f_yts:
-                try:
-                    name, data = f.result(timeout=8)
-                    yt_data[name] = data
-                except Exception:
-                    pass
-            for f in f_trs:
-                try:
-                    name, data = f.result(timeout=5)
-                    trends_data[name] = data
-                except Exception:
-                    pass
-
-        # 4. 종합 비교 테이블
         candidates = {}
-        for name in all_candidates:
-            bz = buzz.get(name, {}) if isinstance(buzz.get(name), dict) else {}
-            yt = yt_data.get(name, {})
-            tr = trends_data.get(name, {})
-            candidates[name] = {
-                "blog": bz.get("blog", 0),
-                "cafe": bz.get("cafe", 0),
-                "video": bz.get("video", 0),
-                "social_total": bz.get("total", 0),
-                "sentiment": bz.get("sentiment", 0),
-                "youtube_count": yt.get("total", 0),
-                "youtube_views": yt.get("views", 0),
-                "youtube_top": yt.get("top_videos", []),
-                "trend_interest": tr.get("interest", 0),
-                "trend_change": tr.get("change_7d", 0),
-                "trend_direction": tr.get("direction", ""),
-                "trend_related": tr.get("related", []),
-                "total_buzz": bz.get("total", 0) + yt.get("views", 0),
-            }
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = [pool.submit(_fetch_one, n) for n in all_candidates]
+            for f in futures:
+                try:
+                    name, data = f.result(timeout=6)
+                    candidates[name] = data
+                except Exception:
+                    pass
 
         # 5. 요약 통계
         our = candidates.get(config.candidate_name, {})
@@ -1012,15 +974,15 @@ async def api_social_buzz(session_token: str = Cookie(default=None)):
             "our_trend": our.get("trend_interest", 0),
             "opp_trend": opp.get("trend_interest", 0),
             "trend_advantage": our.get("trend_interest", 0) - opp.get("trend_interest", 0),
-            "buzz_leader": buzz.get("buzz_leader", ""),
-            "sentiment_leader": buzz.get("sentiment_leader", ""),
+            "buzz_leader": max(candidates, key=lambda n: candidates[n].get("total_buzz", 0)) if candidates else "",
+            "sentiment_leader": max(candidates, key=lambda n: candidates[n].get("sentiment", -9)) if candidates else "",
         }
 
         return {
             "candidates": candidates,
             "summary": summary,
-            "buzz_leader": buzz.get("buzz_leader", ""),
-            "sentiment_leader": buzz.get("sentiment_leader", ""),
+            "buzz_leader": summary.get("buzz_leader", ""),
+            "sentiment_leader": summary.get("sentiment_leader", ""),
         }
 
     try:
