@@ -1012,7 +1012,16 @@ async def api_pledges(session_token: str = Cookie(default=None)):
         regional = {}
         for region in ["창원시", "김해시", "거제시"]:
             regional[region] = comp.get_regional_talking_points(region)
+        config = SAMPLE_GYEONGNAM_CONFIG
+        our_pledges = [
+            {"name": name, "numbers": info.get("수치", ""), "deadline": info.get("완료시기", ""),
+             "description": info.get("설명", "")}
+            for name, info in config.pledges.items()
+        ]
         return {
+            "our_pledges": our_pledges,
+            "candidate": config.candidate_name,
+            "slogan": config.slogan,
             "matrix": matrix,
             "attacks": attacks,
             "defenses": defenses,
