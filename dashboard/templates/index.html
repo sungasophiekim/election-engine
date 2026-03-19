@@ -1066,31 +1066,21 @@ function renderKeywordDetail(kw,d){
   for(var name in whom){html+='<div style="font-size:.85em;padding:2px 0">'+esc(name)+': <strong>'+whom[name]+'</strong></div>'}
   html+='<div style="color:#64b5f6;font-size:.85em;margin-top:8px"><strong>데이터 소스</strong></div>';
   var who=d.who_talks||{};
-  var chIcons={'뉴스':'📰 네이버뉴스','블로그':'📝 네이버블로그','카페':'💬 네이버카페'};
-  for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||ch)+': <strong>'+who[ch]+'건</strong></div>'}
-  html+='</div></div>';
-
-  // Google Trends + YouTube
-  html+='<div style="display:flex;gap:12px;margin-bottom:12px">';
   var gt=d.google_trends||{};
+  var yt=d.youtube||{};
+  var chIcons={'뉴스':'📰','블로그':'📝','카페':'💬'};
+  // 네이버
+  for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||'')+' 네이버'+ch+': <strong>'+who[ch]+'건</strong></div>'}
+  // 구글
   if(gt.interest){
     var gtColor=gt.change_7d>0?'#f44336':gt.change_7d<0?'#4caf50':'#78909c';
-    html+='<div style="flex:1;background:#0d1117;padding:12px;border-radius:8px">';
-    html+='<div style="color:#ff9800;font-size:.85em;margin-bottom:4px"><strong>📊 Google Trends</strong></div>';
-    html+='<div style="font-size:1.3em;font-weight:bold">'+gt.interest+'<span style="font-size:.5em;color:#78909c">/100</span></div>';
-    html+='<div style="font-size:.82em;color:'+gtColor+'">7일 '+(gt.change_7d>0?'+':'')+gt.change_7d.toFixed(1)+'% '+esc(gt.direction)+'</div>';
-    if(gt.related&&gt.related.length)html+='<div style="font-size:.75em;color:#78909c;margin-top:4px">연관: '+gt.related.slice(0,3).map(function(q){return esc(q)}).join(', ')+'</div>';
-    html+='</div>';
+    html+='<div style="font-size:.85em;padding:2px 0">📊 구글검색: <strong>'+gt.interest+'/100</strong> <span style="color:'+gtColor+';font-size:.82em">'+(gt.change_7d>0?'+':'')+gt.change_7d.toFixed(1)+'%</span></div>';
   }
-  var yt=d.youtube||{};
+  // 유튜브
   if(yt.count){
-    html+='<div style="flex:1;background:#0d1117;padding:12px;border-radius:8px">';
-    html+='<div style="color:#f44336;font-size:.85em;margin-bottom:4px"><strong>▶ YouTube</strong></div>';
-    html+='<div style="font-size:.85em">영상 <strong>'+yt.count+'</strong>건 | 조회 <strong>'+(yt.views||0).toLocaleString()+'</strong></div>';
-    if(yt.top&&yt.top.length){yt.top.slice(0,2).forEach(function(v){html+='<div style="font-size:.78em;color:#90caf9;padding:2px 0">▶ '+esc(v.title)+(v.views?' ('+v.views.toLocaleString()+'회)':'')+'</div>'})}
-    html+='</div>';
+    html+='<div style="font-size:.85em;padding:2px 0">▶ 유튜브: <strong>'+yt.count+'건</strong> '+(yt.views||0).toLocaleString()+'조회</div>';
   }
-  html+='</div>';
+  html+='</div></div>';
 
   // 연관 키워드 TOP 10
   html+='<div class="card" style="border-color:#1976d2"><h3>연관 키워드 TOP 10</h3>';
@@ -1130,6 +1120,8 @@ function renderKeywordDetail(kw,d){
   if(samples.news&&samples.news.length){html+='<div style="font-size:.82em"><span style="color:#1976d2">📰 네이버 뉴스</span>';samples.news.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
   if(samples.blog&&samples.blog.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#42a5f5">📝 네이버 블로그</span>';samples.blog.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
   if(samples.cafe&&samples.cafe.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#66bb6a">💬 네이버 카페</span>';samples.cafe.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
+  if(gt.related&&gt.related.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#ff9800">📊 구글 연관검색어</span>';html+='<div style="padding:2px 0;color:#b0bec5">'+gt.related.map(function(q){return esc(q)}).join(' · ')+'</div></div>'}
+  if(yt.top&&yt.top.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#f44336">▶ 유튜브 TOP</span>';yt.top.slice(0,2).forEach(function(v){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(v.title)+(v.views?' ('+v.views.toLocaleString()+'회)':'')+'</div>'});html+='</div>'}
   html+='</div>';
 
   html+='<div style="font-size:.72em;color:#546e7f;margin-top:6px;text-align:right">분석: '+d.total_analyzed+'건 | '+esc(d.data_freshness||'')+'</div>';
