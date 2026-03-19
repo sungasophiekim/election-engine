@@ -1161,7 +1161,8 @@ async function loadIssues(){
     guideHtml+='<div><strong style="color:#64b5f6">긴급도 기준</strong><div style="margin-top:4px">';
     for(var uk in ug){guideHtml+='<div style="padding:2px 0;color:#b0bec5"><strong>'+esc(uk)+'</strong>: '+esc(ug[uk])+'</div>';}
     guideHtml+='</div></div>';
-    document.getElementById('guide-content').innerHTML=guideHtml;
+    var guideEl=document.getElementById('guide-content')||document.getElementById('s-guide');
+    if(guideEl)guideEl.innerHTML=guideHtml;
 
     // 이슈 대응 카드 렌더링
     var resp=data.responses||[];
@@ -1551,7 +1552,7 @@ async function loadPledges(){
     var r=await fetch('/api/pledges');
     if(r.status===401){window.location='/login';return}
     var d=await r.json();
-    if(d.error){document.getElementById('pl-matrix').textContent=d.error;return}
+    if(d.error){var plEl=document.getElementById('pl-our-pledges');if(plEl)plEl.textContent=d.error;return}
 
     // 우리 공약 카드
     var pledges=d.our_pledges||[];
