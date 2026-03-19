@@ -315,7 +315,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
   <!-- Left Nav -->
   <div class="left-nav">
-    <div class="nav-item active" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
+    <div class="nav-item active" onclick="switchNav('warroom')"><span class="nav-icon">🖥</span><span class="nav-label">상황실</span></div>
+    <div class="nav-item" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
     <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span><span class="nav-label">이슈</span></div>
     <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span><span class="nav-label">지역</span></div>
     <div class="nav-item" onclick="switchNav('opponents')"><span class="nav-icon">👥</span><span class="nav-label">상대</span></div>
@@ -337,8 +338,51 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
       <div id="print-date"></div>
     </div>
 
-    <!-- PAGE: Strategy (default) -->
-    <div class="page active" id="page-strategy">
+    <!-- PAGE: War Room (상황실 대시보드) -->
+    <div class="page active" id="page-warroom">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <!-- 좌: 여론조사 추이 -->
+        <div class="card" style="grid-row:span 2">
+          <h3>📈 여론조사 추이</h3>
+          <div id="wr-poll-chart" style="min-height:180px"><div class="skeleton skeleton-block"></div></div>
+          <div id="wr-poll-summary" style="margin-top:8px"><div class="skeleton"></div></div>
+        </div>
+        <!-- 우상: 승률 게이지 -->
+        <div class="card" style="text-align:center">
+          <h3>승률</h3>
+          <div id="wr-gauge" style="font-size:2em;font-weight:bold;padding:10px">--</div>
+          <div id="wr-gap" style="font-size:.9em;color:#78909c">-</div>
+          <div id="wr-momentum" style="font-size:.85em;margin-top:4px">-</div>
+        </div>
+        <!-- 우하: D-Day + 모드 -->
+        <div class="card" style="text-align:center">
+          <div id="wr-dday" style="font-size:2.5em;font-weight:bold;color:#64b5f6">D-??</div>
+          <div id="wr-mode" style="margin-top:6px">-</div>
+          <div id="wr-priority" style="font-size:.82em;color:#90caf9;margin-top:6px">-</div>
+        </div>
+      </div>
+      <!-- 하단: 소셜 + 이슈 나란히 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <!-- 소셜 통계 -->
+        <div class="card">
+          <h3>📱 소셜 통계</h3>
+          <div id="wr-social"><div class="skeleton"></div><div class="skeleton"></div></div>
+        </div>
+        <!-- 이슈 통계 -->
+        <div class="card">
+          <h3>📰 이슈 현황</h3>
+          <div id="wr-issues"><div class="skeleton"></div><div class="skeleton"></div></div>
+        </div>
+      </div>
+      <!-- 하단 전체: 핵심 메시지 -->
+      <div class="card" style="margin-top:10px;border-color:#1976d2">
+        <h3>💬 오늘의 핵심 메시지</h3>
+        <div id="wr-messages" style="font-size:1em"><div class="skeleton"></div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Strategy -->
+    <div class="page" id="page-strategy">
       <div class="grid-2">
         <div class="card"><h3>핵심 메시지</h3><div id="s-msg"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
         <div class="card"><h3>이슈 스코어</h3><div id="s-issues"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
@@ -516,7 +560,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
 <!-- Mobile Bottom Nav -->
 <div class="mobile-nav">
-  <div class="nav-item active" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
+  <div class="nav-item active" onclick="switchNav('warroom')"><span class="nav-icon">🖥</span></div>
+  <div class="nav-item" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
   <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span></div>
   <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span></div>
   <div class="nav-item" onclick="switchNav('opponents')"><span class="nav-icon">👥</span></div>
@@ -562,7 +607,7 @@ var cachedAlerts = [];
 var alertRefreshInterval = null;
 var REFRESH_INTERVAL = 5 * 60 * 1000;
 var MODE_CSS = {'공격':'attack','수비':'defense','선점':'preempt','위기대응':'crisis'};
-var pageLoaded = {strategy:false,issues:false,regions:false,opponents:false,social:false,pledges:false,debate:false,schedule:false,polling:false};
+var pageLoaded = {warroom:false,strategy:false,issues:false,regions:false,opponents:false,social:false,pledges:false,debate:false,schedule:false,polling:false};
 
 /* ===== XSS Escape ===== */
 function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
@@ -657,10 +702,11 @@ function switchNav(name){
   if(page) page.classList.add('active');
   // Activate nav items in both left-nav and mobile-nav
   var navItems=document.querySelectorAll('.nav-item');
-  var navNames=['strategy','issues','regions','opponents','social','pledges','debate','schedule','polling'];
+  var navNames=['warroom','strategy','issues','regions','opponents','social','pledges','debate','schedule','polling'];
   var idx=navNames.indexOf(name);
   navItems.forEach(function(n,i){if(i%navNames.length===idx) n.classList.add('active')});
   // Lazy load
+  if(name==='warroom'&&!pageLoaded.warroom) loadWarRoom();
   if(name==='issues'&&!pageLoaded.issues) loadIssues();
   if(name==='regions'&&!pageLoaded.regions) loadRegions();
   if(name==='opponents'&&!pageLoaded.opponents) loadOpponents();
@@ -842,6 +888,112 @@ async function loadExecSummary(){
     var d=await r.json();
     updateExecBar(d);
   }catch(e){}
+}
+
+/* ===== War Room (상황실 대시보드) ===== */
+async function loadWarRoom(){
+  pageLoaded.warroom=true;
+  // 모든 데이터를 병렬 로드
+  var [pollR,socialR,issueR,execR]=await Promise.all([
+    fetch('/api/polling-history').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
+    fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
+    fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
+    fetch('/api/executive-summary').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
+  ]);
+
+  // 1. 여론조사 추이 차트
+  if(pollR&&pollR.polls&&pollR.polls.length>1){
+    var polls=pollR.polls;
+    var w=480,h=200,pd=40;
+    var ours=polls.map(function(p){return p.our});
+    var opps=polls.map(function(p){var v=p.opponent||{};return Object.values(v)[0]||0});
+    var all=ours.concat(opps),mn=Math.min.apply(null,all)-3,mx=Math.max.apply(null,all)+3,rng=mx-mn||1;
+    var xs=(w-pd*2)/(polls.length-1||1);
+    var Y=function(v){return pd+(1-(v-mn)/rng)*(h-pd*2)};
+    var oP=ours.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ');
+    var eP=opps.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ');
+    var svg='<svg width="'+w+'" height="'+h+'" style="background:#0d1117;border-radius:6px;display:block;max-width:100%">';
+    for(var v=Math.ceil(mn);v<=mx;v+=2)svg+='<line x1="'+pd+'" y1="'+Y(v)+'" x2="'+(w-pd)+'" y2="'+Y(v)+'" stroke="#1e3a5f" stroke-width=".5"/><text x="'+(pd-4)+'" y="'+(Y(v)+4)+'" fill="#78909c" font-size="10" text-anchor="end">'+v+'</text>';
+    svg+='<polyline points="'+oP+'" fill="none" stroke="#4caf50" stroke-width="3"/>';
+    svg+='<polyline points="'+eP+'" fill="none" stroke="#f44336" stroke-width="3"/>';
+    ours.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#4caf50"/>'});
+    opps.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#f44336"/>'});
+    // 날짜 라벨
+    polls.forEach(function(p,i){if(i%2===0||i===polls.length-1)svg+='<text x="'+(pd+i*xs)+'" y="'+(h-5)+'" fill="#546e7f" font-size="8" text-anchor="middle">'+p.date.slice(5)+'</text>'});
+    svg+='<text x="'+(w-pd)+'" y="14" fill="#4caf50" font-size="11" text-anchor="end">● '+(window._candidate||'우리')+'</text>';
+    svg+='<text x="'+(w-pd)+'" y="28" fill="#f44336" font-size="11" text-anchor="end">● '+(window._mainOpponent||'상대')+'</text>';
+    svg+='</svg>';
+    document.getElementById('wr-poll-chart').innerHTML=svg;
+    // 요약
+    var wp=pollR.win_prob||{},tr=pollR.trend||{};
+    document.getElementById('wr-poll-summary').innerHTML=
+      '<div style="display:flex;gap:8px;font-size:.82em;flex-wrap:wrap">'+
+      '<span>최신: '+(window._candidate||'우리')+' <strong style="color:#4caf50">'+ours[ours.length-1].toFixed(1)+'%</strong> vs '+
+      (window._mainOpponent||'상대')+' <strong style="color:#f44336">'+opps[opps.length-1].toFixed(1)+'%</strong></span>'+
+      '<span>추세: <strong>'+(tr.momentum||'-')+'</strong> ('+(tr.our_trend>=0?'+':'')+(tr.our_trend||0).toFixed(2)+'%p/일)</span>'+
+      '</div>';
+  }
+
+  // 2. 승률 게이지
+  if(execR){
+    var wp=execR.win_prob||0;
+    var wpColor=wp>=0.5?'#4caf50':'#f44336';
+    document.getElementById('wr-gauge').innerHTML='<span style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</span>';
+    var gap=pollR&&pollR.win_prob?pollR.win_prob.gap:0;
+    document.getElementById('wr-gap').innerHTML='격차: <strong style="color:'+(gap>=0?'#4caf50':'#f44336')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong>';
+    document.getElementById('wr-momentum').innerHTML=esc(execR.momentum||'')+' | '+esc(pollR&&pollR.win_prob?pollR.win_prob.assessment:'');
+    document.getElementById('wr-dday').textContent='D-'+execR.days_left;
+    document.getElementById('wr-mode').innerHTML='<span class="mode-badge '+(execR.rapid_response_level==='RED'?'crisis':execR.rapid_response_level==='ORANGE'?'preempt':'defense')+'" style="font-size:.9em">긴급 '+esc(execR.rapid_response_level)+'</span>';
+  }
+
+  // 3. 소셜 통계
+  if(socialR&&socialR.candidates){
+    var cands=socialR.candidates;
+    var names=Object.keys(cands);
+    var html='';
+    names.forEach(function(name){
+      var c=cands[name];
+      var sentColor=c.sentiment>=0?'#4caf50':'#f44336';
+      var isOur=name===(window._candidate||'');
+      html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1e3a5f;font-size:.85em">';
+      html+='<span>'+(isOur?'<strong>':'')+(esc(name))+(isOur?'</strong>':'')+'</span>';
+      html+='<span>'+c.social_total.toLocaleString()+'건 <span style="color:'+sentColor+'">'+(c.sentiment>=0?'+':'')+c.sentiment.toFixed(2)+'</span></span>';
+      html+='</div>';
+    });
+    var sm=socialR.summary||{};
+    html+='<div style="margin-top:6px;font-size:.78em;color:#78909c">버즈 '+(sm.buzz_ratio||0)+'x | 감성차 '+(sm.sentiment_advantage>=0?'+':'')+(sm.sentiment_advantage||0).toFixed(2)+'</div>';
+    document.getElementById('wr-social').innerHTML=html;
+  }
+
+  // 4. 이슈 현황
+  if(issueR&&issueR.responses){
+    var resp=issueR.responses;
+    var crisis=resp.filter(function(r){return r.level==='CRISIS'}).length;
+    var alert=resp.filter(function(r){return r.level==='ALERT'}).length;
+    var html='<div style="display:flex;gap:12px;margin-bottom:8px">';
+    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(crisis?'#f44336':'#4caf50')+'">'+crisis+'</div><div style="font-size:.75em;color:#78909c">위기</div></div>';
+    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(alert?'#ff9800':'#4caf50')+'">'+alert+'</div><div style="font-size:.75em;color:#78909c">경계</div></div>';
+    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:#4caf50">'+(resp.length-crisis-alert)+'</div><div style="font-size:.75em;color:#78909c">정상</div></div>';
+    html+='</div>';
+    // 상위 5개
+    resp.slice(0,5).forEach(function(r){
+      var st={'push':'🟢','counter':'🔴','pivot':'🔵','monitor':'🟡','avoid':'⚫'}[r.stance]||'⚪';
+      html+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em">';
+      html+='<span>'+st+' '+esc(r.keyword)+'</span>';
+      html+='<span>'+r.score.toFixed(1)+'</span>';
+      html+='</div>';
+    });
+    document.getElementById('wr-issues').innerHTML=html;
+  }
+
+  // 5. 핵심 메시지 (전략 갱신 데이터에서)
+  if(strategyData&&strategyData.strategy){
+    var msgs=strategyData.strategy.key_messages||[];
+    document.getElementById('wr-messages').innerHTML=msgs.map(function(m,i){
+      return '<div style="padding:6px 10px;margin:4px 0;background:#0d1117;border-left:3px solid #1976d2;border-radius:0 4px 4px 0;font-size:.9em">'+(i+1)+'. '+esc(m)+'</div>';
+    }).join('')||'<div style="color:#78909c">전략 갱신 후 표시됩니다</div>';
+    document.getElementById('wr-priority').textContent=strategyData.strategy.top_priority||'';
+  }
 }
 
 /* ===== Load Issues (cached scores) ===== */
@@ -1841,6 +1993,8 @@ function setupPrint(){
 window.onload=async function(){
   setupPrint();
   checkStatus();
+  // 상황실 자동 로드
+  loadWarRoom();
   // Parallel initial loads
   Promise.all([
     loadExecSummary(),
