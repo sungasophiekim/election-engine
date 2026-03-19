@@ -1912,7 +1912,6 @@ async function runStrategy(){
     renderIssueDetail(data);
     updateKPIsFromStrategy(data);
     document.getElementById('last-up').textContent=new Date().toLocaleTimeString('ko-KR');
-    scheduleNextRefresh();
     loadIssueTrends(data.issues||[]);
     // Refresh right panel
     loadAlerts();
@@ -2132,9 +2131,6 @@ function loadStrategyCache(){
     }).catch(function(){})
   ]).catch(function(){});
 }
-  // Auto-refresh strategy every 5 minutes
-  scheduleNextRefresh();
-};
 </script>
 </body>
 </html>
