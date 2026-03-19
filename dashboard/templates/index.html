@@ -997,9 +997,18 @@ function renderWarRoomIssues(issueR){
   html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(crisis?'#f44336':'#4caf50')+'">'+crisis+'</div><div style="font-size:.75em;color:#78909c">위기</div></div>';
   html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(al?'#ff9800':'#4caf50')+'">'+al+'</div><div style="font-size:.75em;color:#78909c">경계</div></div>';
   html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:#4caf50">'+(resp.length-crisis-al)+'</div><div style="font-size:.75em;color:#78909c">정상</div></div></div>';
-  resp.slice(0,5).forEach(function(r){
+  // 우리→상대→일반 순 정렬
+  var candidate=window._candidate||'김경수';
+  var opponent=window._mainOpponent||'박완수';
+  var sorted=resp.slice().sort(function(a,b){
+    var aO=a.keyword.indexOf(candidate)>=0?0:(a.keyword.indexOf(opponent)>=0?1:2);
+    var bO=b.keyword.indexOf(candidate)>=0?0:(b.keyword.indexOf(opponent)>=0?1:2);
+    return aO!==bO?aO-bO:b.score-a.score;
+  });
+  sorted.slice(0,5).forEach(function(r){
     var st={'push':'🟢','counter':'🔴','pivot':'🔵','monitor':'🟡','avoid':'⚫'}[r.stance]||'⚪';
-    html+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em"><span>'+st+' '+esc(r.keyword)+'</span><span>'+r.score.toFixed(1)+'</span></div>';
+    var kwColor=r.keyword.indexOf(candidate)>=0?'#64b5f6':(r.keyword.indexOf(opponent)>=0?'#ef9a9a':'#e0e0e0');
+    html+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em"><span>'+st+' <span style="color:'+kwColor+'">'+esc(r.keyword)+'</span></span><span>'+r.score.toFixed(1)+'</span></div>';
   });
   document.getElementById('wr-issues').innerHTML=html;
   // 핵심 메시지
@@ -1313,14 +1322,23 @@ async function loadIssues(){
     }).join('');
     (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
 
-    // === 키워드 탭 생성 ===
+    // === 키워드 탭 생성 (우리→상대→일반 순, 중복 제거) ===
+    var candidate=window._candidate||'김경수';
+    var opponent=window._mainOpponent||'박완수';
     var uniqueKws=[];
     resp.forEach(function(r){if(uniqueKws.indexOf(r.keyword)<0)uniqueKws.push(r.keyword)});
+    // 정렬: 우리 후보 → 상대 → 일반
+    uniqueKws.sort(function(a,b){
+      var aOur=a.indexOf(candidate)>=0?0:(a.indexOf(opponent)>=0?1:2);
+      var bOur=b.indexOf(candidate)>=0?0:(b.indexOf(opponent)>=0?1:2);
+      return aOur-bOur;
+    });
     var tabsHtml='';
+    var tabColors={'our':'#1976d2','opp':'#c62828','etc':'#37474f'};
     uniqueKws.forEach(function(kw,i){
-      var ch=resp.filter(function(r){return r.keyword===kw})[0];
-      var news=(ch&&ch.channels)?ch.channels.news||0:0;
-      tabsHtml+='<button class="kw-tab'+(i===0?' active':'')+'" onclick="selectKeywordTab(\''+esc(kw)+'\',this)" style="padding:6px 14px;background:'+(i===0?'#1976d2':'#1e3a5f')+';color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:.85em;transition:background .2s">'+esc(kw)+' <span style="opacity:.7;font-size:.8em">'+news+'</span></button>';
+      var type=kw.indexOf(candidate)>=0?'our':(kw.indexOf(opponent)>=0?'opp':'etc');
+      var bg=i===0?tabColors[type]:('#1e3a5f');
+      tabsHtml+='<button class="kw-tab'+(i===0?' active':'')+'" onclick="selectKeywordTab(\''+esc(kw)+'\',this)" style="padding:6px 14px;background:'+bg+';color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:.85em;transition:background .2s;border-bottom:2px solid '+tabColors[type]+'">'+esc(kw)+'</button>';
     });
     document.getElementById('iss-kw-tabs').innerHTML=tabsHtml;
     // 첫 키워드 자동 선택
