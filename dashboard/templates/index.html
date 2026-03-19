@@ -301,7 +301,7 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 <div class="exec-bar">
   <div class="kpi"><span class="kpi-val" id="ex-fav">--</span><span class="kpi-lbl">지지율</span></div>
   <div class="kpi"><span class="kpi-val" id="ex-gap">--</span><span class="kpi-lbl">격차</span></div>
-  <div class="kpi"><span class="kpi-val" id="ex-wp">--</span><span class="kpi-lbl">승률</span></div>
+  <div class="kpi" style="cursor:pointer" onclick="switchNav('warroom');setTimeout(function(){var e=document.getElementById('wp-explain');if(e)e.style.display='block'},300)"><span class="kpi-val" id="ex-wp">--</span><span class="kpi-lbl">승률 <span style="font-size:1.2em">?</span></span></div>
   <div class="kpi"><span class="kpi-val" id="ex-iss">-</span><span class="kpi-lbl">위기이슈</span></div>
   <div class="kpi"><span class="kpi-val" id="ex-media">-</span><span class="kpi-lbl">미디어</span></div>
   <div class="kpi"><span class="kpi-val" id="ex-buzz">-</span><span class="kpi-lbl">디지털</span></div>
@@ -349,10 +349,27 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         </div>
         <!-- 우상: 승률 게이지 -->
         <div class="card" style="text-align:center">
-          <h3>승률</h3>
+          <h3>승률 <span onclick="document.getElementById('wp-explain').style.display=document.getElementById('wp-explain').style.display==='none'?'block':'none'" style="cursor:pointer;background:#1e3a5f;color:#90caf9;border-radius:50%;width:18px;height:18px;display:inline-block;font-size:.7em;line-height:18px;text-align:center" title="계산 로직 보기">?</span></h3>
           <div id="wr-gauge" style="font-size:2em;font-weight:bold;padding:10px">--</div>
           <div id="wr-gap" style="font-size:.9em;color:#78909c">-</div>
           <div id="wr-momentum" style="font-size:.85em;margin-top:4px">-</div>
+          <!-- 승률 계산 로직 설명 -->
+          <div id="wp-explain" style="display:none;text-align:left;background:#0d1117;border:1px solid #1e3a5f;border-radius:6px;padding:10px;margin-top:8px;font-size:.75em;color:#b0bec5;line-height:1.7">
+            <div style="color:#64b5f6;font-weight:bold;margin-bottom:4px">승률 계산 방법</div>
+            <div><strong>1.</strong> 최근 여론조사 3건을 선택합니다.</div>
+            <div><strong>2.</strong> 가중치를 부여합니다:<br>
+              <code style="color:#90caf9">가중치 = (1/경과일수 + 1) × √표본수</code><br>
+              → 최신 조사 + 대표본에 높은 가중치</div>
+            <div><strong>3.</strong> 가중 평균 지지율을 계산합니다:<br>
+              <code style="color:#90caf9">우리 평균 vs 상대 평균 → 격차(%p)</code></div>
+            <div><strong>4.</strong> 오차범위를 결합합니다:<br>
+              <code style="color:#90caf9">결합오차 = √(Σ(오차²×가중치) / 총가중치)</code></div>
+            <div><strong>5.</strong> 정규분포로 승률을 추정합니다:<br>
+              <code style="color:#90caf9">P(승리) = Φ(격차 / 결합오차)</code><br>
+              → 격차가 오차범위 대비 클수록 승률 ↑</div>
+            <div style="margin-top:6px;color:#ff9800">⚠ 여론조사는 추정치입니다. 실제 투표 결과와 다를 수 있습니다.</div>
+            <div id="wp-detail" style="margin-top:6px;border-top:1px solid #1e3a5f;padding-top:6px"></div>
+          </div>
         </div>
         <!-- 우하: D-Day + 모드 -->
         <div class="card" style="text-align:center">
@@ -939,9 +956,18 @@ async function loadWarRoom(){
     var wp=execR.win_prob||0;
     var wpColor=wp>=0.5?'#4caf50':'#f44336';
     document.getElementById('wr-gauge').innerHTML='<span style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</span>';
-    var gap=pollR&&pollR.win_prob?pollR.win_prob.gap:0;
+    var wpData=pollR&&pollR.win_prob?pollR.win_prob:{};
+    var gap=wpData.gap||0;
     document.getElementById('wr-gap').innerHTML='격차: <strong style="color:'+(gap>=0?'#4caf50':'#f44336')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong>';
-    document.getElementById('wr-momentum').innerHTML=esc(execR.momentum||'')+' | '+esc(pollR&&pollR.win_prob?pollR.win_prob.assessment:'');
+    document.getElementById('wr-momentum').innerHTML=esc(execR.momentum||'')+' | '+esc(wpData.assessment||'');
+    // 상세 계산 표시
+    var detail='<div style="color:#78909c">사용 데이터 (최근 3건, 가중 평균):</div>';
+    detail+='<div>우리 평균: <strong style="color:#4caf50">'+(wpData.our_avg||0).toFixed(1)+'%</strong></div>';
+    var oppAvg=wpData.opponent_avg?Object.values(wpData.opponent_avg)[0]:0;
+    var oppName=wpData.opponent_avg?Object.keys(wpData.opponent_avg)[0]:'상대';
+    detail+='<div>'+esc(oppName)+' 평균: <strong style="color:#f44336">'+(oppAvg||0).toFixed(1)+'%</strong></div>';
+    detail+='<div>격차: <strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong> → 승률 <strong style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</strong></div>';
+    document.getElementById('wp-detail').innerHTML=detail;
     document.getElementById('wr-dday').textContent='D-'+execR.days_left;
     document.getElementById('wr-mode').innerHTML='<span class="mode-badge '+(execR.rapid_response_level==='RED'?'crisis':execR.rapid_response_level==='ORANGE'?'preempt':'defense')+'" style="font-size:.9em">긴급 '+esc(execR.rapid_response_level)+'</span>';
   }
