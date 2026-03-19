@@ -56,6 +56,11 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 .nav-item.active{color:#64b5f6;border-left-color:#64b5f6;background:rgba(25,118,210,.1)}
 .nav-item .nav-icon{font-size:22px;display:block;margin-bottom:2px}
 .nav-item .nav-label{display:block;font-size:10px;letter-spacing:-.3px}
+.nav-divider{height:1px;background:#1e3a5f;margin:6px 8px}
+.nav-section-label{font-size:7px;color:#37474f;text-align:center;padding:4px 0 2px;text-transform:uppercase;letter-spacing:.5px}
+.nav-item.admin{color:#455a64}
+.nav-item.admin:hover{color:#78909c;background:rgba(255,255,255,.03)}
+.nav-item.admin.active{color:#90caf9;border-left-color:#455a64;background:rgba(255,255,255,.05)}
 
 /* Main Area */
 .main-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
@@ -317,15 +322,20 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
   <!-- Left Nav -->
   <div class="left-nav">
+    <!-- 공유용 (캠프 전원) -->
+    <div class="nav-section-label">공유</div>
     <div class="nav-item active" onclick="switchNav('warroom')"><span class="nav-icon">🖥</span><span class="nav-label">상황실</span></div>
-    <div class="nav-item" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
-    <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span><span class="nav-label">이슈</span></div>
-    <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span><span class="nav-label">지역</span></div>
-    <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span><span class="nav-label">소셜</span></div>
     <div class="nav-item" onclick="switchNav('pledges')"><span class="nav-icon">📋</span><span class="nav-label">공약</span></div>
-    <div class="nav-item" onclick="switchNav('debate')"><span class="nav-icon">🎤</span><span class="nav-label">토론</span></div>
-    <div class="nav-item" onclick="switchNav('schedule')"><span class="nav-icon">📅</span><span class="nav-label">일정</span></div>
-    <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span><span class="nav-label">여론</span></div>
+    <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span><span class="nav-label">지역</span></div>
+    <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span><span class="nav-label">이슈</span></div>
+    <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span><span class="nav-label">소셜</span></div>
+    <!-- 어드민용 (선대위/전략팀) -->
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">어드민</div>
+    <div class="nav-item admin" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
+    <div class="nav-item admin" onclick="switchNav('debate')"><span class="nav-icon">🎤</span><span class="nav-label">메세지</span></div>
+    <div class="nav-item admin" onclick="switchNav('schedule')"><span class="nav-icon">📅</span><span class="nav-label">일정</span></div>
+    <div class="nav-item admin" onclick="switchNav('polling')"><span class="nav-icon">📈</span><span class="nav-label">여론</span></div>
   </div>
 
   <!-- Main Area -->
@@ -579,14 +589,14 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 <!-- Mobile Bottom Nav -->
 <div class="mobile-nav">
   <div class="nav-item active" onclick="switchNav('warroom')"><span class="nav-icon">🖥</span></div>
-  <div class="nav-item" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
-  <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span></div>
-  <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span></div>
-  <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span></div>
   <div class="nav-item" onclick="switchNav('pledges')"><span class="nav-icon">📋</span></div>
-  <div class="nav-item" onclick="switchNav('debate')"><span class="nav-icon">🎤</span></div>
-  <div class="nav-item" onclick="switchNav('schedule')"><span class="nav-icon">📅</span></div>
-  <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span></div>
+  <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span></div>
+  <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span></div>
+  <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span></div>
+  <div class="nav-item admin" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
+  <div class="nav-item admin" onclick="switchNav('debate')"><span class="nav-icon">🎤</span></div>
+  <div class="nav-item admin" onclick="switchNav('schedule')"><span class="nav-icon">📅</span></div>
+  <div class="nav-item admin" onclick="switchNav('polling')"><span class="nav-icon">📈</span></div>
 </div>
 
 <!-- Toast -->
@@ -719,7 +729,7 @@ function switchNav(name){
   if(page) page.classList.add('active');
   // Activate nav items in both left-nav and mobile-nav
   var navItems=document.querySelectorAll('.nav-item');
-  var navNames=['warroom','strategy','issues','regions','social','pledges','debate','schedule','polling'];
+  var navNames=['warroom','pledges','regions','issues','social','strategy','debate','schedule','polling'];
   var idx=navNames.indexOf(name);
   navItems.forEach(function(n,i){if(i%navNames.length===idx) n.classList.add('active')});
   // Lazy load
