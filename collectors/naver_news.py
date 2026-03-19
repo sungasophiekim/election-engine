@@ -35,28 +35,41 @@ def _strip_html(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text).replace("&quot;", '"').replace("&amp;", "&")
 
 
-def search_news(query: str, display: int = 100, sort: str = "date") -> list[dict]:
+def search_news(query: str, display: int = 100, sort: str = "date", pages: int = 1) -> list[dict]:
     """
-    네이버 뉴스 검색. 최대 100건.
-    sort: "date"(최신순) | "sim"(정확도순)
+    네이버 뉴스 검색.
+    pages=1: 100건 (기본), pages=3: 300건 (정확도 향상)
+    네이버 API 제한: display 최대 100, start 최대 1000
     """
     headers = _get_headers()
-    params = {"query": query, "display": min(display, 100), "sort": sort}
-
-    with httpx.Client(timeout=10) as client:
-        resp = client.get(NAVER_SEARCH_URL, headers=headers, params=params)
-        resp.raise_for_status()
-        data = resp.json()
-
     articles = []
-    for item in data.get("items", []):
-        articles.append({
-            "title": _strip_html(item.get("title", "")),
-            "description": _strip_html(item.get("description", "")),
-            "link": item.get("originallink", item.get("link", "")),
-            "source": item.get("originallink", "").split("/")[2] if "://" in item.get("originallink", "") else "",
-            "pub_date": item.get("pubDate", ""),
-        })
+
+    for page in range(pages):
+        start = page * 100 + 1
+        if start > 1000:
+            break
+        params = {"query": query, "display": min(display, 100), "sort": sort, "start": start}
+        try:
+            with httpx.Client(timeout=10) as client:
+                resp = client.get(NAVER_SEARCH_URL, headers=headers, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+
+            for item in data.get("items", []):
+                articles.append({
+                    "title": _strip_html(item.get("title", "")),
+                    "description": _strip_html(item.get("description", "")),
+                    "link": item.get("originallink", item.get("link", "")),
+                    "source": item.get("originallink", "").split("/")[2] if "://" in item.get("originallink", "") else "",
+                    "pub_date": item.get("pubDate", ""),
+                })
+
+            # 반환 건수가 요청보다 적으면 더 이상 없음
+            if len(data.get("items", [])) < display:
+                break
+        except Exception:
+            break
+
     return articles
 
 
@@ -247,7 +260,9 @@ def collect_issue_signals(
     signals = []
     for kw in keywords:
         try:
-            articles = search_news(kw, display=100)
+            # 3페이지 수집 (최대 300건) — 정확도 향상
+            articles = search_news(kw, display=100, pages=3)
+            total = count_mentions(kw)
         except Exception as e:
             print(f"  [경고] '{kw}' 검색 실패: {e}")
             continue
@@ -274,8 +289,12 @@ def collect_issue_signals(
                 for a in articles
             )
 
-        # 포털 트렌딩 추정: 최근 24h에 50건 이상이면 활발
-        portal_trending = recent_24h >= 50
+        # 정확도: 수집 건수 < 샘플이면 정확, 아니면 추정
+        sampled = len(articles)
+        is_exact = recent_24h < sampled  # 24h건수가 샘플보다 작으면 정확
+
+        # 포털 트렌딩 추정: 300건 샘플에서 150건 이상이면 활발
+        portal_trending = recent_24h >= 150
 
         # TV 보도 여부: 방송사(티어1) 기사가 3건 이상
         tier1_count = sum(1 for t in tiers if t == 1)

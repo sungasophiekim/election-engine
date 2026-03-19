@@ -120,7 +120,7 @@ def analyze_keyword(
 
     # 1. 데이터 수집
     try:
-        news = search_news(keyword, display=100)
+        news = search_news(keyword, display=100, pages=3)
         for a in news:
             all_texts.append(a["title"] + " " + a.get("description", ""))
             news_titles.append(a["title"])
@@ -262,7 +262,7 @@ def analyze_keyword(
     # 5. 주체 분석
     about_whom = dict(entity_counter.most_common(5))
     who_talks = {
-        "뉴스": len(news_titles),
+        "뉴스": len(news_titles),  # 최대 300건 (3페이지)
         "블로그": len(blog_titles),
         "카페": len(cafe_titles),
     }
