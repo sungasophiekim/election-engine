@@ -553,23 +553,26 @@ async def api_ai_analyze(request: Request, session_token: str = Cookie(default=N
             raw = response.content[0].text.strip()
             if "```" in raw:
                 raw = raw.split("```")[1].replace("json", "").strip()
-            # JSON 파싱 안전 처리
+            # JSON 파싱 — 여러 방법 시도
             import re as re_mod
-            raw = re_mod.sub(r'[\n\r\t]', ' ', raw)
+            raw = re_mod.sub(r'[\n\r\t]+', ' ', raw)
+            result = None
+            # 시도 1: 직접 파싱
             try:
                 result = jmod.loads(raw)
             except jmod.JSONDecodeError:
-                # JSON 실패 시 텍스트에서 핵심만 추출
-                result = {
-                    "sentiment": "분석완료",
-                    "score": 0,
-                    "summary": raw[:200],
-                    "risk": "",
-                    "opportunity": "",
-                    "recommended_action": "",
-                    "message_suggestion": "",
-                    "avoid": "",
-                }
+                pass
+            # 시도 2: { } 추출
+            if not result:
+                m = re_mod.search(r'\{.*\}', raw, re_mod.DOTALL)
+                if m:
+                    try:
+                        result = jmod.loads(re_mod.sub(r'[\n\r\t]+', ' ', m.group()))
+                    except jmod.JSONDecodeError:
+                        pass
+            # 시도 3: fallback
+            if not result:
+                result = {"sentiment": "분석완료", "score": 0, "summary": raw[:300]}
 
             # DB 저장
             db.save_ai_analysis(
