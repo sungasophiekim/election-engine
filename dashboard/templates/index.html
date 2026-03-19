@@ -433,16 +433,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
     <!-- PAGE: Issues -->
     <div class="page" id="page-issues">
-      <!-- 키워드 탭 바 (스크롤 가능) -->
-      <div id="iss-kw-tabs" style="display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;border-bottom:1px solid #1e3a5f;margin-bottom:10px">
-        <div class="skeleton" style="width:200px"></div>
-      </div>
-      <!-- 선택된 키워드 상세 -->
-      <div id="iss-kw-detail">
-        <div class="skeleton skeleton-block"></div>
-      </div>
-      <!-- AI 전략 에이전트 -->
-      <div class="card" style="margin-top:10px;border-color:#6a1b9a;background:#1a1025">
+      <!-- AI 전략 에이전트 (최상단) -->
+      <div class="card" style="margin-bottom:10px;border-color:#6a1b9a;background:#1a1025">
         <h3 style="color:#ce93d8">🤖 AI 전략 에이전트 <span id="ai-remaining" style="font-size:.75em;color:#78909c;font-weight:normal"></span></h3>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
           <button class="btn" style="background:#6a1b9a" id="ai-btn" onclick="runAiAgent()">선택 키워드 분석 요청</button>
@@ -450,6 +442,14 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         </div>
         <div id="ai-result" style="font-size:.88em"></div>
         <div id="ai-history" style="margin-top:8px;font-size:.8em;color:#546e7f"></div>
+      </div>
+      <!-- 키워드 탭 바 (스크롤 가능) -->
+      <div id="iss-kw-tabs" style="display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;border-bottom:1px solid #1e3a5f;margin-bottom:10px">
+        <div class="skeleton" style="width:200px"></div>
+      </div>
+      <!-- 선택된 키워드 상세 -->
+      <div id="iss-kw-detail">
+        <div class="skeleton skeleton-block"></div>
       </div>
     </div>
 
