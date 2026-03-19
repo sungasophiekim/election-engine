@@ -1574,6 +1574,28 @@ async function loadPledges(){
       });
       phtml+='</div>';
       if(d.candidate)phtml='<div style="margin-bottom:10px;font-size:.85em;color:#78909c">'+esc(d.candidate)+' 핵심 공약 '+pledges.length+'대</div>'+phtml;
+      // 상대 공약 비교 카드
+      var opp=d.opponent_pledges||{};
+      var oppNames=Object.keys(opp);
+      if(oppNames.length){
+        phtml+='<div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">';
+        oppNames.forEach(function(name){
+          var o=opp[name];
+          phtml+='<div class="card" style="border-color:#f44336;background:#1a1015">';
+          phtml+='<h3 style="color:#ef5350">'+esc(name)+' <span style="font-size:.75em;color:#78909c;font-weight:normal">'+esc(o.party||'')+'</span></h3>';
+          (o.pledges||[]).forEach(function(p){
+            phtml+='<div style="padding:8px;margin:4px 0;background:#0d0a0f;border-radius:6px;border-left:3px solid #c62828">';
+            phtml+='<div style="font-weight:bold;font-size:.9em;color:#ef9a9a">'+esc(p.name)+'</div>';
+            if(p.numbers)phtml+='<div style="font-size:.82em;color:#e0e0e0;margin:2px 0">'+esc(p.numbers)+'</div>';
+            phtml+='<div style="font-size:.78em;color:#90a4ae">'+esc(p.description)+'</div>';
+            if(p.weakness)phtml+='<div style="font-size:.75em;color:#f44336;margin-top:3px">⚠ 약점: '+esc(p.weakness)+'</div>';
+            phtml+='</div>';
+          });
+          phtml+='</div>';
+        });
+        phtml+='</div>';
+      }
+
       document.getElementById('pl-our-pledges').innerHTML=phtml;
     }
     pageLoaded.pledges=true;

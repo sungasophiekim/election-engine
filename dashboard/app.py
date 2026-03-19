@@ -1013,13 +1013,28 @@ async def api_pledges(session_token: str = Cookie(default=None)):
         for region in ["창원시", "김해시", "거제시"]:
             regional[region] = comp.get_regional_talking_points(region)
         config = SAMPLE_GYEONGNAM_CONFIG
+        from engines.pledge_comparator import OPPONENT_PLEDGES
         our_pledges = [
             {"name": name, "numbers": info.get("수치", ""), "deadline": info.get("완료시기", ""),
              "description": info.get("설명", "")}
             for name, info in config.pledges.items()
         ]
+        opp_pledges = {}
+        for opp_name, opp_data in OPPONENT_PLEDGES.items():
+            opp_pledges[opp_name] = {
+                "party": opp_data.get("party", ""),
+                "pledges": [
+                    {"name": p["name"], "category": p.get("category", ""),
+                     "description": p.get("description", ""),
+                     "numbers": p.get("numbers", ""),
+                     "strength": p.get("strength", ""),
+                     "weakness": p.get("weakness", "")}
+                    for p in opp_data.get("pledges", [])
+                ],
+            }
         return {
             "our_pledges": our_pledges,
+            "opponent_pledges": opp_pledges,
             "candidate": config.candidate_name,
             "slogan": config.slogan,
             "matrix": matrix,
