@@ -1121,14 +1121,14 @@ async function loadIssues(){
       // fallback to basic scores
       var r2=await fetch('/api/scores');if(!r2.ok)return;var sc=await r2.json();
       pageLoaded.issues=true;
-      document.getElementById('i-detail').innerHTML=(sc||[]).map(function(i){
+      (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=(sc||[]).map(function(i){
         var lv=(i.crisis_level||'normal').toLowerCase();
         return '<div class="issue-card"><div class="issue-header"><span class="level-badge '+lv+'">'+(i.crisis_level||'NORMAL')+'</span><span class="keyword">'+esc(i.keyword)+'</span><span class="score">'+i.score.toFixed(1)+'</span></div></div>';
       }).join('');
       return;
     }
     var data=await r.json();
-    if(data.error){document.getElementById('i-detail').textContent=data.error;return}
+    if(data.error){(document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).textContent=data.error;return}
     pageLoaded.issues=true;
 
     // 가이드 렌더링
@@ -1213,7 +1213,7 @@ async function loadIssues(){
         '</details>'+
       '</div>';
     }).join('');
-    document.getElementById('i-detail').innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
+    (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
 
     // === 키워드 탭 생성 ===
     var uniqueKws=[];
@@ -1229,7 +1229,7 @@ async function loadIssues(){
     // 첫 키워드는 자동 로드하지 않음 — 클릭 시 로드 (서버 블로킹 방지)
     document.getElementById('iss-kw-detail').innerHTML='<div style="padding:20px;text-align:center;color:#546e7f">위 키워드를 클릭하면 연관 키워드 TOP 10이 표시됩니다</div>';
 
-  }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
+  }catch(e){(document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
 }
 
 /* ===== Load Issue Trends ===== */
@@ -2084,7 +2084,7 @@ function renderIssueDetail(d){
       '<div class="issue-trend" id="trend-'+encodeURIComponent(i.keyword)+'"></div>'+
       '</div>';
   }).join('');
-  document.getElementById('i-detail').innerHTML=html;
+  (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=html;
 }
 
 /* ===== Status Check ===== */
