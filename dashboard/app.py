@@ -955,47 +955,65 @@ async def api_social_buzz(session_token: str = Cookie(default=None)):
     def _run():
         from dotenv import load_dotenv
         load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from concurrent.futures import ThreadPoolExecutor
         from collectors.social_collector import compare_candidate_buzz
         from collectors.youtube_collector import search_youtube
         from collectors.trends_collector import get_search_trend
+        from collectors.unified_collector import _cached
         from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
         config = SAMPLE_GYEONGNAM_CONFIG
 
         all_candidates = [config.candidate_name] + config.opponents
 
-        # 1. 블로그/카페 버즈 비교
-        buzz = compare_candidate_buzz(config.candidate_name, config.opponents)
+        # 전부 병렬 실행
+        buzz = {}
+        yt_data = {n: {"total": 0, "views": 0, "top_videos": []} for n in all_candidates}
+        trends_data = {n: {"interest": 0, "change_7d": 0, "direction": "", "related": []} for n in all_candidates}
 
-        # 2. 후보별 YouTube 데이터
-        yt_data = {}
-        for name in all_candidates:
-            try:
-                yt = search_youtube(name, max_results=5)
-                yt_data[name] = {
-                    "total": yt.total_results,
-                    "views": yt.total_views,
-                    "top_videos": [
-                        {"title": v.title[:50], "views": v.view_count,
-                         "channel": v.channel, "published": v.published}
-                        for v in yt.top_videos[:3]
-                    ],
-                }
-            except Exception:
-                yt_data[name] = {"total": 0, "views": 0, "top_videos": []}
+        def _fetch_buzz():
+            return compare_candidate_buzz(config.candidate_name, config.opponents)
 
-        # 3. 후보별 Google Trends
-        trends_data = {}
-        for name in all_candidates:
+        def _fetch_yt(name):
+            yt = _cached(f"social_yt:{name}", lambda _n=name: search_youtube(_n, max_results=5))
+            if not yt:
+                return name, {"total": 0, "views": 0, "top_videos": []}
+            return name, {
+                "total": yt.total_results, "views": yt.total_views,
+                "top_videos": [{"title": v.title[:50], "views": v.view_count,
+                                "channel": v.channel, "published": v.published}
+                               for v in yt.top_videos[:3]],
+            }
+
+        def _fetch_trends(name):
+            tr = _cached(f"social_tr:{name}", lambda _n=name: get_search_trend(_n))
+            if not tr:
+                return name, {"interest": 0, "change_7d": 0, "direction": "", "related": []}
+            return name, {
+                "interest": tr.interest_now, "change_7d": tr.change_7d,
+                "direction": tr.trend_direction, "related": tr.related_queries[:5],
+            }
+
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            f_buzz = pool.submit(_fetch_buzz)
+            f_yts = [pool.submit(_fetch_yt, n) for n in all_candidates]
+            f_trs = [pool.submit(_fetch_trends, n) for n in all_candidates]
+
             try:
-                tr = get_search_trend(name)
-                trends_data[name] = {
-                    "interest": tr.interest_now,
-                    "change_7d": tr.change_7d,
-                    "direction": tr.trend_direction,
-                    "related": tr.related_queries[:5],
-                }
+                buzz = f_buzz.result(timeout=8)
             except Exception:
-                trends_data[name] = {"interest": 0, "change_7d": 0, "direction": "", "related": []}
+                buzz = {}
+            for f in f_yts:
+                try:
+                    name, data = f.result(timeout=8)
+                    yt_data[name] = data
+                except Exception:
+                    pass
+            for f in f_trs:
+                try:
+                    name, data = f.result(timeout=5)
+                    trends_data[name] = data
+                except Exception:
+                    pass
 
         # 4. 종합 비교 테이블
         candidates = {}

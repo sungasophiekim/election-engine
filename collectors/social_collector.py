@@ -27,7 +27,8 @@ class SocialSignal:
 # ── Naver Search API Endpoints ──────────────────────────────────────
 NAVER_BLOG_URL = "https://openapi.naver.com/v1/search/blog.json"
 NAVER_CAFE_URL = "https://openapi.naver.com/v1/search/cafearticle.json"
-NAVER_VIDEO_URL = "https://openapi.naver.com/v1/search/vclip"
+# 네이버 동영상 API — 앱 권한 미등록으로 404. 권한 추가 후 활성화.
+NAVER_VIDEO_URL = ""  # "https://openapi.naver.com/v1/search/vclip"
 
 # ── Sentiment Keywords ──────────────────────────────────────────────
 NEGATIVE_KEYWORDS = [
@@ -174,7 +175,11 @@ def search_cafes(query: str, display: int = 100) -> SocialSignal:
 
 
 def search_videos(query: str, display: int = 100) -> SocialSignal:
-    """네이버 동영상 검색 — 유튜브/네이버TV 포함"""
+    """네이버 동영상 검색 — 앱 권한 없으면 빈 결과 즉시 반환"""
+    if not NAVER_VIDEO_URL:
+        return SocialSignal(keyword=query, source_type="video", total_count=0,
+                            recent_24h=0, negative_ratio=0, positive_ratio=0,
+                            top_items=[], engagement_score=0)
     items, total = _search(NAVER_VIDEO_URL, query, display)
     return _build_signal(query, "video", items, total, max_total=max(total, 1))
 

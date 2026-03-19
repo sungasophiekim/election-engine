@@ -238,19 +238,26 @@ def search_community(
 
 
 def scan_all_communities(keyword: str) -> CommunityReport:
-    """모든 커뮤니티 일괄 스캔"""
+    """모든 커뮤니티 병렬 스캔"""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     signals = []
     total = 0
     max_count = 0
     hottest = ""
 
-    for cid in COMMUNITIES:
-        sig = search_community(keyword, cid)
-        signals.append(sig)
-        total += sig.result_count
-        if sig.result_count > max_count:
-            max_count = sig.result_count
-            hottest = sig.name
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(search_community, keyword, cid): cid for cid in COMMUNITIES}
+        for f in as_completed(futures):
+            try:
+                sig = f.result(timeout=5)
+                signals.append(sig)
+                total += sig.result_count
+                if sig.result_count > max_count:
+                    max_count = sig.result_count
+                    hottest = sig.name
+            except Exception:
+                pass
 
     # 전체 톤
     all_titles = []
