@@ -419,7 +419,9 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         <div class="card"><h3>이슈 스코어</h3><div id="s-issues"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
         <div class="card"><h3>지역 우선순위</h3><div id="s-regions"><div class="skeleton"></div><div class="skeleton"></div></div></div>
         <div class="card"><h3>상대 후보</h3><div id="s-opp"><div class="skeleton skeleton-block"></div></div></div>
-        <div class="card fw"><h3>공격 포인트</h3><div id="s-atk"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card"><h3>공격 포인트</h3><div id="s-atk"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        <div class="card"><h3>방어 준비</h3><div id="s-def"><div class="skeleton"></div></div></div>
+        <div class="card fw"><h3>지역별 토킹포인트</h3><div id="s-regional"><div class="skeleton"></div></div></div>
         <div class="card fw"><h3>리스크</h3><div id="s-risk"><div class="msg">갱신 후 표시</div></div></div>
       </div>
     </div>
@@ -496,15 +498,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
 
     <!-- PAGE: Pledges -->
     <div class="page" id="page-pledges">
-      <!-- 우리 공약 카드 -->
+      <!-- 우리 공약 카드 + 상대 비교 -->
       <div id="pl-our-pledges"><div class="skeleton skeleton-block"></div></div>
-      <!-- 비교/공격/방어 -->
-      <div class="grid-2" style="margin-top:14px">
-        <div class="card fw"><h3>상대 공약 비교</h3><div id="pl-matrix" style="overflow-x:auto"><div class="skeleton skeleton-block"></div></div></div>
-        <div class="card"><h3>공격 포인트</h3><div id="pl-attacks"><div class="skeleton"></div></div></div>
-        <div class="card"><h3>방어 준비</h3><div id="pl-defenses"><div class="skeleton"></div></div></div>
-        <div class="card fw"><h3>지역별 토킹포인트</h3><div id="pl-regional"><div class="skeleton"></div></div></div>
-      </div>
     </div>
 
     <!-- PAGE: Debate -->
@@ -1599,36 +1594,7 @@ async function loadPledges(){
       document.getElementById('pl-our-pledges').innerHTML=phtml;
     }
     pageLoaded.pledges=true;
-    var matrix=d.matrix||d.comparison||[];
-    if(matrix.length){
-      var candidates=d.candidates||[];
-      var tbl='<table class="pledge-table"><thead><tr><th>분야</th>';
-      candidates.forEach(function(c){tbl+='<th>'+esc(c)+'</th>'});
-      tbl+='</tr></thead><tbody>';
-      matrix.forEach(function(row){
-        tbl+='<tr><td class="pledge-cat">'+esc(row.category||row.field||'')+'</td>';
-        candidates.forEach(function(c){
-          var val=row[c]||row.pledges&&row.pledges[c]||'-';
-          tbl+='<td>'+esc(typeof val==='string'?val:JSON.stringify(val))+'</td>';
-        });
-        tbl+='</tr>';
-      });
-      tbl+='</tbody></table>';
-      document.getElementById('pl-matrix').innerHTML=tbl;
-    }else{document.getElementById('pl-matrix').innerHTML='<span style="color:#78909c">공약 비교 데이터 없음</span>'}
-    document.getElementById('pl-attacks').innerHTML=(d.attacks||[]).map(function(a){
-      return '<div class="atk '+(a.severity||'medium')+'"><strong>['+esc(a.attack_angle||a.angle||'')+']</strong> '+esc(a.content||a.talking_point||a.pledge||'')+'</div>';
-    }).join('')||'<span style="color:#78909c">-</span>';
-    document.getElementById('pl-defenses').innerHTML=(d.defenses||[]).map(function(df){
-      return '<div class="msg" style="border-color:#4caf50"><strong>'+esc(df.attack||df.topic||'')+'</strong><br>'+esc(df.response||df.defense||'')+'</div>';
-    }).join('')||'<span style="color:#78909c">-</span>';
-    var regional=d.regional_talking_points||d.regional||[];
-    if(regional.length){
-      document.getElementById('pl-regional').innerHTML=regional.slice(0,5).map(function(rr){
-        return '<div class="msg"><strong>'+esc(rr.region||'')+'</strong>: '+esc(rr.points?rr.points.join(', '):rr.talking_point||rr.content||'')+'</div>';
-      }).join('');
-    }else{document.getElementById('pl-regional').innerHTML='<span style="color:#78909c">-</span>'}
-  }catch(e){document.getElementById('pl-matrix').textContent='로딩 실패'}
+  }catch(e){document.getElementById('pl-our-pledges').textContent='로딩 실패'}
 }
 
 /* ===== Load Debate ===== */
@@ -2031,6 +1997,27 @@ function renderStrategy(d){
   document.getElementById('s-atk').innerHTML=(d.attacks||[]).map(function(a){
     return '<div class="atk '+(a.severity||'medium')+'"><strong>['+esc(a.attack_angle)+']</strong> '+esc(a.pledge)+': '+esc(a.talking_point)+'</div>'
   }).join('')||'<span style="color:#78909c">-</span>';
+  // Defense + Regional (공약에서 전략으로 이동)
+  fetch('/api/pledges').then(function(r){return r.ok?r.json():null}).then(function(pd){
+    if(!pd)return;
+    // 방어 준비
+    var defs=pd.defenses||[];
+    document.getElementById('s-def').innerHTML=defs.map(function(df){
+      return '<div class="q-card"><div class="topic" style="color:#ff9800">🛡 '+esc(df.our_pledge||df.potential_attack||'')+'</div><div style="color:#a5d6a7;font-size:.85em">'+esc(df.defense_logic||df.response||'')+'</div></div>'
+    }).join('')||'<span style="color:#78909c">-</span>';
+    // 지역별 토킹포인트
+    var reg=pd.regional||{};
+    var regHtml='';
+    for(var region in reg){
+      regHtml+='<div style="margin-bottom:8px"><span style="background:#1976d2;color:#fff;padding:2px 8px;border-radius:3px;font-size:.8em">'+esc(region)+'</span>';
+      (reg[region]||[]).forEach(function(p){
+        var bc=p.type==='attack'?'#f44336':p.type==='promote'?'#4caf50':'#ff9800';
+        regHtml+='<div class="msg" style="border-color:'+bc+';font-size:.82em">'+esc(p.message||'')+'</div>';
+      });
+      regHtml+='</div>';
+    }
+    document.getElementById('s-regional').innerHTML=regHtml||'<span style="color:#78909c">-</span>';
+  }).catch(function(){});
   // Risk
   var rc=s.risk_level==='매우높음'?'#f44336':s.risk_level==='높음'?'#ff9800':'#4caf50';
   document.getElementById('s-risk').innerHTML='<div class="msg" style="border-color:'+rc+'">리스크: <strong>'+esc(s.risk_level)+'</strong></div>';
