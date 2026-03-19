@@ -598,6 +598,14 @@ async def api_keyword_analysis(keyword: str, session_token: str = Cookie(default
                 "cafe": result.cafe_samples[:5],
             },
             "data_freshness": result.data_freshness,
+            "ai_analysis": {
+                "sentiment": result.ai_sentiment,
+                "score": result.ai_score,
+                "summary": result.ai_summary,
+                "risk": result.ai_risk,
+                "opportunity": result.ai_opportunity,
+                "source": result.ai_source,
+            },
             "google_trends": {
                 "interest": result.trend_interest,
                 "change_7d": result.trend_change_7d,

@@ -1057,6 +1057,18 @@ function renderKeywordDetail(kw,d){
   toneOrder.forEach(function(t){var v=tones[t]||0;if(v>0){
     html+='<div style="display:flex;align-items:center;margin:2px 0"><span style="width:36px;font-size:.78em;color:'+(toneColors[t]||'#78909c')+'">'+t+'</span><div style="flex:1;height:12px;background:#1e3a5f;border-radius:2px;overflow:hidden"><div style="width:'+(v/maxTone*100)+'%;height:100%;background:'+(toneColors[t]||'#78909c')+'"></div></div><span style="width:28px;text-align:right;font-size:.75em">'+v+'</span></div>';
   }});
+  // AI 정밀 분석
+  var ai=d.ai_analysis||{};
+  if(ai.source==='claude'){
+    var aiColor=ai.score>0.2?'#4caf50':ai.score<-0.2?'#f44336':'#ff9800';
+    html+='<div style="margin-top:8px;padding:8px;background:#1a1a2e;border:1px solid #6a1b9a;border-radius:6px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#ce93d8;font-size:.82em"><strong>🤖 AI 분석</strong></span>';
+    html+='<span style="font-weight:bold;color:'+aiColor+'">'+esc(ai.sentiment)+' ('+ai.score.toFixed(2)+')</span></div>';
+    if(ai.summary)html+='<div style="font-size:.82em;color:#e0e0e0;margin-top:4px">'+esc(ai.summary)+'</div>';
+    if(ai.risk&&ai.risk!=='없음')html+='<div style="font-size:.78em;color:#ef9a9a;margin-top:3px">⚠ '+esc(ai.risk)+'</div>';
+    if(ai.opportunity&&ai.opportunity!=='없음')html+='<div style="font-size:.78em;color:#a5d6a7;margin-top:2px">✓ '+esc(ai.opportunity)+'</div>';
+    html+='</div>';
+  }
   html+='</div>';
 
   // 주체

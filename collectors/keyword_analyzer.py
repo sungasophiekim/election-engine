@@ -6,10 +6,52 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
+import os
+import json as json_mod
+
 from collectors.naver_news import search_news, analyze_sentiment, NEGATIVE_KEYWORDS, POSITIVE_KEYWORDS
 from collectors.social_collector import search_blogs, search_cafes
 from collectors.trends_collector import get_search_trend
 from collectors.youtube_collector import search_youtube
+
+
+def _claude_sentiment(keyword: str, titles: list, candidate: str = "") -> dict:
+    """
+    Claude API로 기사 제목 정밀 감성 분석.
+    API 키 없으면 빈 결과 반환 (graceful).
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key or api_key == "sk-ant-xxxxx":
+        return {}
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+
+        sample = titles[:15]  # 최대 15건만 (비용 절약)
+        titles_text = "\n".join(f"{i+1}. {t}" for i, t in enumerate(sample))
+
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",  # 가장 저렴한 모델
+            max_tokens=300,
+            messages=[{
+                "role": "user",
+                "content": f"""다음은 "{keyword}" 키워드로 검색된 최근 뉴스/블로그 제목입니다.
+{candidate} 후보 캠프 관점에서 감성을 분석하세요.
+
+{titles_text}
+
+JSON으로만 응답:
+{{"sentiment":"긍정/부정/중립/혼재","score":-1.0~1.0,"summary":"1문장 요약","risk":"위험요소 또는 없음","opportunity":"기회요소 또는 없음"}}"""
+            }],
+        )
+
+        raw = response.content[0].text.strip()
+        if "```" in raw:
+            raw = raw.split("```")[1].replace("json", "").strip()
+        return json_mod.loads(raw)
+    except Exception:
+        return {}
 
 
 # 감정 톤 카테고리
@@ -97,6 +139,14 @@ class KeywordAnalysis:
     yt_count: int = 0
     yt_views: int = 0
     yt_top: list = field(default_factory=list)  # [{"title":str,"views":int}]
+
+    # Claude AI 분석 (정밀)
+    ai_sentiment: str = ""        # "긍정" | "부정" | "중립" | "혼재"
+    ai_score: float = 0.0         # -1.0 ~ +1.0
+    ai_summary: str = ""          # 1문장 요약
+    ai_risk: str = ""             # 위험 요소
+    ai_opportunity: str = ""      # 기회 요소
+    ai_source: str = ""           # "claude" | "keyword" (분석 소스)
 
     # 메타
     total_analyzed: int = 0
@@ -300,6 +350,23 @@ def analyze_keyword(
     except Exception:
         pass
 
+    # 8. Claude AI 정밀 감성 분석
+    ai_sentiment = ""
+    ai_score = 0.0
+    ai_summary = ""
+    ai_risk = ""
+    ai_opportunity = ""
+    ai_source = "keyword"  # 기본: 키워드 매칭
+    all_titles = news_titles + blog_titles + cafe_titles
+    claude_result = _claude_sentiment(keyword, all_titles, candidate_name)
+    if claude_result:
+        ai_sentiment = claude_result.get("sentiment", "")
+        ai_score = float(claude_result.get("score", 0))
+        ai_summary = claude_result.get("summary", "")
+        ai_risk = claude_result.get("risk", "")
+        ai_opportunity = claude_result.get("opportunity", "")
+        ai_source = "claude"
+
     return KeywordAnalysis(
         keyword=keyword,
         co_words=co_words,
@@ -321,6 +388,12 @@ def analyze_keyword(
         yt_count=yt_count,
         yt_views=yt_views,
         yt_top=yt_top,
+        ai_sentiment=ai_sentiment,
+        ai_score=ai_score,
+        ai_summary=ai_summary,
+        ai_risk=ai_risk,
+        ai_opportunity=ai_opportunity,
+        ai_source=ai_source,
         total_analyzed=len(all_texts),
         data_freshness="실시간",
     )
