@@ -426,7 +426,7 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         <div class="card"><h3>방어 준비</h3><div id="s-def"><div class="skeleton"></div></div></div>
         <div class="card fw"><h3>지역별 토킹포인트</h3><div id="s-regional"><div class="skeleton"></div></div></div>
         <div class="card fw"><h3>리스크</h3><div id="s-risk"><div class="msg">갱신 후 표시</div></div></div>
-        <div class="card fw" style="border-color:#f44336"><h3 style="color:#ef5350">🚨 긴급대응 (스코어링별)</h3><div id="s-response"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card fw" style="border-color:#6a1b9a;background:#1a1025"><h3 style="color:#ce93d8">🤖 AI 긴급 리포트</h3><div id="s-response" style="font-size:.88em"><div style="color:#546e7f">AI 전략 에이전트 분석 이력이 표시됩니다. 이슈 탭에서 분석을 실행하세요.</div></div></div>
         <div class="card fw"><h3>ℹ 이슈 대응 로직 가이드 <span style="font-size:.75em;color:#78909c;cursor:pointer" onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display==='none'?'block':'none'">(펼치기/접기)</span></h3><div id="s-guide" style="display:none;font-size:.82em;line-height:1.8">로딩 중...</div></div>
       </div>
     </div>
@@ -1338,28 +1338,46 @@ async function loadIssues(){
     }).join('');
     (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=html||'<div style="color:#78909c">이슈 데이터 없음</div>';
 
-    // === 키워드 탭 생성 (우리→상대→일반 순, 중복 제거) ===
+    // === 키워드 순위 리스트 (역동적) ===
     var candidate=window._candidate||'김경수';
     var opponent=window._mainOpponent||'박완수';
-    var uniqueKws=[];
-    resp.forEach(function(r){if(uniqueKws.indexOf(r.keyword)<0)uniqueKws.push(r.keyword)});
-    // 정렬: 우리 후보 → 상대 → 일반
-    uniqueKws.sort(function(a,b){
-      var aOur=a.indexOf(candidate)>=0?0:(a.indexOf(opponent)>=0?1:2);
-      var bOur=b.indexOf(candidate)>=0?0:(b.indexOf(opponent)>=0?1:2);
-      return aOur-bOur;
+
+    // 중복 제거 + 스코어순 정렬
+    var seen={};
+    var kwList=[];
+    resp.forEach(function(r){
+      if(!seen[r.keyword]){seen[r.keyword]=true;kwList.push(r)}
     });
-    var tabsHtml='';
-    var tabColors={'our':'#1976d2','opp':'#c62828','etc':'#37474f'};
-    uniqueKws.forEach(function(kw,i){
-      var type=kw.indexOf(candidate)>=0?'our':(kw.indexOf(opponent)>=0?'opp':'etc');
-      var bg=i===0?tabColors[type]:('#1e3a5f');
-      tabsHtml+='<button class="kw-tab'+(i===0?' active':'')+'" onclick="selectKeywordTab(\''+esc(kw)+'\',this)" style="padding:6px 14px;background:'+bg+';color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:.85em;transition:background .2s;border-bottom:2px solid '+tabColors[type]+'">'+esc(kw)+'</button>';
+    kwList.sort(function(a,b){return b.score-a.score});
+
+    var tabsHtml='<div style="font-size:.78em;color:#546e7f;margin-bottom:6px">키워드를 클릭하면 연관 키워드 + 데이터 소스가 표시됩니다</div>';
+    kwList.forEach(function(r,i){
+      var rank=i+1;
+      var kw=r.keyword;
+      var isOur=kw.indexOf(candidate)>=0;
+      var isOpp=kw.indexOf(opponent)>=0;
+      var borderColor=isOur?'#1976d2':(isOpp?'#c62828':'#37474f');
+      var lifecycle=r.lifecycle||'';
+      var trendIcon={'emerging':'🆕','growing':'📈','peak':'🔥','declining':'📉','dormant':'💤'}[lifecycle]||'';
+      var score=r.score||0;
+
+      tabsHtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin:3px 0;background:#141b2d;border-radius:6px;border-left:3px solid '+borderColor+';cursor:pointer;transition:background .15s" onclick="selectKeywordTab(\''+esc(kw)+'\',null)" onmouseover="this.style.background=\'#1a2332\'" onmouseout="this.style.background=\'#141b2d\'">';
+      // 순위
+      var rankColor=rank<=3?'#ff9800':'#546e7f';
+      tabsHtml+='<span style="width:22px;font-weight:bold;color:'+rankColor+';text-align:center">'+rank+'</span>';
+      // 트렌딩 아이콘
+      tabsHtml+='<span style="width:20px;text-align:center">'+trendIcon+'</span>';
+      // 키워드명
+      var nameColor=isOur?'#64b5f6':(isOpp?'#ef9a9a':'#e0e0e0');
+      tabsHtml+='<span style="flex:1;color:'+nameColor+';font-weight:'+(rank<=3?'bold':'normal')+'">'+esc(kw)+'</span>';
+      // 스코어 바
+      tabsHtml+='<div style="width:60px;height:6px;background:#1e3a5f;border-radius:3px;overflow:hidden"><div style="width:'+Math.min(score,100)+'%;height:100%;background:'+borderColor+';border-radius:3px"></div></div>';
+      // 스코어 숫자
+      tabsHtml+='<span style="width:35px;text-align:right;font-size:.85em;font-weight:bold;color:'+(score>=70?'#f44336':score>=50?'#ff9800':'#78909c')+'">'+score.toFixed(0)+'</span>';
+      tabsHtml+='</div>';
     });
     document.getElementById('iss-kw-tabs').innerHTML=tabsHtml;
-    // 첫 키워드 자동 선택
-    // 첫 키워드는 자동 로드하지 않음 — 클릭 시 로드 (서버 블로킹 방지)
-    document.getElementById('iss-kw-detail').innerHTML='<div style="padding:20px;text-align:center;color:#546e7f">위 키워드를 클릭하면 연관 키워드 TOP 10이 표시됩니다</div>';
+    document.getElementById('iss-kw-detail').innerHTML='';
     loadAiHistory();
 
   }catch(e){(document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
@@ -2178,26 +2196,23 @@ function renderStrategy(d){
   // Risk
   var rc=s.risk_level==='매우높음'?'#f44336':s.risk_level==='높음'?'#ff9800':'#4caf50';
   document.getElementById('s-risk').innerHTML='<div class="msg" style="border-color:'+rc+'">리스크: <strong>'+esc(s.risk_level)+'</strong></div>';
-  // 긴급대응 로드
-  fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).then(function(ir){
-    if(!ir||!ir.responses)return;
-    var resp=ir.responses;
-    var html=resp.map(function(r){
-      var st={push:'🟢 밀기',counter:'🔴 반박',avoid:'⚫ 회피',monitor:'🟡 모니터링',pivot:'🔵 전환'}[r.stance]||'⚪';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:3px 0;background:#1a2332;border-radius:4px;border-left:3px solid '+(r.stance==='counter'?'#f44336':r.stance==='push'?'#4caf50':'#1976d2')+'"><div><strong>'+esc(r.keyword)+'</strong> <span style="font-size:.8em;color:#78909c">'+st+'</span></div><div style="text-align:right;font-size:.85em"><strong>'+r.score.toFixed(1)+'</strong> | '+esc(r.owner)+' '+esc(r.urgency)+'</div></div>';
-    }).join('');
-    document.getElementById('s-response').innerHTML=html||'-';
-    // 가이드
-    if(ir.guide){
-      var g=ir.guide;
-      var gh='';
-      if(g.how_it_works)gh+='<div style="background:#0d1117;padding:8px;border-radius:6px;margin-bottom:8px"><strong style="color:#64b5f6">작동 원리</strong><pre style="white-space:pre-wrap;color:#90caf9;margin-top:4px;font-family:inherit">'+esc(g.how_it_works)+'</pre></div>';
-      var stances=g.stances||{};
-      gh+='<div style="margin-bottom:8px"><strong style="color:#64b5f6">5가지 입장</strong><table style="width:100%;margin-top:4px;border-collapse:collapse">';
-      for(var sk in stances){var sv=stances[sk];gh+='<tr style="border-bottom:1px solid #1e3a5f"><td style="padding:4px;width:70px"><span style="color:'+sv.color+'">'+sv.icon+' '+sv.label+'</span></td><td style="padding:4px;color:#b0bec5">'+esc(sv.desc)+'</td></tr>'}
-      gh+='</table></div>';
-      document.getElementById('s-guide').innerHTML=gh;
-    }
+  // AI 긴급 리포트 — 분석 이력에서 로드
+  fetch('/api/ai-agent/history').then(function(r){return r.ok?r.json():null}).then(function(d){
+    if(!d||!d.analyses||!d.analyses.length){return}
+    var html='';
+    d.analyses.slice(0,3).forEach(function(a){
+      var out=null;try{out=JSON.parse(a.output)}catch(e){}
+      if(!out)return;
+      var sc=out.score||0;
+      var scColor=sc>0.2?'#4caf50':sc<-0.2?'#f44336':'#ff9800';
+      html+='<div style="padding:8px;margin:4px 0;background:#0d0a15;border-radius:6px;border-left:3px solid #6a1b9a">';
+      html+='<div style="display:flex;justify-content:space-between"><strong>'+esc(a.keyword)+'</strong><span style="color:'+scColor+'">'+esc(out.sentiment||'')+' ('+sc.toFixed(2)+')</span></div>';
+      if(out.summary)html+='<div style="font-size:.85em;margin-top:3px;color:#b0bec5">'+esc(out.summary).substring(0,100)+'</div>';
+      if(out.recommended_action)html+='<div style="font-size:.82em;color:#64b5f6;margin-top:2px">➡ '+esc(out.recommended_action)+'</div>';
+      html+='<div style="font-size:.72em;color:#37474f;margin-top:2px">'+esc(a.created_at||'').slice(5,16)+'</div>';
+      html+='</div>';
+    });
+    if(html)document.getElementById('s-response').innerHTML=html;
   }).catch(function(){});
 }
 

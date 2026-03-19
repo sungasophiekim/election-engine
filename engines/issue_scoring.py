@@ -103,8 +103,8 @@ def calculate_issue_score(signal: IssueSignal, config: TenantConfig) -> IssueSco
     """
     핵심 스코어링 함수.
 
-    base_score = velocity(0~25) + mention(0~25) + media(0~10) + sentiment(0~15)
-               = 0~75
+    base_score = velocity(0~25) + mention(0~25) + media(0~10)
+               = 0~60
 
     bonuses (additive):
       candidate_linked: +10
@@ -113,13 +113,15 @@ def calculate_issue_score(signal: IssueSignal, config: TenantConfig) -> IssueSco
       election_proximity: +0~10
 
     final = clamp(base + bonuses, 0, 100)
+
+    NOTE: sentiment는 스코어에서 제거됨 — AI 에이전트가 별도 분석
     """
     v_score  = _velocity_score(signal.velocity, signal.mention_count)
     m_score  = _mention_score(signal.mention_count)
     md_score = _media_score(signal.media_tier)
-    s_score  = _sentiment_score(signal.negative_ratio)
+    s_score  = 0.0  # sentiment 제거 — AI 에이전트로 이관
 
-    base = v_score + m_score + md_score + s_score
+    base = v_score + m_score + md_score
 
     # 가산 보너스 적용
     bonus = 0.0
