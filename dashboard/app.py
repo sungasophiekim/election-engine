@@ -610,151 +610,113 @@ async def api_keyword_analysis(keyword: str, session_token: str = Cookie(default
 # Issue Response — 이슈별 대응 전략 (키워드 엔진 연동)
 # ---------------------------------------------------------------------------
 
+def _build_guide():
+    return {
+        "stances": {
+            "push": {"label": "밀기", "color": "#4caf50", "icon": "🟢", "desc": "우리에게 유리 → 적극 확산"},
+            "counter": {"label": "반박", "color": "#f44336", "icon": "🔴", "desc": "불리하지만 대응 필요 → 반박 후 전환"},
+            "avoid": {"label": "회피", "color": "#616161", "icon": "⚫", "desc": "대응할수록 손해 → 침묵"},
+            "monitor": {"label": "모니터링", "color": "#ffeb3b", "icon": "🟡", "desc": "아직 작음 → 확산 감시"},
+            "pivot": {"label": "전환", "color": "#2196f3", "icon": "🔵", "desc": "중립 이슈 → 우리 프레임으로 전환"},
+        },
+        "lifecycle": {
+            "emerging": "태동 — 선점 기회",
+            "growing": "성장 — 지금 대응하면 프레임 장악",
+            "peak": "정점 — 최대 효과/위험",
+            "declining": "하락 — 재점화 주의",
+            "dormant": "소멸 — 모니터링만",
+        },
+        "urgency": {"즉시": "1-2시간 내", "당일": "6시간 내", "48시간": "2일 내", "모니터링": "추적만"},
+        "how_it_works": "1.키워드수집 → 2.스코어링 → 3.감성분석 → 4.입장결정 → 5.대응메시지 → 6.담당배정",
+    }
+
+
+def _build_issue_response_result(responses, unified, config):
+    return {
+        "responses": [
+            {
+                "keyword": r.keyword, "score": r.score, "level": r.level.name,
+                "stance": r.stance, "stance_reason": r.stance_reason,
+                "owner": r.owner, "urgency": r.urgency, "golden_time": r.golden_time_hours,
+                "response_message": r.response_message, "talking_points": r.talking_points,
+                "do_not_say": r.do_not_say, "related_pledges": r.related_pledges,
+                "pivot_to": r.pivot_to, "lifecycle": r.lifecycle,
+                "trend": r.trend_direction, "duration": r.estimated_duration,
+                "scenario_best": r.scenario_best, "scenario_worst": r.scenario_worst,
+                "channels": {
+                    "news": u.news_mentions if u else 0,
+                    "blog": u.blog_recent if u else 0,
+                    "cafe": u.cafe_recent if u else 0,
+                    "video": u.video_recent if u else 0,
+                    "total": u.total_mentions if u else 0,
+                    "prev_total": u.prev_total if u else 0,
+                    "change": u.change_count if u else 0,
+                    "change_pct": u.change_pct if u else 0,
+                    "youtube": u.yt_recent_7d if u else 0,
+                    "yt_views": u.yt_total_views if u else 0,
+                } if (u := next((x for x in unified if x.keyword == r.keyword), None)) or True else {},
+                "top_blogs": [b.get("title", "")[:50] for b in (u.top_blogs if u else [])],
+                "top_cafe": [c.get("title", "")[:50] for c in (u.top_cafe_posts if u else [])],
+                "top_youtube": [v.get("title", "")[:50] for v in (u.yt_top_videos[:3] if u else [])],
+                "trend_data": {
+                    "interest": u.trend_interest if u else 0,
+                    "change_7d": u.trend_change_7d if u else 0,
+                    "direction": u.trend_direction if u else "",
+                    "related": u.trend_related if u else [],
+                } if u else {},
+            }
+            for r in responses
+        ],
+        "guide": _build_guide(),
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+# 이슈 대응 결과 서버 캐시 (전략 갱신 시 업데이트)
+_issue_response_cache = {"data": None, "timestamp": ""}
+
 @app.get("/api/issue-responses")
 async def api_issue_responses(session_token: str = Cookie(default=None)):
-    """이슈별 대응 패키지 전체 목록"""
+    """이슈별 대응 패키지 — DB/캐시에서 즉시 반환. 외부 수집은 전략갱신에서만."""
     if not check_auth(session_token):
         return JSONResponse({"error": "인증 필요"}, status_code=401)
 
-    def _run():
-        from dotenv import load_dotenv
-        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
-        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
-        from engines.issue_scoring import calculate_issue_score
-        from engines.issue_response import IssueResponseEngine
-        from collectors.unified_collector import collect_unified_signals
+    # 캐시가 있으면 즉시 반환 (외부 API 호출 없음)
+    if _issue_response_cache["data"]:
+        return _issue_response_cache["data"]
 
+    # 캐시 없으면 DB 스코어 기반으로 간이 대응 생성
+    def _run():
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        from engines.issue_response import IssueResponseEngine
+        from models.schemas import IssueScore, CrisisLevel
         config = SAMPLE_GYEONGNAM_CONFIG
 
-        # 키워드 엔진으로 동적 키워드 생성
-        from collectors.keyword_engine import KeywordEngine
-        kw_engine = KeywordEngine(config)
-        keywords = kw_engine.get_by_priority(3)  # 우선순위 1~3만
+        with get_db() as db:
+            rows = db.get_latest_scores()
 
-        unified = collect_unified_signals(
-            keywords[:12],  # API 호출 제한
-            candidate_name=config.candidate_name,
-            opponents=config.opponents,
-            include_social=True,
-            include_youtube=False,   # 이슈 대응에서는 뉴스+소셜만 (속도 우선)
-            include_trends=False,
-        )
-        if not unified:
-            return {"error": "수집 실패", "responses": [], "guide": {}}
+        if not rows:
+            return {"error": "데이터 없음 — '전략 갱신' 버튼을 먼저 눌러주세요", "responses": [], "guide": _build_guide()}
 
-        signals = [u.issue_signal for u in unified if u.issue_signal]
-        if not signals:
-            return {"error": "시그널 생성 실패", "responses": [], "guide": {}}
-
-        # DB에서 이전 수집 데이터 조회 → 변화량 계산
-        try:
-            from storage.database import ElectionDB
-            db = ElectionDB()
-            prev_scores = db.get_latest_scores()
-            db.close()
-            prev_map = {s.get("keyword", ""): s.get("mention_count", 0) or 0 for s in prev_scores}
-            for u in unified:
-                prev = prev_map.get(u.keyword, 0)
-                u.prev_total = prev
-                u.change_count = u.total_mentions - prev if prev > 0 else 0
-                u.change_pct = round((u.total_mentions - prev) / prev * 100, 1) if prev > 0 else 0.0
-        except Exception:
-            pass
-
-        scores = sorted(
-            [calculate_issue_score(s, config) for s in signals],
-            key=lambda x: x.score, reverse=True,
-        )
+        # DB 스코어에서 IssueScore 복원
+        level_map = {"CRISIS": CrisisLevel.CRISIS, "ALERT": CrisisLevel.ALERT,
+                     "WATCH": CrisisLevel.WATCH, "NORMAL": CrisisLevel.NORMAL}
+        scores = []
+        for r in rows:
+            lv = level_map.get((r.get("crisis_level") or "NORMAL").upper(), CrisisLevel.NORMAL)
+            scores.append(IssueScore(
+                keyword=r.get("keyword", ""),
+                score=r.get("score", 0),
+                level=lv,
+                breakdown={"sentiment_score": (r.get("negative_ratio") or 0) * 15},
+                estimated_halflife_hours=r.get("halflife_hours", 12),
+            ))
 
         engine = IssueResponseEngine(config)
-        responses = engine.analyze_all(scores, signals)
+        responses = engine.analyze_all(scores)
 
-        return {
-            "responses": [
-                {
-                    "keyword": r.keyword,
-                    "score": r.score,
-                    "level": r.level.name,
-                    "stance": r.stance,
-                    "stance_reason": r.stance_reason,
-                    "owner": r.owner,
-                    "urgency": r.urgency,
-                    "golden_time": r.golden_time_hours,
-                    "response_message": r.response_message,
-                    "talking_points": r.talking_points,
-                    "do_not_say": r.do_not_say,
-                    "related_pledges": r.related_pledges,
-                    "pivot_to": r.pivot_to,
-                    "lifecycle": r.lifecycle,
-                    "trend": r.trend_direction,
-                    "duration": r.estimated_duration,
-                    "scenario_best": r.scenario_best,
-                    "scenario_worst": r.scenario_worst,
-                    # 채널별 데이터 (통합 수집기)
-                    "channels": {
-                        "news": u.news_mentions,
-                        "blog": u.blog_recent,
-                        "cafe": u.cafe_recent,
-                        "video": u.video_recent,
-                        "total": u.total_mentions,
-                        "prev_total": u.prev_total,
-                        "change": u.change_count,
-                        "change_pct": u.change_pct,
-                        "youtube": u.yt_recent_7d,
-                        "yt_views": u.yt_total_views,
-                    } if (u := next((x for x in unified if x.keyword == r.keyword), None)) else {},
-                    "top_blogs": [b.get("title", "")[:50] for b in (u.top_blogs if u else [])],
-                    "top_cafe": [c.get("title", "")[:50] for c in (u.top_cafe_posts if u else [])],
-                    "top_youtube": [v.get("title", "")[:50] for v in (u.yt_top_videos[:3] if u else [])],
-                    "trend": {
-                        "interest": u.trend_interest if u else 0,
-                        "change_7d": u.trend_change_7d if u else 0,
-                        "direction": u.trend_direction if u else "",
-                        "related": u.trend_related if u else [],
-                    } if u else {},
-                }
-                for r in responses
-            ],
-            "guide": {
-                "stances": {
-                    "push": {"label": "밀기", "color": "#4caf50", "icon": "🟢",
-                             "desc": "우리에게 유리한 이슈 → 적극 확산, 미디어 노출 극대화"},
-                    "counter": {"label": "반박", "color": "#f44336", "icon": "🔴",
-                                "desc": "우리에게 불리하지만 대응 필요 → 팩트 반박 후 의제 전환"},
-                    "avoid": {"label": "회피", "color": "#616161", "icon": "⚫",
-                              "desc": "대응할수록 손해 → 침묵. 질문 시 핵심 메시지로 전환"},
-                    "monitor": {"label": "모니터링", "color": "#ffeb3b", "icon": "🟡",
-                                "desc": "아직 작은 이슈 → 확산 감시. 스코어 50 넘으면 대응 격상"},
-                    "pivot": {"label": "전환", "color": "#2196f3", "icon": "🔵",
-                              "desc": "중립 이슈 → 우리 공약 프레임으로 전환. 이슈를 우리 것으로 만들기"},
-                },
-                "lifecycle": {
-                    "emerging": "태동 — 아직 작지만 성장 가능성. 선점 기회.",
-                    "growing": "성장 — 확산 중. 지금 대응하면 프레임 장악 가능.",
-                    "peak": "정점 — 최대 관심. 대응이 가장 큰 효과/위험.",
-                    "declining": "하락 — 관심 감소 중. 불필요한 재점화 주의.",
-                    "dormant": "소멸 — 관심 거의 없음. 모니터링만.",
-                },
-                "urgency": {
-                    "즉시": "발견 즉시 대응 (1-2시간 내)",
-                    "당일": "오늘 중 대응 완료 (6시간 내)",
-                    "48시간": "2일 내 대응 준비",
-                    "모니터링": "특별 대응 불요, 추적만",
-                },
-                "how_it_works": (
-                    "이슈 대응 엔진은 다음 순서로 판단합니다:\n"
-                    "1. 뉴스에서 이슈 키워드 수집 (네이버 API)\n"
-                    "2. 24시간 내 언급량, 부정 비율, 방송 보도 여부로 스코어링 (0~100)\n"
-                    "3. 이슈가 우리에게 유리한지/불리한지 판단 (감성 분석)\n"
-                    "4. 5가지 입장 중 하나를 결정 (밀기/반박/회피/모니터링/전환)\n"
-                    "5. 카테고리별 사전 준비된 템플릿에서 대응 메시지 생성\n"
-                    "6. 위기 플레이북 매칭 (사법 리스크, 재원, 포퓰리즘 등)\n"
-                    "7. DB 과거 데이터와 비교하여 이슈 생명주기 판단\n"
-                    "8. 담당 팀 + 긴급도 + 골든타임 자동 배정"
-                ),
-            },
-            "timestamp": datetime.now().isoformat(),
-        }
+        result = _build_issue_response_result(responses, [], config)
+        return result
 
     try:
         return await run_in_threadpool(_run)
