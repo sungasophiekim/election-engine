@@ -441,6 +441,16 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
       <div id="iss-kw-detail">
         <div class="skeleton skeleton-block"></div>
       </div>
+      <!-- AI 전략 에이전트 -->
+      <div class="card" style="margin-top:10px;border-color:#6a1b9a;background:#1a1025">
+        <h3 style="color:#ce93d8">🤖 AI 전략 에이전트 <span id="ai-remaining" style="font-size:.75em;color:#78909c;font-weight:normal"></span></h3>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <button class="btn" style="background:#6a1b9a" id="ai-btn" onclick="runAiAgent()">선택 키워드 분석 요청</button>
+          <span style="font-size:.78em;color:#78909c">하루 3회 | Claude Sonnet</span>
+        </div>
+        <div id="ai-result" style="font-size:.88em"></div>
+        <div id="ai-history" style="margin-top:8px;font-size:.8em;color:#546e7f"></div>
+      </div>
     </div>
 
     <!-- PAGE: Regions -->
@@ -1014,7 +1024,58 @@ function switchIssueView(view){
 
 /* ===== 키워드 탭 선택 시 연관 키워드 로드 ===== */
 var _kwCache={};
+var _selectedKw='';
+
+/* ===== AI Strategy Agent ===== */
+async function runAiAgent(){
+  if(!_selectedKw){toast('먼저 키워드를 선택하세요');return}
+  var btn=document.getElementById('ai-btn');
+  var resEl=document.getElementById('ai-result');
+  btn.disabled=true;btn.textContent='분석 중...';
+  resEl.innerHTML='<div style="color:#ce93d8">🤖 Claude가 "'+esc(_selectedKw)+'" 분석 중...</div>';
+  try{
+    var r=await fetch('/api/ai-agent/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keyword:_selectedKw})});
+    var d=await r.json();
+    if(d.error){resEl.innerHTML='<div style="color:#ef9a9a">'+esc(d.error)+'</div>';return}
+    var a=d.analysis||{};
+    var sc=a.score||0;
+    var scColor=sc>0.2?'#4caf50':sc<-0.2?'#f44336':'#ff9800';
+    var html='<div style="background:#0d0a15;padding:12px;border-radius:8px;border-left:3px solid #6a1b9a">';
+    html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><strong style="color:#ce93d8">'+esc(d.keyword)+'</strong>';
+    html+='<span style="font-weight:bold;color:'+scColor+'">'+esc(a.sentiment)+' ('+sc.toFixed(2)+')</span></div>';
+    if(a.summary)html+='<div style="margin-bottom:6px">'+esc(a.summary)+'</div>';
+    if(a.risk)html+='<div style="color:#ef9a9a;font-size:.88em">⚠ 위험: '+esc(a.risk)+'</div>';
+    if(a.opportunity)html+='<div style="color:#a5d6a7;font-size:.88em">✓ 기회: '+esc(a.opportunity)+'</div>';
+    if(a.recommended_action)html+='<div style="color:#64b5f6;font-size:.88em;margin-top:4px">→ 행동: '+esc(a.recommended_action)+'</div>';
+    if(a.message_suggestion)html+='<div style="color:#fff;font-size:.88em;margin-top:4px;padding:6px 8px;background:#1e1030;border-radius:4px">"'+esc(a.message_suggestion)+'"</div>';
+    if(a.avoid)html+='<div style="color:#ef9a9a;font-size:.82em;margin-top:4px">🚫 '+esc(a.avoid)+'</div>';
+    html+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">'+esc(d.source||'')+' | 남은 횟수: '+(d.remaining||0)+'회</div>';
+    html+='</div>';
+    resEl.innerHTML=html;
+    document.getElementById('ai-remaining').textContent='(오늘 남은 횟수: '+(d.remaining||0)+'/3)';
+    loadAiHistory();
+  }catch(e){resEl.innerHTML='<div style="color:#ef9a9a">에러: '+esc(e.message)+'</div>'}
+  finally{btn.disabled=false;btn.textContent='선택 키워드 분석 요청'}
+}
+async function loadAiHistory(){
+  try{
+    var r=await fetch('/api/ai-agent/history');if(!r.ok)return;
+    var d=await r.json();
+    document.getElementById('ai-remaining').textContent='(오늘 남은 횟수: '+(d.remaining||0)+'/3)';
+    if(!d.analyses||!d.analyses.length)return;
+    var html='<div style="color:#78909c;margin-bottom:4px">최근 분석 이력</div>';
+    d.analyses.slice(0,5).forEach(function(a){
+      var out=null;try{out=JSON.parse(a.output)}catch(e){}
+      html+='<div style="padding:3px 0;border-bottom:1px solid #1e1030">'+esc(a.created_at||'').slice(0,16)+' <strong>'+esc(a.keyword)+'</strong>';
+      if(out)html+=' — '+esc(out.sentiment||'');
+      html+='</div>';
+    });
+    document.getElementById('ai-history').innerHTML=html;
+  }catch(e){}
+}
+
 function selectKeywordTab(kw,btn){
+  _selectedKw=kw;  // AI 에이전트용 저장
   // 탭 active 표시
   document.querySelectorAll('.kw-tab').forEach(function(t){t.className='kw-tab'});
   if(btn)btn.className='kw-tab active';
@@ -1265,6 +1326,7 @@ async function loadIssues(){
     // 첫 키워드 자동 선택
     // 첫 키워드는 자동 로드하지 않음 — 클릭 시 로드 (서버 블로킹 방지)
     document.getElementById('iss-kw-detail').innerHTML='<div style="padding:20px;text-align:center;color:#546e7f">위 키워드를 클릭하면 연관 키워드 TOP 10이 표시됩니다</div>';
+    loadAiHistory();
 
   }catch(e){(document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
 }

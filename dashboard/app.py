@@ -469,6 +469,134 @@ async def api_add_keyword(request: Request, session_token: str = Cookie(default=
 
 
 # ---------------------------------------------------------------------------
+# AI Strategy Agent — 하루 3회 정밀 분석
+# ---------------------------------------------------------------------------
+
+AI_DAILY_LIMIT = 3
+
+@app.post("/api/ai-agent/analyze")
+async def api_ai_analyze(request: Request, session_token: str = Cookie(default=None)):
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+
+    body = await request.json()
+    keyword = body.get("keyword", "")
+    if not keyword:
+        return JSONResponse({"error": "키워드 필수"}, status_code=400)
+
+    def _run():
+        from storage.database import ElectionDB
+        db = ElectionDB()
+
+        # 하루 3회 제한 체크
+        today_count = db.count_ai_today()
+        if today_count >= AI_DAILY_LIMIT:
+            db.close()
+            return {"error": f"오늘 분석 {AI_DAILY_LIMIT}회 한도 초과 (사용: {today_count}회)", "remaining": 0}
+
+        # 컨텍스트 수집
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+        from collectors.naver_news import search_news
+        config = SAMPLE_GYEONGNAM_CONFIG
+
+        articles = search_news(keyword, display=100, pages=2)
+        titles = [a["title"] for a in articles[:20]]
+
+        # 전략 컨텍스트 구성
+        context = {
+            "candidate": config.candidate_name,
+            "slogan": config.slogan,
+            "opponents": config.opponents,
+            "pledges": list(config.pledges.keys()),
+            "keyword": keyword,
+            "article_count": len(articles),
+            "titles": titles,
+        }
+
+        # Claude 호출
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key or "xxxxx" in api_key:
+            db.close()
+            return {"error": "Anthropic API 키 미설정", "remaining": AI_DAILY_LIMIT - today_count}
+
+        import anthropic, json as jmod
+        client = anthropic.Anthropic(api_key=api_key)
+
+        prompt = f"""당신은 '{config.candidate_name}' 후보 ({config.region} {config.election_type}) 캠프의 수석 전략 참모입니다.
+슬로건: {config.slogan}
+상대: {', '.join(config.opponents)}
+공약: {', '.join(config.pledges.keys())}
+
+아래는 "{keyword}" 키워드의 최근 뉴스 제목입니다:
+{chr(10).join(f'{i+1}. {t}' for i,t in enumerate(titles[:15]))}
+
+캠프 전략가 관점에서 분석하세요. JSON으로만 응답:
+{{
+  "sentiment": "긍정/부정/중립/혼재",
+  "score": -1.0~1.0,
+  "summary": "현재 상황 2~3문장 요약",
+  "risk": "캠프 관점 위험 요소 (구체적으로)",
+  "opportunity": "활용 가능한 기회 (구체적으로)",
+  "recommended_action": "지금 해야 할 행동 1가지",
+  "message_suggestion": "이 이슈에 대해 후보가 할 수 있는 발언 1문장",
+  "avoid": "절대 하면 안 되는 것"
+}}"""
+
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=500,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.content[0].text.strip()
+            if "```" in raw:
+                raw = raw.split("```")[1].replace("json", "").strip()
+            result = jmod.loads(raw)
+
+            # DB 저장
+            db.save_ai_analysis(
+                analysis_type="sentiment",
+                keyword=keyword,
+                input_context=jmod.dumps(context, ensure_ascii=False),
+                output=jmod.dumps(result, ensure_ascii=False),
+            )
+            remaining = AI_DAILY_LIMIT - today_count - 1
+            db.close()
+
+            return {
+                "analysis": result,
+                "keyword": keyword,
+                "remaining": remaining,
+                "source": "claude-sonnet",
+            }
+        except Exception as e:
+            db.close()
+            return {"error": str(e)[:100], "remaining": AI_DAILY_LIMIT - today_count}
+
+    try:
+        return await run_in_threadpool(_run)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/ai-agent/history")
+async def api_ai_history(session_token: str = Cookie(default=None)):
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+    with get_db() as db:
+        analyses = db.get_ai_analyses(limit=20)
+        today_count = db.count_ai_today()
+    return {
+        "analyses": analyses,
+        "today_count": today_count,
+        "daily_limit": AI_DAILY_LIMIT,
+        "remaining": max(0, AI_DAILY_LIMIT - today_count),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Community Monitoring — 한국 주요 커뮤니티 모니터링
 # ---------------------------------------------------------------------------
 

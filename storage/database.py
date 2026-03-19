@@ -67,6 +67,16 @@ CREATE TABLE IF NOT EXISTS polls (
     undecided       REAL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS ai_analyses (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    type            TEXT NOT NULL,
+    keyword         TEXT,
+    input_context   TEXT,
+    output          TEXT,
+    requested_by    TEXT DEFAULT 'dashboard'
+);
+
 CREATE TABLE IF NOT EXISTS daily_briefs (
     id                   INTEGER PRIMARY KEY AUTOINCREMENT,
     recorded_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -388,4 +398,36 @@ class ElectionDB:
             """,
             (region, since),
         ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------
+    # AI Analysis methods
+    # ------------------------------------------------------------------
+
+    def save_ai_analysis(self, analysis_type: str, keyword: str,
+                         input_context: str, output: str,
+                         requested_by: str = "dashboard"):
+        self._conn.execute(
+            "INSERT INTO ai_analyses (type, keyword, input_context, output, requested_by) VALUES (?,?,?,?,?)",
+            (analysis_type, keyword, input_context, output, requested_by),
+        )
+        self._conn.commit()
+
+    def count_ai_today(self) -> int:
+        row = self._conn.execute(
+            "SELECT COUNT(*) as cnt FROM ai_analyses WHERE date(created_at)=date('now')"
+        ).fetchone()
+        return row["cnt"] if row else 0
+
+    def get_ai_analyses(self, keyword: str = None, limit: int = 10) -> list:
+        if keyword:
+            rows = self._conn.execute(
+                "SELECT * FROM ai_analyses WHERE keyword=? ORDER BY created_at DESC LIMIT ?",
+                (keyword, limit),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM ai_analyses ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
         return [dict(r) for r in rows]
