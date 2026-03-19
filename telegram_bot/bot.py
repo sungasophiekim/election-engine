@@ -52,12 +52,12 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"캠프 전략 AI 에이전트입니다.\n"
         f"채팅 ID: `{chat_id}`\n\n"
         f"*명령어:*\n"
-        f"/분석 키워드 — AI 감성 분석\n"
-        f"/전략 — 오늘의 전략 브리핑\n"
-        f"/이슈 — 이슈 스코어 요약\n"
-        f"/여론 — 여론조사 현황\n"
-        f"/상대 — 상대 후보 동향\n"
-        f"/도움 — 명령어 목록",
+        f"/analyze 키워드 — AI 감성 분석 (하루 3회)\n"
+        f"/strategy — 오늘의 전략 브리핑\n"
+        f"/issues — 이슈 스코어 요약\n"
+        f"/poll — 여론조사 현황\n"
+        f"/opponent — 상대 후보 동향\n\n"
+        f"단축: /a /s /i /p /o",
         parse_mode="Markdown",
     )
 
@@ -278,12 +278,17 @@ def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", cmd_start))
-    app.add_handler(CommandHandler("도움", cmd_help))
-    app.add_handler(CommandHandler("분석", cmd_analyze))
-    app.add_handler(CommandHandler("전략", cmd_strategy))
-    app.add_handler(CommandHandler("이슈", cmd_issues))
-    app.add_handler(CommandHandler("여론", cmd_polling))
-    app.add_handler(CommandHandler("상대", cmd_opponent))
+    app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("analyze", cmd_analyze))
+    app.add_handler(CommandHandler("a", cmd_analyze))
+    app.add_handler(CommandHandler("strategy", cmd_strategy))
+    app.add_handler(CommandHandler("s", cmd_strategy))
+    app.add_handler(CommandHandler("issues", cmd_issues))
+    app.add_handler(CommandHandler("i", cmd_issues))
+    app.add_handler(CommandHandler("poll", cmd_polling))
+    app.add_handler(CommandHandler("p", cmd_polling))
+    app.add_handler(CommandHandler("opponent", cmd_opponent))
+    app.add_handler(CommandHandler("o", cmd_opponent))
 
     print("🤖 텔레그램 전략 봇 시작...")
     print(f"   명령어: /start /분석 /전략 /이슈 /여론 /상대")
