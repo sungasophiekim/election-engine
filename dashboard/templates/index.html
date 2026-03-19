@@ -329,13 +329,13 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
     <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span><span class="nav-label">지역</span></div>
     <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span><span class="nav-label">이슈</span></div>
     <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span><span class="nav-label">소셜</span></div>
+    <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span><span class="nav-label">여론</span></div>
     <!-- 어드민용 (선대위/전략팀) -->
     <div class="nav-divider"></div>
     <div class="nav-section-label">어드민</div>
     <div class="nav-item admin" onclick="switchNav('strategy')"><span class="nav-icon">📊</span><span class="nav-label">전략</span></div>
     <div class="nav-item admin" onclick="switchNav('debate')"><span class="nav-icon">🎤</span><span class="nav-label">메세지</span></div>
     <div class="nav-item admin" onclick="switchNav('schedule')"><span class="nav-icon">📅</span><span class="nav-label">일정</span></div>
-    <div class="nav-item admin" onclick="switchNav('polling')"><span class="nav-icon">📈</span><span class="nav-label">여론</span></div>
   </div>
 
   <!-- Main Area -->
@@ -593,10 +593,10 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
   <div class="nav-item" onclick="switchNav('regions')"><span class="nav-icon">🗺</span></div>
   <div class="nav-item" onclick="switchNav('issues')"><span class="nav-icon">📰</span></div>
   <div class="nav-item" onclick="switchNav('social')"><span class="nav-icon">📱</span></div>
+  <div class="nav-item" onclick="switchNav('polling')"><span class="nav-icon">📈</span></div>
   <div class="nav-item admin" onclick="switchNav('strategy')"><span class="nav-icon">📊</span></div>
   <div class="nav-item admin" onclick="switchNav('debate')"><span class="nav-icon">🎤</span></div>
   <div class="nav-item admin" onclick="switchNav('schedule')"><span class="nav-icon">📅</span></div>
-  <div class="nav-item admin" onclick="switchNav('polling')"><span class="nav-icon">📈</span></div>
 </div>
 
 <!-- Toast -->
@@ -729,7 +729,7 @@ function switchNav(name){
   if(page) page.classList.add('active');
   // Activate nav items in both left-nav and mobile-nav
   var navItems=document.querySelectorAll('.nav-item');
-  var navNames=['warroom','pledges','regions','issues','social','strategy','debate','schedule','polling'];
+  var navNames=['warroom','pledges','regions','issues','social','polling','strategy','debate','schedule'];
   var idx=navNames.indexOf(name);
   navItems.forEach(function(n,i){if(i%navNames.length===idx) n.classList.add('active')});
   // Lazy load
