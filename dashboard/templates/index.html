@@ -1064,9 +1064,11 @@ function renderKeywordDetail(kw,d){
   html+='<div style="color:#64b5f6;font-size:.85em;margin-bottom:6px"><strong>언급 대상</strong></div>';
   var whom=d.about_whom||{};
   for(var name in whom){html+='<div style="font-size:.85em;padding:2px 0">'+esc(name)+': <strong>'+whom[name]+'</strong></div>'}
-  html+='<div style="color:#64b5f6;font-size:.85em;margin-top:8px"><strong>채널</strong></div>';
+  html+='<div style="color:#64b5f6;font-size:.85em;margin-top:8px"><strong>데이터 소스</strong></div>';
   var who=d.who_talks||{};
-  for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+esc(ch)+': '+who[ch]+'</div>'}
+  var chIcons={'뉴스':'📰 네이버뉴스','블로그':'📝 네이버블로그','카페':'💬 네이버카페'};
+  for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||ch)+': <strong>'+who[ch]+'건</strong></div>'}
+  html+='<div style="font-size:.7em;color:#546e7f;margin-top:4px">Naver Search API</div>';
   html+='</div></div>';
 
   // 연관 키워드 TOP 10
@@ -1104,8 +1106,9 @@ function renderKeywordDetail(kw,d){
   // 샘플
   html+='<div class="card" style="margin-top:10px"><h3>최근 기사/게시글</h3>';
   var samples=d.samples||{};
-  if(samples.news&&samples.news.length){html+='<div style="font-size:.82em"><span style="color:#1976d2">📰 뉴스</span>';samples.news.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
-  if(samples.blog&&samples.blog.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#42a5f5">📝 블로그</span>';samples.blog.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
+  if(samples.news&&samples.news.length){html+='<div style="font-size:.82em"><span style="color:#1976d2">📰 네이버 뉴스</span>';samples.news.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
+  if(samples.blog&&samples.blog.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#42a5f5">📝 네이버 블로그</span>';samples.blog.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
+  if(samples.cafe&&samples.cafe.length){html+='<div style="font-size:.82em;margin-top:4px"><span style="color:#66bb6a">💬 네이버 카페</span>';samples.cafe.slice(0,3).forEach(function(t){html+='<div style="padding:2px 0;color:#b0bec5">· '+esc(t)+'</div>'});html+='</div>'}
   html+='</div>';
 
   html+='<div style="font-size:.72em;color:#546e7f;margin-top:6px;text-align:right">분석: '+d.total_analyzed+'건 | '+esc(d.data_freshness||'')+'</div>';
