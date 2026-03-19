@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 
 from collectors.naver_news import search_news, analyze_sentiment, NEGATIVE_KEYWORDS, POSITIVE_KEYWORDS
 from collectors.social_collector import search_blogs, search_cafes
+from collectors.trends_collector import get_search_trend
+from collectors.youtube_collector import search_youtube
 
 
 # 감정 톤 카테고리
@@ -85,9 +87,20 @@ class KeywordAnalysis:
     blog_samples: list[str]
     cafe_samples: list[str]
 
+    # Google Trends
+    trend_interest: int = 0       # 0~100
+    trend_change_7d: float = 0.0  # %
+    trend_direction: str = ""     # ↑급상승 등
+    trend_related: list = field(default_factory=list)
+
+    # YouTube
+    yt_count: int = 0
+    yt_views: int = 0
+    yt_top: list = field(default_factory=list)  # [{"title":str,"views":int}]
+
     # 메타
-    total_analyzed: int
-    data_freshness: str           # "실시간" | "1시간 전" | ...
+    total_analyzed: int = 0
+    data_freshness: str = ""
 
 
 def analyze_keyword(
@@ -254,6 +267,32 @@ def analyze_keyword(
         "카페": len(cafe_titles),
     }
 
+    # 6. Google Trends
+    tr_interest = 0
+    tr_change = 0.0
+    tr_direction = ""
+    tr_related = []
+    try:
+        tr = get_search_trend(keyword)
+        tr_interest = tr.interest_now
+        tr_change = tr.change_7d
+        tr_direction = tr.trend_direction
+        tr_related = tr.related_queries[:5]
+    except Exception:
+        pass
+
+    # 7. YouTube
+    yt_count = 0
+    yt_views = 0
+    yt_top = []
+    try:
+        yt = search_youtube(keyword, max_results=5)
+        yt_count = yt.total_results
+        yt_views = yt.total_views
+        yt_top = [{"title": v.title[:50], "views": v.view_count} for v in yt.top_videos[:3]]
+    except Exception:
+        pass
+
     return KeywordAnalysis(
         keyword=keyword,
         co_words=co_words,
@@ -268,6 +307,13 @@ def analyze_keyword(
         news_samples=news_titles[:5],
         blog_samples=blog_titles[:5],
         cafe_samples=cafe_titles[:5],
+        trend_interest=tr_interest,
+        trend_change_7d=tr_change,
+        trend_direction=tr_direction,
+        trend_related=tr_related,
+        yt_count=yt_count,
+        yt_views=yt_views,
+        yt_top=yt_top,
         total_analyzed=len(all_texts),
         data_freshness="실시간",
     )

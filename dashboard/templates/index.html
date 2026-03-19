@@ -1068,8 +1068,29 @@ function renderKeywordDetail(kw,d){
   var who=d.who_talks||{};
   var chIcons={'뉴스':'📰 네이버뉴스','블로그':'📝 네이버블로그','카페':'💬 네이버카페'};
   for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||ch)+': <strong>'+who[ch]+'건</strong></div>'}
-  html+='<div style="font-size:.7em;color:#546e7f;margin-top:4px">Naver Search API</div>';
   html+='</div></div>';
+
+  // Google Trends + YouTube
+  html+='<div style="display:flex;gap:12px;margin-bottom:12px">';
+  var gt=d.google_trends||{};
+  if(gt.interest){
+    var gtColor=gt.change_7d>0?'#f44336':gt.change_7d<0?'#4caf50':'#78909c';
+    html+='<div style="flex:1;background:#0d1117;padding:12px;border-radius:8px">';
+    html+='<div style="color:#ff9800;font-size:.85em;margin-bottom:4px"><strong>📊 Google Trends</strong></div>';
+    html+='<div style="font-size:1.3em;font-weight:bold">'+gt.interest+'<span style="font-size:.5em;color:#78909c">/100</span></div>';
+    html+='<div style="font-size:.82em;color:'+gtColor+'">7일 '+(gt.change_7d>0?'+':'')+gt.change_7d.toFixed(1)+'% '+esc(gt.direction)+'</div>';
+    if(gt.related&&gt.related.length)html+='<div style="font-size:.75em;color:#78909c;margin-top:4px">연관: '+gt.related.slice(0,3).map(function(q){return esc(q)}).join(', ')+'</div>';
+    html+='</div>';
+  }
+  var yt=d.youtube||{};
+  if(yt.count){
+    html+='<div style="flex:1;background:#0d1117;padding:12px;border-radius:8px">';
+    html+='<div style="color:#f44336;font-size:.85em;margin-bottom:4px"><strong>▶ YouTube</strong></div>';
+    html+='<div style="font-size:.85em">영상 <strong>'+yt.count+'</strong>건 | 조회 <strong>'+(yt.views||0).toLocaleString()+'</strong></div>';
+    if(yt.top&&yt.top.length){yt.top.slice(0,2).forEach(function(v){html+='<div style="font-size:.78em;color:#90caf9;padding:2px 0">▶ '+esc(v.title)+(v.views?' ('+v.views.toLocaleString()+'회)':'')+'</div>'})}
+    html+='</div>';
+  }
+  html+='</div>';
 
   // 연관 키워드 TOP 10
   html+='<div class="card" style="border-color:#1976d2"><h3>연관 키워드 TOP 10</h3>';

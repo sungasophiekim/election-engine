@@ -598,6 +598,17 @@ async def api_keyword_analysis(keyword: str, session_token: str = Cookie(default
                 "cafe": result.cafe_samples[:5],
             },
             "data_freshness": result.data_freshness,
+            "google_trends": {
+                "interest": result.trend_interest,
+                "change_7d": result.trend_change_7d,
+                "direction": result.trend_direction,
+                "related": result.trend_related,
+            },
+            "youtube": {
+                "count": result.yt_count,
+                "views": result.yt_views,
+                "top": result.yt_top,
+            },
         }
 
     try:
