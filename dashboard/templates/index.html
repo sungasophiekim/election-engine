@@ -1128,18 +1128,21 @@ async function loadIssues(){
     var opponent=window._mainOpponent||'박완수';
 
     // 카테고리 분류
-    var groups={'👤 '+candidate:[],'👥 '+opponent:[],'🏛 경남/선거':[],'📌 기타':[]};
+    var gk1='👤 '+candidate, gk2='👥 '+opponent, gk3='🏛 경남/선거', gk4='📌 기타';
+    var groups={};
+    groups[gk1]=[];groups[gk2]=[];groups[gk3]=[];groups[gk4]=[];
     resp.forEach(function(r){
       var kw=r.keyword||'';
-      if(kw.indexOf(candidate)>=0) groups['👤 '+candidate].push(r);
-      else if(kw.indexOf(opponent)>=0) groups['👥 '+opponent].push(r);
-      else if(kw.indexOf('경남')>=0||kw.indexOf('도지사')>=0||kw.indexOf('부울경')>=0||kw.indexOf('창원')>=0) groups['🏛 경남/선거'].push(r);
-      else groups['📌 기타'].push(r);
+      if(kw.indexOf(candidate)>=0) groups[gk1].push(r);
+      else if(kw.indexOf(opponent)>=0) groups[gk2].push(r);
+      else if(kw.indexOf('경남')>=0||kw.indexOf('도지사')>=0||kw.indexOf('부울경')>=0||kw.indexOf('창원')>=0) groups[gk3].push(r);
+      else groups[gk4].push(r);
     });
 
     // 각 그룹 내 뉴스 건수 합산
     var buzzHtml='';
-    var groupColors={'👤 '+candidate:'#1976d2','👥 '+opponent:'#f44336','🏛 경남/선거':'#ff9800','📌 기타':'#78909c'};
+    var groupColors={};
+    groupColors[gk1]='#1976d2';groupColors[gk2]='#f44336';groupColors[gk3]='#ff9800';groupColors[gk4]='#78909c';
 
     for(var gName in groups){
       var items=groups[gName];
@@ -1173,8 +1176,6 @@ async function loadIssues(){
     }
 
     buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">키워드 클릭 → 상세 분석 | ▶ 클릭 → 연관 키워드</div>';
-    });
-    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px"><span style="color:#1976d2">■</span>뉴스 <span style="color:#42a5f5">■</span>블로그 <span style="color:#66bb6a">■</span>카페 <span style="color:#ef5350">■</span>동영상 | 클릭하면 상세 분석</div>';
     document.getElementById('i-buzz').innerHTML=buzzHtml;
 
   }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
