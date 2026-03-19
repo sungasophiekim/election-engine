@@ -1181,6 +1181,54 @@ def _run_strategy_sync():
     finally:
         db.close()
 
+    # --- 전체 캐시 초기화 (소셜/이슈 새 데이터 반영) ---
+    try:
+        from collectors.unified_collector import _cache as unified_cache
+        unified_cache.clear()
+    except Exception:
+        pass
+
+    # --- 이슈 대응 캐시 갱신 (채널 데이터 포함) ---
+    try:
+        from engines.issue_response import IssueResponseEngine
+        ir_engine = IssueResponseEngine(config)
+        ir_responses = ir_engine.analyze_all(issue_scores, signals)
+
+        # 시그널에서 채널 데이터 추출
+        sig_map = {s.keyword: s for s in signals}
+        resp_list = []
+        for r in ir_responses:
+            sig = sig_map.get(r.keyword)
+            entry = {
+                "keyword": r.keyword, "score": r.score, "level": r.level.name,
+                "stance": r.stance, "stance_reason": r.stance_reason,
+                "owner": r.owner, "urgency": r.urgency, "golden_time": r.golden_time_hours,
+                "response_message": r.response_message, "talking_points": r.talking_points,
+                "do_not_say": r.do_not_say, "related_pledges": r.related_pledges,
+                "pivot_to": r.pivot_to, "lifecycle": r.lifecycle,
+                "trend": r.trend_direction, "duration": r.estimated_duration,
+                "scenario_best": r.scenario_best, "scenario_worst": r.scenario_worst,
+                "channels": {
+                    "news": sig.mention_count if sig else 0,
+                    "blog": 0, "cafe": 0, "video": 0,
+                    "total": sig.mention_count if sig else 0,
+                    "prev_total": 0, "change": 0, "change_pct": 0,
+                    "youtube": 0, "yt_views": 0,
+                },
+                "top_blogs": [], "top_cafe": [], "top_youtube": [],
+                "trend_data": {},
+            }
+            resp_list.append(entry)
+
+        global _issue_response_cache
+        _issue_response_cache["data"] = {
+            "responses": resp_list,
+            "guide": _build_guide(),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception:
+        pass
+
     # --- Build response ---
     return {
         "candidate": config.candidate_name,
