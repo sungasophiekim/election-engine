@@ -1208,40 +1208,14 @@ async function loadIssues(){
         buzzHtml+='<div><span style="color:'+gColor+';font-weight:bold;margin-right:6px">'+(idx+1)+'</span><strong>'+esc(r.keyword)+'</strong></div>';
         buzzHtml+='<div style="text-align:right;font-size:.85em"><strong>'+newsCount+'</strong><span style="color:#78909c"> 건</span></div>';
         buzzHtml+='</div>';
-        // 연관 키워드 영역 (비동기 로드)
-        buzzHtml+='<div id="'+kwId+'" style="margin-top:4px;min-height:16px"><span style="font-size:.72em;color:#37474f">연관 키워드 로딩...</span></div>';
+        // 연관 키워드 (클릭 시 로드)
+        buzzHtml+='<div id="'+kwId+'" style="margin-top:4px"><span style="font-size:.72em;color:#37474f;cursor:pointer" onclick="event.stopPropagation();loadRelatedKw(\''+encodeURIComponent(r.keyword)+'\',\''+kwId+'\')">▶ 연관 키워드 보기</span></div>';
         buzzHtml+='</div>';
       });
       buzzHtml+='</div>';
     }
 
-    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">클릭하면 상세 분석 | 연관 키워드 자동 로드 중...</div>';
-
-    // 비동기로 각 키워드의 연관 단어 로드 (fire-and-forget)
-    var allKws=resp.map(function(r){return r.keyword}).filter(function(v,i,a){return a.indexOf(v)===i}).slice(0,8);
-    allKws.forEach(function(kw){
-      var kwId='buzz-kw-'+encodeURIComponent(kw).replace(/%/g,'_');
-      fetch('/api/keyword-analysis/'+encodeURIComponent(kw))
-        .then(function(r){return r.ok?r.json():null})
-        .then(function(d){
-          if(!d)return;
-          var el=document.getElementById(kwId);
-          if(!el)return;
-          var words=d.co_words||[];
-          if(!words.length){el.innerHTML='<span style="font-size:.72em;color:#37474f">연관 키워드 없음</span>';return}
-          var html='<div style="display:flex;flex-wrap:wrap;gap:4px">';
-          words.slice(0,8).forEach(function(w,i){
-            var opacity=Math.max(0.4,1-i*0.08);
-            var size=Math.max(0.72,0.9-i*0.02);
-            html+='<span style="background:#1e3a5f;padding:2px 7px;border-radius:10px;font-size:'+size+'em;opacity:'+opacity+'">'+esc(w.word)+' <span style="color:#546e7f;font-size:.8em">'+w.count+'</span></span>';
-          });
-          html+='</div>';
-          el.innerHTML=html;
-        }).catch(function(){
-          var el=document.getElementById(kwId);
-          if(el)el.innerHTML='';
-        });
-    });
+    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">키워드 클릭 → 상세 분석 | ▶ 클릭 → 연관 키워드</div>';
     });
     buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px"><span style="color:#1976d2">■</span>뉴스 <span style="color:#42a5f5">■</span>블로그 <span style="color:#66bb6a">■</span>카페 <span style="color:#ef5350">■</span>동영상 | 클릭하면 상세 분석</div>';
     document.getElementById('i-buzz').innerHTML=buzzHtml;
@@ -1758,6 +1732,26 @@ async function deletePoll(id){
     if(d.ok){pageLoaded.polling=false;loadPolling();loadSavedPolls();toast('삭제 완료')}
   }catch(e){toast('삭제 실패')}
 }
+/* ===== Load Related Keywords (on click) ===== */
+function loadRelatedKw(encodedKw,elId){
+  var el=document.getElementById(elId);
+  if(!el)return;
+  el.innerHTML='<span style="font-size:.72em;color:#546e7f">로딩...</span>';
+  fetch('/api/keyword-analysis/'+encodedKw)
+    .then(function(r){return r.ok?r.json():null})
+    .then(function(d){
+      if(!d||!d.co_words||!d.co_words.length){el.innerHTML='<span style="font-size:.72em;color:#37474f">연관 키워드 없음</span>';return}
+      var html='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+      d.co_words.slice(0,8).forEach(function(w,i){
+        var op=Math.max(0.4,1-i*0.08);
+        var sz=Math.max(0.72,0.9-i*0.02);
+        html+='<span style="background:#1e3a5f;padding:2px 7px;border-radius:10px;font-size:'+sz+'em;opacity:'+op+'">'+esc(w.word)+' <span style="color:#546e7f;font-size:.8em">'+w.count+'</span></span>';
+      });
+      html+='</div>';
+      el.innerHTML=html;
+    }).catch(function(){el.innerHTML=''});
+}
+
 /* ===== Keyword Detail Modal ===== */
 async function showKeywordDetail(encodedKw){
   var kw=decodeURIComponent(encodedKw);
