@@ -1226,7 +1226,8 @@ async function loadIssues(){
     });
     document.getElementById('iss-kw-tabs').innerHTML=tabsHtml;
     // 첫 키워드 자동 선택
-    if(uniqueKws.length)selectKeywordTab(uniqueKws[0],null);
+    // 첫 키워드는 자동 로드하지 않음 — 클릭 시 로드 (서버 블로킹 방지)
+    document.getElementById('iss-kw-detail').innerHTML='<div style="padding:20px;text-align:center;color:#546e7f">위 키워드를 클릭하면 연관 키워드 TOP 10이 표시됩니다</div>';
 
   }catch(e){document.getElementById('i-detail').innerHTML='<div style="color:#78909c">로딩 실패: '+esc(e.message||'')+'</div>'}
 }
