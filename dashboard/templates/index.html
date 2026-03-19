@@ -426,6 +426,8 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         <div class="card"><h3>방어 준비</h3><div id="s-def"><div class="skeleton"></div></div></div>
         <div class="card fw"><h3>지역별 토킹포인트</h3><div id="s-regional"><div class="skeleton"></div></div></div>
         <div class="card fw"><h3>리스크</h3><div id="s-risk"><div class="msg">갱신 후 표시</div></div></div>
+        <div class="card fw" style="border-color:#f44336"><h3 style="color:#ef5350">🚨 긴급대응 (스코어링별)</h3><div id="s-response"><div class="skeleton skeleton-block"></div></div></div>
+        <div class="card fw"><h3>ℹ 이슈 대응 로직 가이드 <span style="font-size:.75em;color:#78909c;cursor:pointer" onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display==='none'?'block':'none'">(펼치기/접기)</span></h3><div id="s-guide" style="display:none;font-size:.82em;line-height:1.8">로딩 중...</div></div>
       </div>
     </div>
 
@@ -438,23 +440,6 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
       <!-- 선택된 키워드 상세 -->
       <div id="iss-kw-detail">
         <div class="skeleton skeleton-block"></div>
-      </div>
-      <!-- 하단: 대응순서 -->
-      <div style="margin-top:14px">
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button class="btn btn-secondary" id="iss-tab-resp" onclick="switchIssueView('response')">🎯 스코어링별 대응</button>
-          <button class="btn btn-secondary" id="iss-tab-guide" onclick="switchIssueView('guide')">ℹ 로직 가이드</button>
-        </div>
-        <div id="iss-view-response" style="display:none">
-          <div id="i-detail"><div class="skeleton skeleton-block"></div></div>
-      </div>
-
-      <!-- 로직 가이드 -->
-      <div id="iss-view-guide" style="display:none">
-        <div class="card" style="border-color:#1976d2">
-          <h3>이슈 대응 로직 가이드</h3>
-          <div id="guide-content" style="font-size:.82em;line-height:1.8">로딩 중...</div>
-        </div>
       </div>
     </div>
 
@@ -2057,6 +2042,27 @@ function renderStrategy(d){
   // Risk
   var rc=s.risk_level==='매우높음'?'#f44336':s.risk_level==='높음'?'#ff9800':'#4caf50';
   document.getElementById('s-risk').innerHTML='<div class="msg" style="border-color:'+rc+'">리스크: <strong>'+esc(s.risk_level)+'</strong></div>';
+  // 긴급대응 로드
+  fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).then(function(ir){
+    if(!ir||!ir.responses)return;
+    var resp=ir.responses;
+    var html=resp.map(function(r){
+      var st={push:'🟢 밀기',counter:'🔴 반박',avoid:'⚫ 회피',monitor:'🟡 모니터링',pivot:'🔵 전환'}[r.stance]||'⚪';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:3px 0;background:#1a2332;border-radius:4px;border-left:3px solid '+(r.stance==='counter'?'#f44336':r.stance==='push'?'#4caf50':'#1976d2')+'"><div><strong>'+esc(r.keyword)+'</strong> <span style="font-size:.8em;color:#78909c">'+st+'</span></div><div style="text-align:right;font-size:.85em"><strong>'+r.score.toFixed(1)+'</strong> | '+esc(r.owner)+' '+esc(r.urgency)+'</div></div>';
+    }).join('');
+    document.getElementById('s-response').innerHTML=html||'-';
+    // 가이드
+    if(ir.guide){
+      var g=ir.guide;
+      var gh='';
+      if(g.how_it_works)gh+='<div style="background:#0d1117;padding:8px;border-radius:6px;margin-bottom:8px"><strong style="color:#64b5f6">작동 원리</strong><pre style="white-space:pre-wrap;color:#90caf9;margin-top:4px;font-family:inherit">'+esc(g.how_it_works)+'</pre></div>';
+      var stances=g.stances||{};
+      gh+='<div style="margin-bottom:8px"><strong style="color:#64b5f6">5가지 입장</strong><table style="width:100%;margin-top:4px;border-collapse:collapse">';
+      for(var sk in stances){var sv=stances[sk];gh+='<tr style="border-bottom:1px solid #1e3a5f"><td style="padding:4px;width:70px"><span style="color:'+sv.color+'">'+sv.icon+' '+sv.label+'</span></td><td style="padding:4px;color:#b0bec5">'+esc(sv.desc)+'</td></tr>'}
+      gh+='</table></div>';
+      document.getElementById('s-guide').innerHTML=gh;
+    }
+  }).catch(function(){});
 }
 
 /* ===== Render Issue Detail (from strategy) ===== */
