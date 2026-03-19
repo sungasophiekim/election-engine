@@ -46,6 +46,10 @@ STOPWORDS = {
     "인당", "만원", "천억", "개소", "노선", "개월", "세계",
     "지급", "준공", "착공", "조성", "추진", "실시", "시행",
     "확보", "예산", "규모", "목표", "달성", "기준",
+    # 일반 부사/형용사/접속
+    "위해", "함께", "좋은", "새로운", "다른", "같은", "모든", "필요",
+    "가능", "중요", "주요", "다양", "적극", "실질", "특별", "본격",
+    "연계한", "통한", "대비", "마련", "방안", "방문",
     # 기타 무의미
     "것으", "하면서", "이라는", "라는", "라는게", "있으며",
     "만큼", "그러나", "하지만", "그리고", "또는", "이런",
@@ -144,7 +148,24 @@ def analyze_keyword(
 
     for text in all_texts:
         words = re.findall(r'[가-힣]{2,6}', text)
-        filtered = [w for w in words if w not in STOPWORDS and w not in kw_words and len(w) >= 2 and not w.endswith('는') and not w.endswith('에서') and not w.endswith('했다')]
+        filtered = []
+        for w in words:
+            if w in STOPWORDS or w in kw_words or len(w) < 2:
+                continue
+            # 조사/어미 붙은 변형 필터 (예: 공약을, 부울경이, 창원특례시가)
+            suffixes = ('는','을','를','이','가','에','의','로','와','과','도','만',
+                        '에서','으로','에는','에도','했다','한다','이다','으며',
+                        '에게','까지','부터','처럼','보다','라는','라고','이며')
+            skip = False
+            for sf in suffixes:
+                if w.endswith(sf) and len(w) > len(sf) + 1:
+                    base = w[:-len(sf)]
+                    if base in kw_words or len(base) < 2:
+                        skip = True
+                        break
+            if skip:
+                continue
+            filtered.append(w)
 
         for w in filtered:
             word_counter[w] += 1
