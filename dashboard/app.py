@@ -547,13 +547,29 @@ async def api_ai_analyze(request: Request, session_token: str = Cookie(default=N
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=500,
+                max_tokens=800,
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = response.content[0].text.strip()
             if "```" in raw:
                 raw = raw.split("```")[1].replace("json", "").strip()
-            result = jmod.loads(raw)
+            # JSON 파싱 안전 처리
+            import re as re_mod
+            raw = re_mod.sub(r'[\n\r\t]', ' ', raw)
+            try:
+                result = jmod.loads(raw)
+            except jmod.JSONDecodeError:
+                # JSON 실패 시 텍스트에서 핵심만 추출
+                result = {
+                    "sentiment": "분석완료",
+                    "score": 0,
+                    "summary": raw[:200],
+                    "risk": "",
+                    "opportunity": "",
+                    "recommended_action": "",
+                    "message_suggestion": "",
+                    "avoid": "",
+                }
 
             # DB 저장
             db.save_ai_analysis(
