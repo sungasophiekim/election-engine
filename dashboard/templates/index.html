@@ -939,119 +939,76 @@ function renderWarRoomSocial(socialR){
   document.getElementById('wr-social').innerHTML=html;
 }
 
-async function loadWarRoom(){
+function loadWarRoom(){
   pageLoaded.warroom=true;
-  // 빠른 API만 로드 (social-buzz 제거 → 0.9초 절약)
-  var [pollR,issueR,execR]=await Promise.all([
-    fetch('/api/polling-history').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
-    fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
-    fetch('/api/executive-summary').then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
-  ]);
-  // 소셜은 백그라운드로 (상황실 블로킹 안 함)
-  var socialR=null;
-  fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).then(function(d){
-    socialR=d;renderWarRoomSocial(d);
+  // 전부 fire-and-forget — await 없음, 화면 즉시 표시
+  var pollR=null,issueR=null,execR=null;
+  fetch('/api/polling-history').then(function(r){return r.ok?r.json():null}).then(function(d){pollR=d;renderWarRoomPoll(d)}).catch(function(){});
+  fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).then(function(d){issueR=d;renderWarRoomIssues(d)}).catch(function(){});
+  fetch('/api/executive-summary').then(function(r){return r.ok?r.json():null}).then(function(d){execR=d;renderWarRoomExec(d,pollR)}).catch(function(){});
+  fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).then(function(d){renderWarRoomSocial(d)}).catch(function(){});
+
+}
+function renderWarRoomPoll(pollR){
+  if(!pollR||!pollR.polls||pollR.polls.length<2)return;
+  var polls=pollR.polls,w=480,h=200,pd=40;
+  var ours=polls.map(function(p){return p.our});
+  var opps=polls.map(function(p){var v=p.opponent||{};return Object.values(v)[0]||0});
+  var all=ours.concat(opps),mn=Math.min.apply(null,all)-3,mx=Math.max.apply(null,all)+3,rng=mx-mn||1;
+  var xs=(w-pd*2)/(polls.length-1||1);
+  var Y=function(v){return pd+(1-(v-mn)/rng)*(h-pd*2)};
+  var svg='<svg width="'+w+'" height="'+h+'" style="background:#0d1117;border-radius:6px;display:block;max-width:100%">';
+  for(var v=Math.ceil(mn);v<=mx;v+=2)svg+='<line x1="'+pd+'" y1="'+Y(v)+'" x2="'+(w-pd)+'" y2="'+Y(v)+'" stroke="#1e3a5f" stroke-width=".5"/><text x="'+(pd-4)+'" y="'+(Y(v)+4)+'" fill="#78909c" font-size="10" text-anchor="end">'+v+'</text>';
+  svg+='<polyline points="'+ours.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ')+'" fill="none" stroke="#4caf50" stroke-width="3"/>';
+  svg+='<polyline points="'+opps.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ')+'" fill="none" stroke="#f44336" stroke-width="3"/>';
+  ours.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#4caf50"/>'});
+  opps.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#f44336"/>'});
+  svg+='<text x="'+(w-pd)+'" y="14" fill="#4caf50" font-size="11" text-anchor="end">● '+(window._candidate||'우리')+'</text>';
+  svg+='<text x="'+(w-pd)+'" y="28" fill="#f44336" font-size="11" text-anchor="end">● '+(window._mainOpponent||'상대')+'</text></svg>';
+  document.getElementById('wr-poll-chart').innerHTML=svg;
+  var wp=pollR.win_prob||{},tr=pollR.trend||{};
+  document.getElementById('wr-poll-summary').innerHTML='<div style="font-size:.82em">최신: <strong style="color:#4caf50">'+ours[ours.length-1].toFixed(1)+'%</strong> vs <strong style="color:#f44336">'+opps[opps.length-1].toFixed(1)+'%</strong> | 추세: '+(tr.momentum||'-')+'</div>';
+}
+function renderWarRoomExec(execR,pollR){
+  if(!execR)return;
+  var wp=execR.win_prob||0,wpColor=wp>=0.5?'#4caf50':'#f44336';
+  document.getElementById('wr-gauge').innerHTML='<span style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</span>';
+  var wpData=pollR&&pollR.win_prob?pollR.win_prob:{};
+  var gap=wpData.gap||0;
+  document.getElementById('wr-gap').innerHTML='격차: <strong style="color:'+(gap>=0?'#4caf50':'#f44336')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong>';
+  document.getElementById('wr-momentum').textContent=(execR.momentum||'')+' | '+(wpData.assessment||'');
+  document.getElementById('wr-dday').textContent='D-'+execR.days_left;
+  document.getElementById('wp-detail').innerHTML='<div style="color:#78909c">우리 '+(wpData.our_avg||0).toFixed(1)+'% vs 상대 '+(Object.values(wpData.opponent_avg||{})[0]||0).toFixed(1)+'%</div>';
+  // 선거일정
+  fetch('/api/calendar').then(function(r){return r.ok?r.json():null}).then(function(cal){
+    if(!cal)return;
+    document.getElementById('wr-calendar').innerHTML=(cal.events||[]).map(function(ev){
+      var c=ev.done?'#546e7f':ev.type==='election'?'#f44336':'#90caf9';
+      return '<div style="padding:2px 0;color:'+c+';'+(ev.done?'text-decoration:line-through;opacity:.5':'')+'">'+
+        (ev.done?'✓':'○')+' '+esc(ev.date.slice(5))+' '+esc(ev.event)+'</div>';
+    }).join('');
   }).catch(function(){});
-
-  // 1. 여론조사 추이 차트
-  if(pollR&&pollR.polls&&pollR.polls.length>1){
-    var polls=pollR.polls;
-    var w=480,h=200,pd=40;
-    var ours=polls.map(function(p){return p.our});
-    var opps=polls.map(function(p){var v=p.opponent||{};return Object.values(v)[0]||0});
-    var all=ours.concat(opps),mn=Math.min.apply(null,all)-3,mx=Math.max.apply(null,all)+3,rng=mx-mn||1;
-    var xs=(w-pd*2)/(polls.length-1||1);
-    var Y=function(v){return pd+(1-(v-mn)/rng)*(h-pd*2)};
-    var oP=ours.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ');
-    var eP=opps.map(function(v,i){return(pd+i*xs)+','+Y(v)}).join(' ');
-    var svg='<svg width="'+w+'" height="'+h+'" style="background:#0d1117;border-radius:6px;display:block;max-width:100%">';
-    for(var v=Math.ceil(mn);v<=mx;v+=2)svg+='<line x1="'+pd+'" y1="'+Y(v)+'" x2="'+(w-pd)+'" y2="'+Y(v)+'" stroke="#1e3a5f" stroke-width=".5"/><text x="'+(pd-4)+'" y="'+(Y(v)+4)+'" fill="#78909c" font-size="10" text-anchor="end">'+v+'</text>';
-    svg+='<polyline points="'+oP+'" fill="none" stroke="#4caf50" stroke-width="3"/>';
-    svg+='<polyline points="'+eP+'" fill="none" stroke="#f44336" stroke-width="3"/>';
-    ours.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#4caf50"/>'});
-    opps.forEach(function(v,i){svg+='<circle cx="'+(pd+i*xs)+'" cy="'+Y(v)+'" r="4" fill="#f44336"/>'});
-    // 날짜 라벨
-    polls.forEach(function(p,i){if(i%2===0||i===polls.length-1)svg+='<text x="'+(pd+i*xs)+'" y="'+(h-5)+'" fill="#546e7f" font-size="8" text-anchor="middle">'+p.date.slice(5)+'</text>'});
-    svg+='<text x="'+(w-pd)+'" y="14" fill="#4caf50" font-size="11" text-anchor="end">● '+(window._candidate||'우리')+'</text>';
-    svg+='<text x="'+(w-pd)+'" y="28" fill="#f44336" font-size="11" text-anchor="end">● '+(window._mainOpponent||'상대')+'</text>';
-    svg+='</svg>';
-    document.getElementById('wr-poll-chart').innerHTML=svg;
-    // 요약
-    var wp=pollR.win_prob||{},tr=pollR.trend||{};
-    document.getElementById('wr-poll-summary').innerHTML=
-      '<div style="display:flex;gap:8px;font-size:.82em;flex-wrap:wrap">'+
-      '<span>최신: '+(window._candidate||'우리')+' <strong style="color:#4caf50">'+ours[ours.length-1].toFixed(1)+'%</strong> vs '+
-      (window._mainOpponent||'상대')+' <strong style="color:#f44336">'+opps[opps.length-1].toFixed(1)+'%</strong></span>'+
-      '<span>추세: <strong>'+(tr.momentum||'-')+'</strong> ('+(tr.our_trend>=0?'+':'')+(tr.our_trend||0).toFixed(2)+'%p/일)</span>'+
-      '</div>';
-  }
-
-  // 2. 승률 게이지
-  if(execR){
-    var wp=execR.win_prob||0;
-    var wpColor=wp>=0.5?'#4caf50':'#f44336';
-    document.getElementById('wr-gauge').innerHTML='<span style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</span>';
-    var wpData=pollR&&pollR.win_prob?pollR.win_prob:{};
-    var gap=wpData.gap||0;
-    document.getElementById('wr-gap').innerHTML='격차: <strong style="color:'+(gap>=0?'#4caf50':'#f44336')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong>';
-    document.getElementById('wr-momentum').innerHTML=esc(execR.momentum||'')+' | '+esc(wpData.assessment||'');
-    // 상세 계산 표시
-    var detail='<div style="color:#78909c">사용 데이터 (최근 3건, 가중 평균):</div>';
-    detail+='<div>우리 평균: <strong style="color:#4caf50">'+(wpData.our_avg||0).toFixed(1)+'%</strong></div>';
-    var oppAvg=wpData.opponent_avg?Object.values(wpData.opponent_avg)[0]:0;
-    var oppName=wpData.opponent_avg?Object.keys(wpData.opponent_avg)[0]:'상대';
-    detail+='<div>'+esc(oppName)+' 평균: <strong style="color:#f44336">'+(oppAvg||0).toFixed(1)+'%</strong></div>';
-    detail+='<div>격차: <strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%p</strong> → 승률 <strong style="color:'+wpColor+'">'+(wp*100).toFixed(1)+'%</strong></div>';
-    document.getElementById('wp-detail').innerHTML=detail;
-    document.getElementById('wr-dday').textContent='D-'+execR.days_left;
-    // 주요 선거일정 로드
-    fetch('/api/calendar').then(function(r){return r.ok?r.json():null}).then(function(cal){
-      if(!cal)return;
-      var events=cal.events||[];
-      var html='';
-      events.forEach(function(ev){
-        var done=ev.done;
-        var icon=done?'✓':'○';
-        var color=done?'#546e7f':ev.type==='election'?'#f44336':ev.type==='voting'?'#ff9800':ev.type==='debate'?'#64b5f6':'#90caf9';
-        var style=done?'text-decoration:line-through;opacity:.5':'';
-        html+='<div style="padding:3px 0;color:'+color+';'+style+'">'+icon+' '+esc(ev.date.slice(5))+' '+esc(ev.event)+'</div>';
-      });
-      if(cal.poll_blackout)html+='<div style="background:#b71c1c;color:#fff;padding:4px 6px;border-radius:4px;margin-top:4px;font-size:.85em;text-align:center">⚠ 여론조사 공표금지</div>';
-      document.getElementById('wr-calendar').innerHTML=html;
-    }).catch(function(){});
-  }
-
-  // 3. 소셜 통계 (백그라운드 로드 → renderWarRoomSocial)
-  renderWarRoomSocial(socialR);
-
-  // 4. 이슈 현황
-  if(issueR&&issueR.responses){
-    var resp=issueR.responses;
-    var crisis=resp.filter(function(r){return r.level==='CRISIS'}).length;
-    var alert=resp.filter(function(r){return r.level==='ALERT'}).length;
-    var html='<div style="display:flex;gap:12px;margin-bottom:8px">';
-    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(crisis?'#f44336':'#4caf50')+'">'+crisis+'</div><div style="font-size:.75em;color:#78909c">위기</div></div>';
-    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(alert?'#ff9800':'#4caf50')+'">'+alert+'</div><div style="font-size:.75em;color:#78909c">경계</div></div>';
-    html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:#4caf50">'+(resp.length-crisis-alert)+'</div><div style="font-size:.75em;color:#78909c">정상</div></div>';
-    html+='</div>';
-    // 상위 5개
-    resp.slice(0,5).forEach(function(r){
-      var st={'push':'🟢','counter':'🔴','pivot':'🔵','monitor':'🟡','avoid':'⚫'}[r.stance]||'⚪';
-      html+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em">';
-      html+='<span>'+st+' '+esc(r.keyword)+'</span>';
-      html+='<span>'+r.score.toFixed(1)+'</span>';
-      html+='</div>';
-    });
-    document.getElementById('wr-issues').innerHTML=html;
-  }
-
-  // 5. 핵심 메시지 (전략 갱신 데이터에서)
+}
+function renderWarRoomIssues(issueR){
+  if(!issueR||!issueR.responses)return;
+  var resp=issueR.responses;
+  var crisis=resp.filter(function(r){return r.level==='CRISIS'}).length;
+  var al=resp.filter(function(r){return r.level==='ALERT'}).length;
+  var html='<div style="display:flex;gap:12px;margin-bottom:8px">';
+  html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(crisis?'#f44336':'#4caf50')+'">'+crisis+'</div><div style="font-size:.75em;color:#78909c">위기</div></div>';
+  html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:'+(al?'#ff9800':'#4caf50')+'">'+al+'</div><div style="font-size:.75em;color:#78909c">경계</div></div>';
+  html+='<div style="text-align:center"><div style="font-size:1.8em;font-weight:bold;color:#4caf50">'+(resp.length-crisis-al)+'</div><div style="font-size:.75em;color:#78909c">정상</div></div></div>';
+  resp.slice(0,5).forEach(function(r){
+    var st={'push':'🟢','counter':'🔴','pivot':'🔵','monitor':'🟡','avoid':'⚫'}[r.stance]||'⚪';
+    html+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e3a5f;font-size:.82em"><span>'+st+' '+esc(r.keyword)+'</span><span>'+r.score.toFixed(1)+'</span></div>';
+  });
+  document.getElementById('wr-issues').innerHTML=html;
+  // 핵심 메시지
   if(strategyData&&strategyData.strategy){
     var msgs=strategyData.strategy.key_messages||[];
     document.getElementById('wr-messages').innerHTML=msgs.map(function(m,i){
       return '<div style="padding:6px 10px;margin:4px 0;background:#0d1117;border-left:3px solid #1976d2;border-radius:0 4px 4px 0;font-size:.9em">'+(i+1)+'. '+esc(m)+'</div>';
     }).join('')||'<div style="color:#78909c">전략 갱신 후 표시됩니다</div>';
-    document.getElementById('wr-priority').textContent=strategyData.strategy.top_priority||'';
   }
 }
 
