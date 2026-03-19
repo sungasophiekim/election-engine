@@ -115,12 +115,17 @@ def analyze_keyword(
     opponents = opponents or []
     all_texts = []
     news_titles = []
+    news_total = 0
+    blog_total = 0
+    cafe_total = 0
     blog_titles = []
     cafe_titles = []
 
     # 1. 데이터 수집
     try:
         news = search_news(keyword, display=100, pages=3)
+        from collectors.naver_news import count_mentions
+        news_total = count_mentions(keyword)
         for a in news:
             all_texts.append(a["title"] + " " + a.get("description", ""))
             news_titles.append(a["title"])
@@ -129,6 +134,7 @@ def analyze_keyword(
 
     try:
         blog = search_blogs(keyword, display=50)
+        blog_total = blog.total_count
         for b in blog.top_items[:30]:
             all_texts.append(b.get("title", "") + " " + b.get("description", ""))
             blog_titles.append(b.get("title", ""))
@@ -137,6 +143,7 @@ def analyze_keyword(
 
     try:
         cafe = search_cafes(keyword, display=50)
+        cafe_total = cafe.total_count
         for c in cafe.top_items[:30]:
             all_texts.append(c.get("title", "") + " " + c.get("description", ""))
             cafe_titles.append(c.get("title", ""))
@@ -262,9 +269,9 @@ def analyze_keyword(
     # 5. 주체 분석
     about_whom = dict(entity_counter.most_common(5))
     who_talks = {
-        "뉴스": len(news_titles),  # 최대 300건 (3페이지)
-        "블로그": len(blog_titles),
-        "카페": len(cafe_titles),
+        "뉴스": {"sampled": len(news_titles), "total": news_total, "period": "최신 300건 샘플"},
+        "블로그": {"sampled": len(blog_titles), "total": blog_total, "period": "전체 누적"},
+        "카페": {"sampled": len(cafe_titles), "total": cafe_total, "period": "전체 누적"},
     }
 
     # 6. Google Trends

@@ -1070,15 +1070,23 @@ function renderKeywordDetail(kw,d){
   var yt=d.youtube||{};
   var chIcons={'뉴스':'📰','블로그':'📝','카페':'💬'};
   // 네이버
-  for(var ch in who){html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||'')+' 네이버'+ch+': <strong>'+who[ch]+'건</strong></div>'}
+  for(var ch in who){
+    var v=who[ch];
+    if(typeof v==='object'){
+      var totalStr=v.total?v.total.toLocaleString()+'건':'';
+      html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||'')+' 네이버'+ch+': <strong>'+totalStr+'</strong> <span style="font-size:.75em;color:#546e7f">('+esc(v.period||'')+')</span></div>';
+    }else{
+      html+='<div style="font-size:.85em;padding:2px 0">'+(chIcons[ch]||'')+' 네이버'+ch+': <strong>'+v+'건</strong></div>';
+    }
+  }
   // 구글
   if(gt.interest){
     var gtColor=gt.change_7d>0?'#f44336':gt.change_7d<0?'#4caf50':'#78909c';
-    html+='<div style="font-size:.85em;padding:2px 0">📊 구글검색: <strong>'+gt.interest+'/100</strong> <span style="color:'+gtColor+';font-size:.82em">'+(gt.change_7d>0?'+':'')+gt.change_7d.toFixed(1)+'%</span></div>';
+    html+='<div style="font-size:.85em;padding:2px 0">📊 구글검색: <strong>관심도 '+gt.interest+'/100</strong> <span style="color:'+gtColor+';font-size:.82em">'+(gt.change_7d>0?'+':'')+gt.change_7d.toFixed(1)+'%</span> <span style="font-size:.75em;color:#546e7f">(최근 1개월)</span></div>';
   }
   // 유튜브
   if(yt.count){
-    html+='<div style="font-size:.85em;padding:2px 0">▶ 유튜브: <strong>'+yt.count+'건</strong> '+(yt.views||0).toLocaleString()+'조회</div>';
+    html+='<div style="font-size:.85em;padding:2px 0">▶ 유튜브: <strong>'+yt.count+'건</strong> '+(yt.views||0).toLocaleString()+'조회 <span style="font-size:.75em;color:#546e7f">(최근 30일)</span></div>';
   }
   html+='</div></div>';
 
