@@ -1027,21 +1027,21 @@ async function loadIssues(){
 }
 
 /* ===== Load Issue Trends ===== */
-async function loadIssueTrends(issues){
-  var top=issues.slice(0,10);
-  for(var idx=0;idx<top.length;idx++){
-    var issue=top[idx];
-    try{
-      var r=await fetch('/api/trend/'+encodeURIComponent(issue.keyword)+'?days=7');
-      if(!r.ok) continue;
-      var d=await r.json();
-      var el=document.getElementById('trend-'+encodeURIComponent(issue.keyword));
-      if(el&&d.scores&&d.scores.length>1){
-        var color=(issue.level||issue.crisis_level)==='CRISIS'?'#f44336':(issue.level||issue.crisis_level)==='ALERT'?'#ff9800':'#64b5f6';
-        el.innerHTML='<div style="font-size:.72em;color:#78909c;margin-bottom:2px">7일 추이</div>'+sparkline(d.scores,180,28,color);
-      }
-    }catch(e){}
-  }
+function loadIssueTrends(issues){
+  // 병렬로 모든 트렌드를 동시 로드 (순차 await 제거)
+  var top=issues.slice(0,5);  // 최대 5개만
+  top.forEach(function(issue){
+    fetch('/api/trend/'+encodeURIComponent(issue.keyword)+'?days=7')
+      .then(function(r){return r.ok?r.json():null})
+      .then(function(d){
+        if(!d) return;
+        var el=document.getElementById('trend-'+encodeURIComponent(issue.keyword));
+        if(el&&d.scores&&d.scores.length>1){
+          var color=(issue.level||issue.crisis_level)==='CRISIS'?'#f44336':(issue.level||issue.crisis_level)==='ALERT'?'#ff9800':'#64b5f6';
+          el.innerHTML='<div style="font-size:.72em;color:#78909c;margin-bottom:2px">7일 추이</div>'+sparkline(d.scores,180,28,color);
+        }
+      }).catch(function(){});
+  });
 }
 
 /* ===== Load Regions ===== */
