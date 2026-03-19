@@ -632,10 +632,12 @@ async def api_issue_responses(session_token: str = Cookie(default=None)):
         keywords = kw_engine.get_by_priority(3)  # 우선순위 1~3만
 
         unified = collect_unified_signals(
-            keywords[:15],  # API 호출 제한: 최대 15개
+            keywords[:12],  # API 호출 제한
             candidate_name=config.candidate_name,
             opponents=config.opponents,
             include_social=True,
+            include_youtube=False,   # 이슈 대응에서는 뉴스+소셜만 (속도 우선)
+            include_trends=False,
         )
         if not unified:
             return {"error": "수집 실패", "responses": [], "guide": {}}

@@ -2,7 +2,11 @@
 Election Strategy Engine — 통합 수집기
 뉴스 + 블로그 + 카페 + 유튜브 + Google Trends를 한번에 수집하여
 이슈별 종합 시그널을 생성합니다.
+
+v2: 병렬 수집 + 캐싱으로 속도 개선
 """
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from models.schemas import IssueSignal
 from collectors.naver_news import (
@@ -17,6 +21,22 @@ from collectors.social_collector import (
 )
 from collectors.youtube_collector import search_youtube
 from collectors.trends_collector import get_search_trend
+
+# ── 캐싱 (5분) ──────────────────────────────────────────────
+_cache = {}
+_CACHE_TTL = 300  # 5분
+
+def _cached(key, fn):
+    """5분 캐싱 래퍼"""
+    now = time.time()
+    if key in _cache and now - _cache[key][1] < _CACHE_TTL:
+        return _cache[key][0]
+    try:
+        result = fn()
+        _cache[key] = (result, now)
+        return result
+    except Exception:
+        return _cache[key][0] if key in _cache else None
 
 
 @dataclass
@@ -105,19 +125,20 @@ def collect_unified_signals(
     """
     opponents = opponents or []
 
-    # 1. 뉴스 수집
-    news_signals = _collect_news(
+    # 1. 뉴스 수집 (캐싱)
+    cache_key = f"news:{','.join(sorted(keywords))}"
+    news_signals = _cached(cache_key, lambda: _collect_news(
         keywords,
         candidate_name=candidate_name,
         opponents=opponents,
-    )
+    ))
+    news_signals = news_signals or []
     news_map = {s.keyword: s for s in news_signals}
 
-    results = []
-
-    for kw in keywords:
+    # ── 키워드별 병렬 수집 ─────────────────────────────────────
+    def _collect_one(kw):
+        """키워드 1개에 대해 모든 채널 수집 (병렬 실행 단위)"""
         ns = news_map.get(kw)
-
         u = UnifiedSignal(keyword=kw)
 
         # 뉴스 데이터
@@ -130,41 +151,28 @@ def collect_unified_signals(
             u.candidate_linked = ns.candidate_linked
             u.media_tier = ns.media_tier
 
-        # 소셜 데이터
+        # 소셜 데이터 (블로그 + 카페)
         if include_social:
-            try:
-                blog = search_blogs(kw)
+            blog = _cached(f"blog:{kw}", lambda _kw=kw: search_blogs(_kw))
+            if blog:
                 u.blog_total = blog.total_count
                 u.blog_recent = blog.recent_24h
                 u.blog_negative = blog.negative_ratio
                 u.blog_positive = blog.positive_ratio
                 u.top_blogs = blog.top_items[:3]
-            except Exception:
-                pass
 
-            try:
-                cafe = search_cafes(kw)
+            cafe = _cached(f"cafe:{kw}", lambda _kw=kw: search_cafes(_kw))
+            if cafe:
                 u.cafe_total = cafe.total_count
                 u.cafe_recent = cafe.recent_24h
                 u.cafe_negative = cafe.negative_ratio
                 u.cafe_positive = cafe.positive_ratio
                 u.top_cafe_posts = cafe.top_items[:3]
-            except Exception:
-                pass
 
-            try:
-                video = search_videos(kw)
-                u.video_total = video.total_count
-                u.video_recent = video.recent_24h
-                u.video_negative = video.negative_ratio
-                u.video_positive = video.positive_ratio
-            except Exception:
-                pass
-
-        # 유튜브 수집
+        # 유튜브 (선택적)
         if include_youtube:
-            try:
-                yt = search_youtube(kw, max_results=10)
+            yt = _cached(f"yt:{kw}", lambda _kw=kw: search_youtube(_kw, max_results=5))
+            if yt:
                 u.yt_total = yt.total_results
                 u.yt_recent_7d = yt.recent_count
                 u.yt_total_views = yt.total_views
@@ -174,20 +182,34 @@ def collect_unified_signals(
                      "published": v.published}
                     for v in yt.top_videos[:5]
                 ]
-            except Exception:
-                pass
 
-        # Google Trends 수집
+        # Google Trends (선택적)
         if include_trends:
-            try:
-                tr = get_search_trend(kw)
+            tr = _cached(f"tr:{kw}", lambda _kw=kw: get_search_trend(_kw))
+            if tr:
                 u.trend_interest = tr.interest_now
                 u.trend_change_7d = tr.change_7d
                 u.trend_direction = tr.trend_direction
                 u.trend_related = tr.related_queries[:5]
+
+        return u
+
+    # 병렬 실행 (최대 3 스레드 — 네이버 API rate limit 방지)
+    results = []
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = {pool.submit(_collect_one, kw): kw for kw in keywords}
+        for future in as_completed(futures):
+            try:
+                results.append(future.result())
             except Exception:
                 pass
 
+    # 원래 키워드 순서 유지
+    kw_order = {kw: i for i, kw in enumerate(keywords)}
+    results.sort(key=lambda u: kw_order.get(u.keyword, 999))
+
+    # ── 종합 계산 ─────────────────────────────────────────────
+    for u in results:
         # 종합 계산
         channels = []
         if u.news_mentions > 0:
@@ -218,18 +240,14 @@ def collect_unified_signals(
                 u.combined_positive = sum(c[0] * c[1] for c in pos_channels) / pos_weight
 
         # IssueSignal 생성 (기존 엔진과 호환)
-        # 소셜 데이터를 반영하여 mention_count와 velocity 보정
-        social_boost = min(u.blog_recent + u.cafe_recent, 50)  # 소셜 최대 50건 보정
+        ns = news_map.get(u.keyword)
+        social_boost = min(u.blog_recent + u.cafe_recent, 50)
         boosted_mentions = (ns.mention_count if ns else 0) + social_boost
-
-        # 소셜에서 부정 비율이 더 높으면 반영
         final_negative = u.combined_negative if channels else (ns.negative_ratio if ns else 0)
-
-        # 카페/블로그에서 활발하면 포털 트렌딩 추정 강화
         social_trending = (u.blog_recent + u.cafe_recent) >= 30
 
         u.issue_signal = IssueSignal(
-            keyword=kw,
+            keyword=u.keyword,
             mention_count=boosted_mentions,
             velocity=ns.velocity if ns else (u.total_mentions / 10.0),
             negative_ratio=final_negative,
@@ -238,8 +256,6 @@ def collect_unified_signals(
             portal_trending=(ns.portal_trending if ns else False) or social_trending,
             tv_reported=ns.tv_reported if ns else False,
         )
-
-        results.append(u)
 
     return results
 
