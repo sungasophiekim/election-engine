@@ -1193,17 +1193,47 @@ async function loadIssues(){
       items.sort(function(a,b){return((b.channels||{}).total||b.score||0)-((a.channels||{}).total||a.score||0)});
       items.forEach(function(r,idx){
         var ch=r.channels||{};
-        var total=ch.total||0;
         var newsCount=ch.news||0;
-        buzzHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:3px 0;background:#141b2d;border-radius:6px;cursor:pointer;border-left:3px solid '+gColor+'" onclick="showKeywordDetail(\''+encodeURIComponent(r.keyword)+'\')">';
-        buzzHtml+='<div><span style="color:'+gColor+';font-weight:bold;margin-right:6px">'+(idx+1)+'</span>'+esc(r.keyword)+'</div>';
-        buzzHtml+='<div style="text-align:right;font-size:.85em"><strong>'+newsCount+'</strong><span style="color:#78909c">건</span></div>';
+        var kwId='buzz-kw-'+encodeURIComponent(r.keyword).replace(/%/g,'_');
+        buzzHtml+='<div style="padding:8px 10px;margin:4px 0;background:#141b2d;border-radius:6px;border-left:3px solid '+gColor+'">';
+        buzzHtml+='<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="showKeywordDetail(\''+encodeURIComponent(r.keyword)+'\')">';
+        buzzHtml+='<div><span style="color:'+gColor+';font-weight:bold;margin-right:6px">'+(idx+1)+'</span><strong>'+esc(r.keyword)+'</strong></div>';
+        buzzHtml+='<div style="text-align:right;font-size:.85em"><strong>'+newsCount+'</strong><span style="color:#78909c"> 건</span></div>';
+        buzzHtml+='</div>';
+        // 연관 키워드 영역 (비동기 로드)
+        buzzHtml+='<div id="'+kwId+'" style="margin-top:4px;min-height:16px"><span style="font-size:.72em;color:#37474f">연관 키워드 로딩...</span></div>';
         buzzHtml+='</div>';
       });
       buzzHtml+='</div>';
     }
 
-    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">클릭하면 연관 단어·감정·프레임 상세 분석</div>';
+    buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px">클릭하면 상세 분석 | 연관 키워드 자동 로드 중...</div>';
+
+    // 비동기로 각 키워드의 연관 단어 로드 (fire-and-forget)
+    var allKws=resp.map(function(r){return r.keyword}).filter(function(v,i,a){return a.indexOf(v)===i}).slice(0,8);
+    allKws.forEach(function(kw){
+      var kwId='buzz-kw-'+encodeURIComponent(kw).replace(/%/g,'_');
+      fetch('/api/keyword-analysis/'+encodeURIComponent(kw))
+        .then(function(r){return r.ok?r.json():null})
+        .then(function(d){
+          if(!d)return;
+          var el=document.getElementById(kwId);
+          if(!el)return;
+          var words=d.co_words||[];
+          if(!words.length){el.innerHTML='<span style="font-size:.72em;color:#37474f">연관 키워드 없음</span>';return}
+          var html='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+          words.slice(0,8).forEach(function(w,i){
+            var opacity=Math.max(0.4,1-i*0.08);
+            var size=Math.max(0.72,0.9-i*0.02);
+            html+='<span style="background:#1e3a5f;padding:2px 7px;border-radius:10px;font-size:'+size+'em;opacity:'+opacity+'">'+esc(w.word)+' <span style="color:#546e7f;font-size:.8em">'+w.count+'</span></span>';
+          });
+          html+='</div>';
+          el.innerHTML=html;
+        }).catch(function(){
+          var el=document.getElementById(kwId);
+          if(el)el.innerHTML='';
+        });
+    });
     });
     buzzHtml+='<div style="font-size:.72em;color:#546e7f;margin-top:6px"><span style="color:#1976d2">■</span>뉴스 <span style="color:#42a5f5">■</span>블로그 <span style="color:#66bb6a">■</span>카페 <span style="color:#ef5350">■</span>동영상 | 클릭하면 상세 분석</div>';
     document.getElementById('i-buzz').innerHTML=buzzHtml;
