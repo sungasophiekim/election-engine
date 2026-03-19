@@ -532,7 +532,8 @@ async def api_ai_analyze(request: Request, session_token: str = Cookie(default=N
 아래는 "{keyword}" 키워드의 최근 뉴스 제목입니다:
 {chr(10).join(f'{i+1}. {t}' for i,t in enumerate(titles[:15]))}
 
-캠프 전략가 관점에서 분석하세요. JSON으로만 응답:
+캠프 전략가 관점에서 분석하세요.
+중요: 반드시 한 줄 JSON으로만 응답하세요. 줄바꿈 없이 한 줄로. 각 값은 50자 이내로 간결하게:
 {{
   "sentiment": "긍정/부정/중립/혼재",
   "score": -1.0~1.0,
