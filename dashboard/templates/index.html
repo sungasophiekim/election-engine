@@ -946,7 +946,7 @@ function loadWarRoom(){
   fetch('/api/polling-history').then(function(r){return r.ok?r.json():null}).then(function(d){pollR=d;renderWarRoomPoll(d)}).catch(function(){});
   fetch('/api/issue-responses').then(function(r){return r.ok?r.json():null}).then(function(d){issueR=d;renderWarRoomIssues(d)}).catch(function(){});
   fetch('/api/executive-summary').then(function(r){return r.ok?r.json():null}).then(function(d){execR=d;renderWarRoomExec(d,pollR)}).catch(function(){});
-  fetch('/api/social-buzz').then(function(r){return r.ok?r.json():null}).then(function(d){renderWarRoomSocial(d)}).catch(function(){});
+  // social-buzz는 소셜 탭에서만 로드 (상황실에서 제거 — 서버 블로킹 방지)
 
 }
 function renderWarRoomPoll(pollR){
