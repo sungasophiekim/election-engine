@@ -1919,7 +1919,9 @@ async function runStrategy(){
     if(data.error){toast(data.error);return}
     strategyData=data;
     renderStrategy(data);
-    renderIssueDetail(data);
+    // 이슈 탭 캐시 리셋 (다음 방문 시 새 데이터로 로드)
+    pageLoaded.issues=false;
+    _kwCache={};
     updateKPIsFromStrategy(data);
     document.getElementById('last-up').textContent=new Date().toLocaleTimeString('ko-KR');
     loadIssueTrends(data.issues||[]);
@@ -2068,25 +2070,7 @@ function renderStrategy(d){
 }
 
 /* ===== Render Issue Detail (from strategy) ===== */
-function renderIssueDetail(d){
-  if(!d||!d.issues) return;
-  pageLoaded.issues=true;
-  var html=d.issues.map(function(i){
-    var lv=(i.level||'NORMAL').toLowerCase();
-    var neg=i.negative_ratio!==undefined?(i.negative_ratio*100).toFixed(0)+'%':'-';
-    var speed=i.velocity!==undefined?i.velocity.toFixed(1)+'x':'-';
-    return '<div class="issue-card">'+
-      '<div class="issue-header">'+
-      '<span class="level-badge '+lv+'">'+i.level+'</span>'+
-      '<span class="keyword">'+esc(i.keyword)+'</span>'+
-      '<span class="score">'+i.score.toFixed(1)+'</span>'+
-      '</div>'+
-      '<div class="issue-stats">24h 언급 '+(i.mention_count||0)+'건 | 부정 '+neg+' | 속도 '+speed+'</div>'+
-      '<div class="issue-trend" id="trend-'+encodeURIComponent(i.keyword)+'"></div>'+
-      '</div>';
-  }).join('');
-  (document.getElementById('i-detail')||document.getElementById('iss-kw-detail')||{set innerHTML(v){},set textContent(v){}}).innerHTML=html;
-}
+// renderIssueDetail 삭제됨 — 전략 갱신 시 이슈 캐시만 리셋
 
 /* ===== Status Check ===== */
 async function checkStatus(){
