@@ -83,16 +83,23 @@ def _classify_article(title: str) -> str:
 
 def _update_all():
     """전체 갱신: 광역 뉴스 수집 → 분류 → 클러스터링 → 후보 버즈 → 판세"""
+    print(f"[{_now()}] _update_all() 시작", flush=True)
     # sys.path + .env
     while _ROOT in sys.path:
         sys.path.remove(_ROOT)
     sys.path.insert(0, _ROOT)
     _ensure_env()
 
+    # 환경변수 확인
+    naver_id = os.environ.get("NAVER_CLIENT_ID", "")
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    print(f"[{_now()}] ENV 확인: NAVER_ID={'있음' if naver_id else '없음'}, ANTHROPIC={'있음' if anthropic_key else '없음'}", flush=True)
+
     try:
         from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG as cfg
         from collectors.naver_news import search_news, collect_issue_signals, _last_collection_meta
         from collectors.api_cache import wait_if_needed, record_call
+        print(f"[{_now()}] import 성공", flush=True)
 
         snap = _load_snap()
         src_ts = snap.get("source_timestamps", {})
@@ -992,7 +999,12 @@ def _scheduler_loop():
     print(f"[{_now()}] === 스케줄러 v2 시작 (광역수집 + AI분류) ===", flush=True)
 
     # 시작 시 즉시 전체 갱신 실행
-    _update_all()
+    try:
+        _update_all()
+    except Exception as e:
+        print(f"[{_now()}] _scheduler_loop 내 _update_all 크래시: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
 
     tick = 0
     while True:
