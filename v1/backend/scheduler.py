@@ -44,6 +44,7 @@ def _load_snap() -> dict:
 
 def _save_snap(snap: dict):
     snap["timestamp"] = datetime.now().isoformat()
+    os.makedirs(os.path.dirname(ENRICHMENT_PATH), exist_ok=True)
     with open(ENRICHMENT_PATH, "w") as f:
         json.dump(snap, f, ensure_ascii=False, indent=2, default=str)
 
