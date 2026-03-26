@@ -247,9 +247,17 @@ tbody tr:last-child td { border-bottom: none; }
   }).join("")}
 </div>
 
-<!-- 4. 메시지 & 실행 일정 -->
+<!-- 4. 현장 방문 일정 -->
 <div class="section">
-  <div class="s-title">4. 현장 방문 일정 & 메시지</div>
+  <div class="s-title">4. 현장 방문 일정</div>
+  ${daily.daily_theme ? `
+  <div class="thesis" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="font-size:9px;font-weight:700;background:#0D1B2A;color:#E8B84B;padding:2px 10px;border-radius:10px;letter-spacing:1px">TODAY&apos;S THEME</span>
+      <span style="font-size:14px;font-weight:900;color:#0D1B2A">${daily.daily_theme.keyword}</span>
+    </div>
+    <p style="font-size:10.5px;color:#374151">${daily.daily_theme.rationale}</p>
+  </div>` : ""}
   ${fieldSchedule.map((m: any) => `
   <div style="border:1px solid #E5E7EB;border-radius:6px;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -257,6 +265,7 @@ tbody tr:last-child td { border-bottom: none; }
       ${m.when ? `<span style="font-size:9px;font-weight:600;color:#991B1B">${m.when}</span>` : ""}
       ${m.region ? `<span style="font-size:9px;font-weight:600;background:#DBEAFE;color:#1E40AF;padding:1px 7px;border-radius:10px">${m.region}</span>` : ""}
     </div>
+    ${m.theme ? `<div style="font-size:10px;margin-bottom:4px"><span style="background:#FEF3C7;color:#92400E;font-size:9px;font-weight:600;padding:1px 7px;border-radius:10px">#${m.theme}</span>${m.theme_reason ? ` <span style="color:#6B7280;font-size:9.5px">— ${m.theme_reason}</span>` : ""}</div>` : ""}
     ${m.location ? `<div style="font-size:10px;color:#6B7280;margin-bottom:4px">📍 ${m.location}</div>` : ""}
     ${m.concept ? `<div style="font-size:10px;color:#374151;margin-bottom:4px">🎯 컨셉: ${m.concept}</div>` : ""}
     <div style="font-size:12px;font-weight:700;color:#0D1B2A;margin-bottom:4px">&ldquo;${m.message}&rdquo;</div>
@@ -705,6 +714,16 @@ function MessageTab({ daily }: { daily: any }) {
     <div className="grid grid-cols-2 gap-5">
       {/* Left: Field Schedule */}
       <div className="space-y-3">
+        {/* Daily Theme */}
+        {daily.daily_theme && (
+          <div className="rounded-xl p-4" style={{ background: "linear-gradient(135deg, #0D1B2A 0%, #1B3A6B 100%)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#C8922A", color: "white" }}>TODAY&apos;S THEME</span>
+              <span className="text-[16px] font-black text-white">{daily.daily_theme.keyword}</span>
+            </div>
+            <div className="text-[11px] text-white/80 leading-relaxed">{daily.daily_theme.rationale}</div>
+          </div>
+        )}
         <div className="text-xs font-bold text-[#0D1B2A] mb-2">현장 방문 일정</div>
         {fieldSchedule.map((m: any, i: number) => (
           <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
@@ -713,6 +732,12 @@ function MessageTab({ daily }: { daily: any }) {
               {m.when && <span className="text-[9px] font-bold text-[#C0392B]">{m.when}</span>}
               {m.region && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">{m.region}</span>}
             </div>
+            {m.theme && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">#{m.theme}</span>
+                {m.theme_reason && <span className="text-[9px] text-gray-500">{m.theme_reason}</span>}
+              </div>
+            )}
             {m.location && <div className="text-[10px] text-gray-500 mb-1">📍 {m.location}</div>}
             {m.concept && <div className="text-[10px] text-gray-600 mb-2">🎯 {m.concept}</div>}
             <div className="text-[14px] font-bold text-[#0D1B2A] mb-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
