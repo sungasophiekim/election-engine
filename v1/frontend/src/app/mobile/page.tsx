@@ -435,12 +435,15 @@ function SideBadge({ side }: { side: string }) {
 
 /* ───────────────────── Main Mobile Page ───────────────────── */
 
+type MobileView = "dashboard" | "strategy" | "system";
+
 export default function MobileDashboard() {
-  const { token, checkSession, logout } = useAuth();
+  const { token, tier, checkSession, logout } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [view, setView] = useState<MobileView>("dashboard");
 
   const [indices, setIndices] = useState<IndicesPayload | null>(null);
   const [clusters, setClusters] = useState<NewsCluster[]>([]);
@@ -554,7 +557,7 @@ export default function MobileDashboard() {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-[14px] font-black text-blue-300">
-              김경수 캠프
+              {{ dashboard: "김경수 캠프", strategy: "전략모드", system: "시스템" }[view]}
             </span>
             {dDay != null && (
               <span className="text-[10px] font-bold bg-cyan-900/40 text-cyan-400 border border-cyan-700/30 px-2 py-0.5 rounded-full">
@@ -580,6 +583,11 @@ export default function MobileDashboard() {
       </div>
 
       {/* ── Content ── */}
+      {view === "strategy" ? (
+        <div className="px-4 py-4 pb-24"><MobileStrategyView onBack={() => setView("dashboard")} /></div>
+      ) : view === "system" ? (
+        <div className="px-4 py-4 pb-24"><MobileSystemView /></div>
+      ) : (
       <div className="px-4 py-4 space-y-3 pb-8">
         {/* ── Index Cards ── */}
         {indices && (
@@ -747,6 +755,201 @@ export default function MobileDashboard() {
         >
           새로고침
         </button>
+
+        <div className="h-20" /> {/* 하단 네비 여백 */}
+      </div>
+      )}
+
+      {/* ── Bottom Navigation ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#080e18]/95 backdrop-blur-sm border-t border-[#1a2844]">
+        <div className="flex">
+          <button onClick={() => setView("dashboard")}
+            className={`flex-1 py-3 flex flex-col items-center gap-1 min-h-[56px] transition-colors ${view === "dashboard" ? "text-cyan-400" : "text-gray-600"}`}>
+            <span className="text-[16px]">📊</span>
+            <span className="text-[9px] font-bold">대시보드</span>
+          </button>
+          {tier === 1 && (
+            <button onClick={() => setView("strategy")}
+              className={`flex-1 py-3 flex flex-col items-center gap-1 min-h-[56px] transition-colors ${view === "strategy" ? "text-[#E8B84B]" : "text-gray-600"}`}>
+              <span className="text-[16px]">📋</span>
+              <span className="text-[9px] font-bold">전략모드</span>
+            </button>
+          )}
+          <button onClick={() => setView("system")}
+            className={`flex-1 py-3 flex flex-col items-center gap-1 min-h-[56px] transition-colors ${view === "system" ? "text-cyan-400" : "text-gray-600"}`}>
+            <span className="text-[16px]">⚙️</span>
+            <span className="text-[9px] font-bold">시스템</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mobile Strategy View ── */
+function MobileStrategyView({ onBack }: { onBack: () => void }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getDailyBriefing().catch(() => null),
+      getIndicesCurrent().catch(() => null),
+    ]).then(([daily, indices]) => {
+      setData({ daily, indices });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div className="py-20 text-center text-gray-500 animate-pulse text-sm">전략 데이터 로딩 중...</div>;
+
+  const daily = data?.daily || {};
+  const sd = daily.situation_diagnosis || {};
+  const dl = daily.decision_layer || {};
+  const strategies = daily.strategies || [];
+  const fieldSchedule = daily.field_schedule || daily.messages || [];
+  const indices = data?.indices || {};
+
+  return (
+    <div className="space-y-3">
+      {/* Daily Theme */}
+      {daily.daily_theme && (
+        <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#C8922A] text-white">THEME</span>
+            <span className="text-[16px] font-black text-white">{daily.daily_theme.keyword}</span>
+          </div>
+          <div className="text-[11px] text-gray-400 leading-relaxed">{daily.daily_theme.rationale}</div>
+        </div>
+      )}
+
+      {/* Executive Summary */}
+      {daily.executive_summary && (
+        <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+          <div className="text-[10px] text-cyan-400 font-bold mb-2">종합 브리핑</div>
+          <div className="text-[12px] text-gray-300 leading-[1.9]">{daily.executive_summary}</div>
+        </div>
+      )}
+
+      {/* Decision Layer */}
+      {dl.moment_type && (
+        <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+          <div className="text-[11px] font-bold text-amber-400 mb-2">현재 국면: {dl.moment_type}</div>
+          <div className="text-[10px] text-rose-400 mb-1">🛡 {dl.must_protect}</div>
+          <div className="text-[10px] text-emerald-400">⚔ {dl.can_push}</div>
+        </div>
+      )}
+
+      {/* Strategies */}
+      {strategies.length > 0 && (
+        <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+          <div className="text-[10px] text-cyan-400 font-bold mb-3">대응 전략</div>
+          {strategies.map((s: any, i: number) => {
+            const isUrgent = s.timeline?.includes("즉시") || s.timeline?.includes("오늘");
+            return (
+              <div key={i} className={`mb-3 pb-3 border-b border-[#1a2844] last:border-0 last:mb-0 last:pb-0 ${isUrgent ? "pl-3 border-l-2 border-l-rose-500" : ""}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isUrgent ? "bg-rose-500/20 text-rose-400" : "bg-blue-500/20 text-blue-400"}`}>
+                    {isUrgent ? "긴급" : "단기"} · {s.timeline}
+                  </span>
+                </div>
+                <div className="text-[12px] font-bold text-gray-200">{s.title}</div>
+                <div className="text-[10px] text-gray-400 mt-1 leading-relaxed">{s.action}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Field Schedule */}
+      {fieldSchedule.length > 0 && (
+        <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+          <div className="text-[10px] text-[#E8B84B] font-bold mb-3">현장 방문 일정</div>
+          {fieldSchedule.map((m: any, i: number) => (
+            <div key={i} className="mb-3 pb-3 border-b border-[#1a2844] last:border-0 last:mb-0 last:pb-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-bold text-blue-400">P{m.priority}</span>
+                {m.when && <span className="text-[9px] text-rose-400">{m.when}</span>}
+                {m.region && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">{m.region}</span>}
+                {m.theme && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">#{m.theme}</span>}
+              </div>
+              {m.location && <div className="text-[10px] text-gray-500">📍 {m.location}</div>}
+              <div className="text-[12px] font-bold text-gray-200 mt-1">&ldquo;{m.message}&rdquo;</div>
+              <div className="text-[10px] text-gray-400 mt-1">{m.sub_message}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!daily.executive_summary && <div className="text-center py-10 text-gray-500 text-sm">데일리 리포트를 먼저 생성하세요</div>}
+    </div>
+  );
+}
+
+/* ── Mobile System View ── */
+function MobileSystemView() {
+  const indices = useState<any>(null);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    getIndicesCurrent().then(setData).catch(() => {});
+  }, []);
+
+  const issue = data?.issue || {};
+  const reaction = data?.reaction || {};
+  const pandse = data?.pandse || {};
+
+  return (
+    <div className="space-y-3">
+      {/* 이슈지수 */}
+      <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+        <div className="text-[11px] text-emerald-400 font-bold mb-2">이슈지수</div>
+        <div className="text-[10px] text-gray-400 leading-relaxed mb-3">
+          광역 뉴스 수집(~250건) → AI 클러스터링(TOP 10) → 기사수 × 감성강도 가중 → 50pt 기준 지수화. &gt;55pt 우세, &lt;45pt 열세.
+        </div>
+        <div className="text-[10px] text-gray-500">
+          현재: {issue.index?.toFixed(1) || "—"}pt ({issue.grade || "—"})
+        </div>
+        <div className="text-[9px] text-gray-600 mt-1">소스: 뉴스 (Naver API 11쿼리) + AI 클러스터링 (Haiku)</div>
+        <div className="text-[9px] text-gray-600">주기: 1시간</div>
+      </div>
+
+      {/* 반응지수 */}
+      <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+        <div className="text-[11px] text-amber-400 font-bold mb-2">반응지수</div>
+        <div className="text-[10px] text-gray-400 leading-relaxed mb-3">
+          이슈 TOP 10 키워드 → 블로그·카페·유튜브·커뮤니티(10곳)·뉴스댓글 수집 → 감성 분석 → 50pt 기준.
+        </div>
+        <div className="text-[10px] text-gray-500">
+          현재: {reaction.index?.toFixed(1) || "—"}pt ({reaction.grade || "—"}) · {reaction.total_mentions?.toLocaleString() || 0}건 수집
+        </div>
+        <div className="text-[9px] text-gray-600 mt-1">소스: 블로그·카페·유튜브·커뮤니티·뉴스댓글·맘카페</div>
+        <div className="text-[9px] text-gray-600">주기: 1시간 (이슈 수집 직후)</div>
+      </div>
+
+      {/* 판세지수 */}
+      <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+        <div className="text-[11px] text-cyan-400 font-bold mb-2">판세지수</div>
+        <div className="text-[10px] text-gray-400 leading-relaxed mb-3">
+          9개 독립 팩터(대통령효과·보수기저·현직프리미엄·여론관성 등) → 실데이터 자동 연동 → 50pt 기준. Alert: 1pt 이상 변동 시 AI 분석.
+        </div>
+        <div className="text-[10px] text-gray-500">
+          현재: {pandse.index?.toFixed(1) || "—"}pt ({pandse.grade || "—"}) · D-{pandse.d_day || "?"}
+        </div>
+        <div className="text-[9px] text-gray-600 mt-1">소스: 갤럽·클러스터·여론조사·이슈/반응지수</div>
+        <div className="text-[9px] text-gray-600">주기: 1시간</div>
+      </div>
+
+      {/* 시스템 정보 */}
+      <div className="bg-[#0e1825] rounded-xl border border-[#1a2844] p-4">
+        <div className="text-[11px] text-gray-300 font-bold mb-2">시스템 정보</div>
+        <div className="text-[10px] text-gray-500 leading-relaxed space-y-1">
+          <div>데이터 수집: 1시간 주기 자동</div>
+          <div>데일리 리포트: Opus · 1일 1회</div>
+          <div>위클리 리포트: Opus · 주 1회</div>
+          <div>AI 클러스터링: Haiku · 시간당 1회</div>
+          <div>학습데이터: 매일 08:00 자동 저장</div>
+        </div>
       </div>
     </div>
   );
