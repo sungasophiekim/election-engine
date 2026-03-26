@@ -7,7 +7,7 @@ import { ResearchPage } from "./ResearchTab";
 import StrategyMode from "./strategy/StrategyMode";
 
 const BASE_TABS = ["데일리 리포트", "위클리 리포트"] as const;
-type Tab = (typeof BASE_TABS)[number] | "전략모드";
+type Tab = (typeof BASE_TABS)[number] | "전략모드" | "학습데이터" | "리서치";
 
 /* ═══ PDF 출력 — 인라인 스타일 변환 ═══ */
 function printReport(title: string) {
@@ -704,7 +704,7 @@ export default function ReportPanel({ open, onClose }: { open: boolean; onClose:
             ))}
           </div>
           <div className="flex items-center gap-2">
-            {tab !== "리서치" && tab !== "전략모드" && (
+            {(tab as string) !== "전략모드" && (
               <button
                 onClick={() => printReport(tab === "데일리 리포트" ? "전략대응 리포트" : "주간 성과 리포트")}
                 className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded transition-all">
