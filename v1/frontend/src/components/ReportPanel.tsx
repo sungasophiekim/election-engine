@@ -141,6 +141,12 @@ function DailyReport() {
   const sd = data.situation_diagnosis || {};
   const dl = data.decision_layer || {};
   const eg = sd.exposure_gap || {};
+  const st = data.strategy || {};
+  const strategies = data.strategies || [];
+  const messages = data.messages || [];
+  const execution = data.execution || [];
+  const kpiMon = data.kpi_monitoring || [];
+  const riskMgmt = data.risk_management || [];
 
   return (
     <div id="report-body" className="space-y-5 max-w-[820px] mx-auto">
@@ -181,7 +187,7 @@ function DailyReport() {
                 </tr>
               </thead>
               <tbody>
-                {ir.issue_top5.map((iss: any) => (
+                {sd.issue_top5.map((iss: any) => (
                   <tr key={iss.rank} className="border-b border-gray-800/50">
                     <td className="py-2.5 px-2 text-center text-gray-500 font-bold">{iss.rank}</td>
                     <td className="py-2.5 px-2 text-gray-100 font-bold">{iss.name}</td>
@@ -201,7 +207,7 @@ function DailyReport() {
 
             {/* 이슈별 세그먼트 진단 */}
             <div className="space-y-1.5 mt-2">
-              {ir.issue_top5.filter((iss: any) => iss.diagnosis).map((iss: any) => (
+              {sd.issue_top5.filter((iss: any) => iss.diagnosis).map((iss: any) => (
                 <div key={`diag-${iss.rank}`} className="bg-gray-800/20 rounded-lg px-3 py-2 text-[11px] leading-relaxed">
                   <span className="text-gray-300 font-bold mr-1">{iss.rank}. {iss.name}</span>
                   <span className="text-gray-400">{iss.diagnosis}</span>
@@ -212,7 +218,7 @@ function DailyReport() {
         )}
 
         {/* 리액션 TOP5 */}
-        {ir.reaction_top5?.length > 0 && (
+        {sd.reaction_top5?.length > 0 && (
           <div className="mb-4">
             <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">시민 리액션 TOP 5</h3>
             <table className="w-full text-xs">
@@ -226,7 +232,7 @@ function DailyReport() {
                 </tr>
               </thead>
               <tbody>
-                {ir.reaction_top5.map((r: any) => (
+                {sd.reaction_top5.map((r: any) => (
                   <tr key={r.rank} className="border-b border-gray-800/50">
                     <td className="py-2 px-2 text-center text-gray-500">{r.rank}</td>
                     <td className="py-2 px-2 text-gray-100 font-bold">{r.keyword}</td>
@@ -243,18 +249,18 @@ function DailyReport() {
         )}
 
         {/* 후보별 진단 — 2컬럼 */}
-        {(ir.our_diagnosis || ir.opp_diagnosis) && (
+        {(sd.our_diagnosis || sd.opp_diagnosis) && (
           <div className="grid grid-cols-2 gap-3">
-            {ir.our_diagnosis && (
+            {sd.our_diagnosis && (
               <div className="rounded-lg border border-blue-800/30 bg-blue-950/10 p-3">
                 <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-1.5">우리 후보 진단</div>
-                <div className="text-[11px] text-gray-300 leading-[1.7]">{ir.our_diagnosis}</div>
+                <div className="text-[11px] text-gray-300 leading-[1.7]">{sd.our_diagnosis}</div>
               </div>
             )}
-            {ir.opp_diagnosis && (
+            {sd.opp_diagnosis && (
               <div className="rounded-lg border border-red-800/30 bg-red-950/10 p-3">
                 <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider mb-1.5">상대 후보 진단</div>
-                <div className="text-[11px] text-gray-300 leading-[1.7]">{ir.opp_diagnosis}</div>
+                <div className="text-[11px] text-gray-300 leading-[1.7]">{sd.opp_diagnosis}</div>
               </div>
             )}
           </div>
