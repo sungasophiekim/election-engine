@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 # 경로 설정
-_ROOT = "/Users/sunga/Desktop/election_engine"
+_ROOT = str(Path(__file__).resolve().parent.parent.parent)  # election_engine/
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 _V1 = str(Path(__file__).resolve().parent)

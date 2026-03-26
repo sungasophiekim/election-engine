@@ -79,13 +79,19 @@ def _load_history() -> list:
 
 
 def _ensure_env():
-    env_path = "/Users/sunga/Desktop/election_engine/.env"
-    if os.path.exists(env_path):
-        for line in open(env_path):
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip())
+    from pathlib import Path
+    # 프로젝트 루트의 .env (로컬 개발용, Render에서는 환경변수로 설정)
+    for candidate in [
+        Path(__file__).resolve().parent.parent.parent.parent / ".env",  # election_engine/.env
+        Path.cwd() / ".env",
+    ]:
+        if candidate.exists():
+            for line in open(candidate):
+                line = line.strip()
+                if "=" in line and not line.startswith("#"):
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip())
+            break
 
 
 def _build_daily_context(snap: dict) -> str:

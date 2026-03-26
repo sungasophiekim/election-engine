@@ -9,7 +9,8 @@ router = APIRouter(prefix="/api/prediction", tags=["prediction"])
 def get_prediction():
     try:
         import sys
-        sys.path.insert(0, "/Users/sunga/Desktop/election_engine")
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
         from engines.turnout_predictor import predict_turnout
         result = predict_turnout()
         d = result.to_dict()
