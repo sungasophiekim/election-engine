@@ -56,7 +56,9 @@ if _FRONTEND_OUT.exists():
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        """Next.js static export fallback."""
+        """Next.js static export fallback. /api/* 는 무시."""
+        if full_path.startswith("api/"):
+            return {"error": "not found"}
         file_path = _FRONTEND_OUT / full_path
         if file_path.is_file():
             return FileResponse(str(file_path))
