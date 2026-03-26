@@ -42,5 +42,16 @@
     "issue_park": 8,
     "reaction_kim": 23,
     "reaction_park": 43
+  },
+  {
+    "timestamp": "2026-03-26T19:35:27.907610",
+    "date": "03.26 19:35",
+    "issue_index": 100.0,
+    "reaction_index": 100.0,
+    "pandse": 54.5,
+    "issue_kim": 38,
+    "issue_park": 0,
+    "reaction_kim": 24,
+    "reaction_park": 0
   }
 ]
