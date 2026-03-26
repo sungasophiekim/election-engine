@@ -315,6 +315,69 @@ tbody tr:last-child td { border-bottom: none; }
     setTimeout(() => win.print(), 500);
   }
 }
+function exportResearchPDF() {
+  // 리서치 탭의 DOM을 캡처해서 인쇄용 새 창으로
+  const el = document.getElementById("research-content");
+  if (!el) { window.print(); return; }
+  const clone = el.cloneNode(true) as HTMLElement;
+
+  // 다크 테마 → 라이트 테마 변환
+  clone.querySelectorAll("*").forEach((node) => {
+    const e = node as HTMLElement;
+    const cls = e.className || "";
+    if (typeof cls !== "string") return;
+    // 배경
+    if (cls.includes("bg-[#0e1825]") || cls.includes("bg-[#080e18]") || cls.includes("wr-card")) e.style.background = "#fff";
+    if (cls.includes("bg-cyan-600") || cls.includes("bg-cyan-950")) e.style.background = "#eff6ff";
+    if (cls.includes("bg-amber-600") || cls.includes("bg-amber-950")) e.style.background = "#fffbeb";
+    if (cls.includes("bg-emerald-600") || cls.includes("bg-emerald-950")) e.style.background = "#f0fdf4";
+    if (cls.includes("bg-purple-600")) e.style.background = "#faf5ff";
+    if (cls.includes("bg-blue-950") || cls.includes("bg-blue-900")) e.style.background = "#eff6ff";
+    if (cls.includes("bg-red-950") || cls.includes("bg-red-900")) e.style.background = "#fef2f2";
+    // 텍스트
+    if (cls.includes("text-cyan-300") || cls.includes("text-cyan-400")) e.style.color = "#0891b2";
+    if (cls.includes("text-amber-300") || cls.includes("text-amber-400")) e.style.color = "#d97706";
+    if (cls.includes("text-emerald-400")) e.style.color = "#059669";
+    if (cls.includes("text-blue-400") || cls.includes("text-blue-300")) e.style.color = "#2563eb";
+    if (cls.includes("text-red-400") || cls.includes("text-red-300")) e.style.color = "#dc2626";
+    if (cls.includes("text-purple-400")) e.style.color = "#7c3aed";
+    if (cls.includes("text-gray-100") || cls.includes("text-gray-200") || cls.includes("text-gray-300")) e.style.color = "#1a1a1a";
+    if (cls.includes("text-gray-400") || cls.includes("text-gray-500")) e.style.color = "#666";
+    if (cls.includes("text-gray-600")) e.style.color = "#888";
+    if (cls.includes("text-white")) e.style.color = "#1a1a1a";
+    // 보더
+    if (cls.includes("border-[#1a2844]") || cls.includes("border-gray-800")) e.style.borderColor = "#e5e7eb";
+    if (cls.includes("border-cyan")) e.style.borderColor = "#0891b2";
+  });
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>선거 전략 리서치</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+* { box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; color: #111827; background: white; padding: 32px 40px; font-size: 11px; line-height: 1.7; }
+@media print { body { padding: 0; } @page { size: A4; margin: 14mm; } }
+.doc-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #0D1B2A; }
+.doc-title { font-size: 16px; font-weight: 900; color: #0D1B2A; }
+.doc-sub { font-size: 10px; color: #6B7280; margin-top: 3px; }
+.doc-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #d1d5db; font-size: 8.5px; color: #9ca3af; text-align: center; }
+</style></head><body>
+<div class="doc-header">
+  <div class="doc-title">경남도지사 선거 전략 리서치</div>
+  <div class="doc-sub">${new Date().toISOString().slice(0, 10)} · 학술연구 + 캠프전략 + 해외연구 종합 · 대외비</div>
+</div>
+${clone.innerHTML}
+<div class="doc-footer">김경수 경남도지사 캠프 · 전략 리서치 · 대외비</div>
+</body></html>`;
+
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 500);
+  }
+}
+
 type SubTab = "summary" | "issue" | "strategy" | "message";
 
 export default function StrategyMode({ onExit }: { onExit: () => void }) {
@@ -410,7 +473,7 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => exportPDF(data)} className="px-3 py-1.5 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
+            <button onClick={() => page === "research" ? exportResearchPDF() : exportPDF(data)} className="px-3 py-1.5 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
               🖨 PDF 출력
             </button>
           </div>
@@ -442,7 +505,7 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
           ) : page === "training" ? (
             <TrainingPage training={data.training} />
           ) : page === "research" ? (
-            <div className="bg-[#0a0f1a] rounded-xl p-4 -mx-2"><ResearchPage /></div>
+            <div id="research-content" className="bg-[#0a0f1a] rounded-xl p-4 -mx-2"><ResearchPage /></div>
           ) : (
             <ArchivePage reports={data.reports} />
           )}
