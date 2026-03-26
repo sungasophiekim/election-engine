@@ -185,11 +185,10 @@ def _update_all():
         src_ts["cluster_updated_at"] = datetime.now().isoformat()
 
         # ── 3.5 클러스터 기반 이슈지수 (가중지수: 기사수 × 감성강도) ──
-        our_score, opp_score = 0.0, 0.0
+        our_score, opp_score, neutral_score = 0.0, 0.0, 0.0
         our_count, opp_count, neutral_count = 0, 0, 0
         for c in scored_clusters:
             cnt = c.get("count", 0)
-            # 감성강도: 0~100 (절대값), 최소 10 보장 (건수만 있어도 반영)
             intensity = max(10, abs(c.get("sentiment", 0)))
             impact = cnt * intensity
             side = c.get("side", "")
@@ -200,14 +199,17 @@ def _update_all():
                 opp_score += impact
                 opp_count += cnt
             else:
+                neutral_score += impact
                 neutral_count += cnt
 
-        # 지수화: 50pt 기준, 데이터 없으면 50
-        # our 100% → 65pt (cap), opp 100% → 35pt (cap), 동률 → 50pt
-        total_score = our_score + opp_score
-        if total_score > 0:
-            raw_ratio = our_score / total_score  # 0.0 ~ 1.0
-            issue_index = round(50 + (raw_ratio - 0.5) * 30, 1)  # ±15pt 범위
+        # 지수화: 50pt 기준
+        # 중립 클러스터를 양측에 균등 배분 (상대 유리 데이터 부족 보정)
+        total_all = our_score + opp_score + neutral_score
+        if total_all > 0:
+            # 우리 점유율 = (우리 + 중립의 절반) / 전체
+            our_share = (our_score + neutral_score * 0.5) / total_all
+            # 50pt 기준 ±15pt, 부드러운 매핑
+            issue_index = round(50 + (our_share - 0.5) * 30, 1)
             issue_index = max(35, min(65, issue_index))
         else:
             issue_index = 50.0
