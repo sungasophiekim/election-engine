@@ -1,58 +1,95 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useStore } from "@/lib/store";
-import { getDailyBriefing, getWeeklyBriefing } from "@/lib/api";
+import { getDailyBriefing, getWeeklyBriefing, getTrainingData } from "@/lib/api";
 import { ResearchPage } from "./ResearchTab";
 
-const TABS = ["데일리 리포트", "위클리 리포트", "리서치"] as const;
+const TABS = ["데일리 리포트", "위클리 리포트", "학습데이터", "리서치"] as const;
 type Tab = (typeof TABS)[number];
 
-/* ═══ PDF 출력 ═══ */
+/* ═══ PDF 출력 — 인라인 스타일 변환 ═══ */
 function printReport(title: string) {
   const el = document.getElementById("report-body");
   if (!el) return;
+
+  // 다크 테마 → 인쇄용 컬러 매핑
+  const colorMap: Record<string, string> = {
+    "text-gray-100": "#1a1a1a", "text-gray-200": "#333", "text-gray-300": "#444",
+    "text-gray-400": "#666", "text-gray-500": "#888", "text-gray-600": "#999", "text-gray-700": "#aaa",
+    "text-blue-300": "#2563eb", "text-blue-400": "#2563eb", "text-red-300": "#dc2626", "text-red-400": "#dc2626",
+    "text-cyan-300": "#0891b2", "text-cyan-400": "#0891b2", "text-amber-300": "#d97706", "text-amber-400": "#d97706",
+    "text-emerald-400": "#059669", "text-purple-400": "#7c3aed", "text-pink-300": "#db2777",
+  };
+
+  // DOM → 인쇄용 HTML 생성
+  const clone = el.cloneNode(true) as HTMLElement;
+
+  // 인라인 스타일 적용: 텍스트 색상 변환
+  clone.querySelectorAll("*").forEach((node) => {
+    const el = node as HTMLElement;
+    const cls = el.className || "";
+    if (typeof cls !== "string") return;
+
+    // 배경색 → 흰 배경 호환으로 변환
+    if (cls.includes("bg-blue-950") || cls.includes("bg-cyan-950")) el.style.background = "#eff6ff";
+    else if (cls.includes("bg-red-950")) el.style.background = "#fef2f2";
+    else if (cls.includes("bg-amber-950") || cls.includes("bg-amber-500")) el.style.background = "#fffbeb";
+    else if (cls.includes("bg-gray-800") || cls.includes("bg-gray-700")) el.style.background = "#f9fafb";
+    else if (cls.includes("bg-emerald-500") || cls.includes("bg-emerald-950")) el.style.background = "#f0fdf4";
+    else el.style.background = "transparent";
+
+    // 텍스트 색상
+    for (const [tw, hex] of Object.entries(colorMap)) {
+      if (cls.includes(tw)) { el.style.color = hex; break; }
+    }
+    // 기본 텍스트 색상
+    if (!el.style.color && (cls.includes("text-gray-100") || cls.includes("text-gray-200"))) el.style.color = "#1a1a1a";
+
+    // 보더
+    if (cls.includes("border-gray-700") || cls.includes("border-gray-800") || cls.includes("border-gray-600")) el.style.borderColor = "#e2e8f0";
+    if (cls.includes("border-blue-800") || cls.includes("border-blue-500")) el.style.borderColor = "#bfdbfe";
+    if (cls.includes("border-red-800") || cls.includes("border-red-900")) el.style.borderColor = "#fecaca";
+    if (cls.includes("border-amber-800") || cls.includes("border-amber-500")) el.style.borderColor = "#fde68a";
+    if (cls.includes("border-cyan-800")) el.style.borderColor = "#a5f3fc";
+
+    // 재생성 버튼 숨김
+    if (el.tagName === "BUTTON") el.style.display = "none";
+  });
+
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; color:#1a1a1a; padding:32px 40px; font-size:12px; line-height:1.7; max-width:800px; margin:0 auto; }
-  h1 { font-size:18px; font-weight:900; margin-bottom:2px; }
-  .subtitle { font-size:11px; color:#888; margin-bottom:16px; }
-  .summary-box { background:#f0f7ff; border-left:4px solid #2563eb; padding:12px 16px; margin:16px 0; border-radius:4px; font-size:13px; line-height:1.8; }
-  h2 { font-size:14px; font-weight:800; margin:20px 0 8px; padding:6px 0; border-bottom:2px solid #1a1a1a; }
-  h3 { font-size:12px; font-weight:700; margin:12px 0 6px; color:#374151; }
-  table { width:100%; border-collapse:collapse; margin:8px 0 16px; font-size:11px; }
-  th { background:#f8fafc; border:1px solid #e2e8f0; padding:6px 10px; text-align:left; font-weight:700; font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; }
-  td { border:1px solid #e2e8f0; padding:6px 10px; vertical-align:top; }
-  .our { color:#2563eb; font-weight:600; }
-  .opp { color:#dc2626; font-weight:600; }
-  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
-  .tag-red { background:#fef2f2; color:#dc2626; }
-  .tag-amber { background:#fffbeb; color:#d97706; }
-  .tag-green { background:#f0fdf4; color:#16a34a; }
-  .tag-blue { background:#eff6ff; color:#2563eb; }
-  .tag-gray { background:#f9fafb; color:#6b7280; }
-  .action-box { background:#fafafa; border:1px solid #e5e7eb; border-radius:6px; padding:10px 14px; margin:6px 0; }
-  .action-box .title { font-weight:700; font-size:12px; margin-bottom:4px; }
-  .action-box .meta { font-size:10px; color:#6b7280; }
-  .msg-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 14px; margin:6px 0; }
-  .msg-text { font-size:13px; font-weight:700; color:#1e40af; }
-  .caution-box { background:#fffbeb; border-left:4px solid #f59e0b; padding:8px 12px; margin:10px 0; font-size:11px; }
-  .danger-box { background:#fef2f2; border-left:4px solid #dc2626; padding:8px 12px; margin:10px 0; font-size:11px; }
-  .diagnosis-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 14px; margin:6px 0; }
-  .diagnosis-box .label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
-  .footer { margin-top:24px; padding-top:8px; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af; }
-  @page { size:A4; margin:20mm 15mm; }
-  @media print { body { padding:0; } }
+  body {
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    color: #1a1a1a; padding: 28px 36px; font-size: 11.5px; line-height: 1.65;
+    max-width: 780px; margin: 0 auto;
+  }
+  h1 { font-size: 17px; font-weight: 900; letter-spacing: -0.02em; }
+  h2 { font-size: 13.5px; font-weight: 800; margin: 18px 0 8px; padding: 4px 0; border-bottom: 2px solid #1a1a1a; }
+  h3 { font-size: 11.5px; font-weight: 700; margin: 10px 0 5px; color: #374151; text-transform: uppercase; letter-spacing: 0.04em; }
+  section { margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10.5px; }
+  th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 8px; text-align: left; font-weight: 700; font-size: 9.5px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { border: 1px solid #e2e8f0; padding: 5px 8px; vertical-align: top; }
+  span[class*="rounded"] { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; }
+  div[class*="rounded-lg"] { border-radius: 6px; padding: 8px 12px; margin: 5px 0; border: 1px solid #e5e7eb; }
+  div[class*="border-l-4"], div[class*="border-l-2"] { border-left-width: 3px !important; border-left-style: solid !important; }
+  div[class*="grid-cols-2"] { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  div[class*="space-y-"] > * + * { margin-top: 6px; }
+  .footer, div[class*="footer"] { margin-top: 16px; padding-top: 6px; border-top: 1px solid #e5e7eb; font-size: 8.5px; color: #9ca3af; }
+  @page { size: A4; margin: 18mm 14mm; }
+  @media print {
+    body { padding: 0; }
+    section { page-break-inside: avoid; }
+    table { page-break-inside: avoid; }
+  }
 </style></head><body>`);
-
-  // Generate clean print HTML from data
-  const clone = el.cloneNode(true) as HTMLElement;
   w.document.write(clone.innerHTML);
   w.document.write("</body></html>");
   w.document.close();
-  setTimeout(() => w.print(), 600);
+  setTimeout(() => w.print(), 700);
 }
 
 /* ═══ 생성 버튼 ═══ */
@@ -81,13 +118,9 @@ function GenerateBtn({ loading, onClick, label }: { loading: boolean; onClick: (
 ═══════════════════════════════════════════ */
 function DailyReport() {
   const indices = useStore((s) => s.indices);
-  const prediction = useStore((s) => s.prediction);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-
-  const pandse = indices?.pandse;
-  const poll = prediction?.poll || {};
-  const dDay = pandse?.d_day || "?";
+  const dDay = indices?.pandse?.d_day || "?";
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 
   const generate = useCallback(async (force = false) => {
@@ -105,8 +138,9 @@ function DailyReport() {
     </div>
   );
 
-  const ir = data.issue_review || {};
-  const st = data.strategy || {};
+  const sd = data.situation_diagnosis || {};
+  const dl = data.decision_layer || {};
+  const eg = sd.exposure_gap || {};
 
   return (
     <div id="report-body" className="space-y-5 max-w-[820px] mx-auto">
@@ -115,27 +149,27 @@ function DailyReport() {
       <div className="flex items-end justify-between border-b border-gray-700 pb-3">
         <div>
           <h1 className="text-lg font-black text-gray-100 tracking-tight">경남도지사 선거 전략대응 리포트</h1>
-          <div className="subtitle text-xs text-gray-500 mt-0.5">{today} | 선거 D-{dDay}일 | 캠프 내부 한정</div>
+          <div className="text-xs text-gray-500 mt-0.5">{today} | 선거 D-{dDay}일 | 캠프 내부 한정</div>
         </div>
-        <button onClick={() => generate(true)} className="text-[10px] text-gray-600 hover:text-gray-400 border border-gray-700 px-2.5 py-1 rounded transition">재생성</button>
+        <span className="text-[9px] text-gray-600">1일 1회 | Opus 4.6</span>
       </div>
 
-      {/* ── 종합요약 ── */}
-      {data.summary && (
-        <div className="summary-box bg-blue-950/20 border-l-4 border-l-blue-500 rounded-r-lg px-4 py-3">
-          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">한줄 요약</div>
-          <div className="text-[13px] text-gray-100 leading-[1.8] whitespace-pre-line">{data.summary}</div>
+      {/* ── 0. Executive Summary ── */}
+      {data.executive_summary && (
+        <div className="bg-blue-950/20 border-l-4 border-l-blue-500 rounded-r-lg px-4 py-3">
+          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">종합 요약</div>
+          <div className="text-[13px] text-gray-100 leading-[1.8] whitespace-pre-line">{data.executive_summary}</div>
         </div>
       )}
 
-      {/* ══ 1. 24시간 이슈 점검 ══ */}
+      {/* ══ 1. 상황 진단 ══ */}
       <section>
-        <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">1. 지난 24시간 이슈 점검</h2>
+        <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">1. 상황 진단</h2>
 
-        {/* 이슈 TOP5 테이블 */}
-        {ir.issue_top5?.length > 0 && (
+        {/* 이슈 상태 */}
+        {sd.issue_state?.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">이슈 TOP 5</h3>
+            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">이슈 상태 — 무엇이 확산되고 있는가</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-gray-700">
@@ -384,7 +418,7 @@ function WeeklyReport() {
           <h1 className="text-lg font-black text-gray-100">주간 성과 리포트</h1>
           <div className="text-xs text-gray-500 mt-0.5">{data.week} | 캠프 내부 한정</div>
         </div>
-        <button onClick={() => generate(true)} className="text-[10px] text-gray-600 hover:text-gray-400 border border-gray-700 px-2.5 py-1 rounded transition">재생성</button>
+        <span className="text-[9px] text-gray-600">1주 1회 | Opus 4.6</span>
       </div>
 
       {/* 주간 종합 */}
@@ -504,6 +538,127 @@ function WeeklyReport() {
 }
 
 /* ═══════════════════════════════════════════
+   학습데이터 뷰
+═══════════════════════════════════════════ */
+function TrainingDataView() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await getTrainingData();
+      setData(d);
+      if (d.days?.length > 0) setSelected(d.days[0]);
+    } catch { }
+    setLoading(false);
+  }, []);
+
+  if (!data && !loading) return (
+    <button onClick={load} className="w-full py-4 text-center text-gray-400 hover:text-white border border-dashed border-gray-700 rounded-lg transition-colors">
+      학습데이터 불러오기 ({loading ? "..." : "클릭"})
+    </button>
+  );
+  if (loading) return <div className="text-center py-8 text-gray-500 animate-pulse">불러오는 중...</div>;
+  if (!data?.days?.length) return <div className="text-center py-8 text-gray-500">저장된 학습데이터 없음</div>;
+
+  const sideColor = (s: string) => s?.includes("우리") ? "text-blue-400" : s?.includes("상대") ? "text-red-400" : "text-gray-400";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-gray-400">총 {data.total}일 기록</div>
+        <div className="flex gap-1 flex-wrap">
+          {data.days.map((d: any) => (
+            <button key={d.date} onClick={() => setSelected(d)}
+              className={`text-[9px] px-2 py-1 rounded transition-all ${
+                selected?.date === d.date ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "text-gray-500 hover:text-gray-300 border border-gray-800"
+              }`}>
+              {d.date?.slice(5)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selected && (
+        <div className="space-y-3">
+          <div className="text-sm font-bold text-gray-200">{selected.date} <span className="text-gray-500 font-normal text-xs">D-{selected.d_day}</span></div>
+
+          {/* 3개 지수 */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "이슈지수", val: selected.indices?.issue_index, color: "text-emerald-400" },
+              { label: "반응지수", val: selected.indices?.reaction_index, color: "text-amber-400" },
+              { label: "판세지수", val: selected.indices?.pandse_index, color: "text-cyan-400" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="bg-gray-800/30 rounded-lg px-3 py-2 text-center">
+                <div className="text-[9px] text-gray-500">{label}</div>
+                <div className={`text-lg font-black ${color}`}>{val?.toFixed(1) || "—"}<span className="text-[8px] text-gray-600">pt</span></div>
+              </div>
+            ))}
+          </div>
+
+          {/* AI 해석 */}
+          {selected.ai_summary?.issue && (
+            <div className="bg-cyan-950/20 border border-cyan-900/30 rounded-lg px-3 py-2 space-y-1">
+              <div className="text-[9px] text-cyan-400 font-bold">AI 해석</div>
+              <div className="text-[10px] text-gray-300">이슈: {selected.ai_summary.issue}</div>
+              <div className="text-[10px] text-gray-300">반응: {selected.ai_summary.reaction}</div>
+            </div>
+          )}
+
+          {/* TOP 이슈 */}
+          {selected.top_issues?.length > 0 && (
+            <div>
+              <div className="text-[10px] text-gray-400 font-bold mb-1">TOP 이슈</div>
+              <div className="space-y-0.5">
+                {selected.top_issues.map((iss: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-[9px] py-0.5 border-b border-gray-800/50 last:border-0">
+                    <span className="text-gray-600 w-4">{i + 1}</span>
+                    <span className="text-gray-200 flex-1">{iss.name}</span>
+                    <span className={`${sideColor(iss.side)} w-14 text-right`}>{iss.side}</span>
+                    <span className="text-gray-500 w-8 text-right">{iss.count}건</span>
+                    <span className={`w-8 text-right ${iss.sentiment > 0 ? "text-emerald-400" : iss.sentiment < 0 ? "text-rose-400" : "text-gray-500"}`}>{iss.sentiment > 0 ? "+" : ""}{iss.sentiment}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 여론조사 */}
+          {selected.poll?.president_approval > 0 && (
+            <div className="bg-gray-800/30 rounded-lg px-3 py-2">
+              <div className="text-[9px] text-gray-500 mb-1">여론조사</div>
+              <div className="text-[10px] text-gray-300">
+                대통령 {selected.poll.president_approval}% · 민주 {selected.poll.dem_support}% · 국힘 {selected.poll.ppp_support}%
+              </div>
+            </div>
+          )}
+
+          {/* 판세 팩터 */}
+          {selected.pandse_factors?.length > 0 && (
+            <div>
+              <div className="text-[10px] text-gray-400 font-bold mb-1">판세 9 Factors</div>
+              <div className="space-y-0.5">
+                {selected.pandse_factors.map((f: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-[9px] py-0.5 border-b border-gray-800/50 last:border-0">
+                    <span className="text-gray-300 flex-1">{f.name}</span>
+                    <span className={`font-bold w-10 text-right ${f.value > 0 ? "text-blue-400" : f.value < 0 ? "text-red-400" : "text-gray-500"}`}>{f.value > 0 ? "+" : ""}{f.value}</span>
+                    <span className="text-gray-600 text-[8px] truncate max-w-[200px]">{f.reason}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════
    메인 패널
 ═══════════════════════════════════════════ */
 export default function ReportPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -546,6 +701,7 @@ export default function ReportPanel({ open, onClose }: { open: boolean; onClose:
         <div className="px-6 py-5 overflow-y-auto max-h-[calc(92vh-56px)]">
           {tab === "데일리 리포트" && <DailyReport />}
           {tab === "위클리 리포트" && <WeeklyReport />}
+          {tab === "학습데이터" && <TrainingDataView />}
           {tab === "리서치" && <ResearchPage />}
         </div>
       </div>

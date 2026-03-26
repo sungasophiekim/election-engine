@@ -111,9 +111,33 @@ def _build_daily_context(snap: dict) -> str:
     park_sents = [v.get("ai_sentiment", {}) for k, v in buzz.items() if "박완수" in k]
 
     cluster_text = "\n".join(
-        f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | {c.get('count',0)}건 | tip: {c.get('tip','')}"
+        f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | {c.get('count',0)}건 | 감성{c.get('sentiment',0):+d} | 시민반응: {c.get('community_expected','?')} | tip: {c.get('tip','')}"
         for i, c in enumerate(clusters[:10])
     ) or "없음"
+
+    # 이슈지수 (가중지수)
+    ci = snap.get("cluster_issue", {})
+    issue_index = ci.get("issue_index", 50)
+    issue_text = f"이슈지수: {issue_index:.1f}pt (50=중립, >50 우리유리) | 우리 {ci.get('kim_count',0)}건(가중{ci.get('kim_score',0)}) vs 상대 {ci.get('park_count',0)}건(가중{ci.get('park_score',0)})"
+
+    # 반응지수 (실데이터 기반)
+    cr = snap.get("cluster_reaction", {})
+    reaction_text = f"반응지수: 김경수 {cr.get('kim_sentiment',0):+d} / 박완수 {cr.get('park_sentiment',0):+d}"
+    if cr.get("total_mentions"):
+        reaction_text += f" | {cr['total_mentions']}건 수집 ({', '.join(cr.get('sources_collected',[]))})"
+    # 반응 상세 (키워드별)
+    rx_details = cr.get("details", [])
+    reaction_detail = ""
+    for rx in rx_details[:10]:
+        srcs = rx.get("sources", {})
+        src_sents = []
+        for sname, sdata in srcs.items():
+            s = sdata.get("net_sentiment", 0)
+            cnt = sdata.get("count", 0) or sdata.get("comments", 0) or sdata.get("mentions", 0)
+            if cnt > 0 or s != 0:
+                src_sents.append(f"{sname}={s:+.2f}({cnt}건)")
+        if src_sents:
+            reaction_detail += f"  - [{rx.get('side','?')}] {rx.get('keyword','')}: {' | '.join(src_sents)}\n"
 
     factors_text = "\n".join(
         f"  - {f.get('name','')}: {f.get('value',0):+.1f} ({f.get('reason','')})"
@@ -140,14 +164,25 @@ def _build_daily_context(snap: dict) -> str:
 9 Factors 상세:
 {factors_text}
 
+### {issue_text}
+
+### {reaction_text}
+
+### 반응지수 상세 (이슈별 소스 감성)
+{reaction_detail or "없음"}
+
 ### 뉴스 노출 (24시간)
 - 김경수: {kim_m}건 | 박완수: {park_m}건
 
 ### 후보별 버즈 상세 (AI 감성분석)
 {buzz_detail}
 
-### 뉴스 클러스터 TOP 10
+### 뉴스 클러스터 TOP 10 (감성·시민반응 포함)
 {cluster_text}
+
+### AI 한줄 해석
+- 이슈: {snap.get('ai_issue_summary', '없음')}
+- 반응: {snap.get('ai_reaction_summary', '없음')}
 
 ### 최근 7회 지표 추이
 {trend_text}
@@ -164,7 +199,8 @@ def _build_daily_context(snap: dict) -> str:
 @router.get("/daily-briefing")
 def daily_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
-    if not force and _cache["daily"]["date"] == today and _cache["daily"]["data"]:
+    # 1일 1회 제한 — 같은 날 이미 생성했으면 캐시 반환 (force 무시)
+    if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
         return _cache["daily"]["data"]
 
     snap = _load_snap()
@@ -175,82 +211,165 @@ def daily_briefing(force: bool = False):
         import anthropic
         client = anthropic.Anthropic()
 
+        today_str = datetime.now().strftime("%m/%d")
+        weekday_kr = ["월","화","수","목","금","토","일"][datetime.now().weekday()]
+
         prompt = f"""{context}
 
 당신은 김경수 경남도지사 캠프의 전략 총 책임자입니다.
-매일 오전 후보에게 전달하는 전략대응 리포트를 작성하세요.
+이것은 예측 리포트가 아닙니다. 진단 중심 전략 리포트입니다.
+
+목적: 현재 정치 상황 진단 → 전략적 해석 → 전략 권고 → 실행 계획 → KPI/모니터링
+예측(forecast)이나 확률 추정이 아닌, 캠프 의사결정을 위한 실행 문서입니다.
+
+분석 레이어 (이 순서로 분석):
+1. 이슈 상태 (무엇이 확산되고 있는가)
+2. 반응 상태 (사람들이 어떻게 반응하는가) — 이슈 볼륨보다 중요
+3. 세그먼트 반응 (어떤 세그먼트가 반응하는가)
+4. 지역 반응 (어떤 지역이 반응하는가)
+5. 조직 시그널 (동원 가능한 신호)
+6. 전략적 판단 (공격 기회 / 방어 위험 / 관찰 항목)
 
 아래 JSON 형식으로만 답변 (코드블록 없이 순수 JSON):
 {{
-  "summary": "종합요약 — 3줄 이내. 판세 진단 + 핵심 위기/기회 + 오늘 반드시 해야 할 것",
+  "executive_summary": "종합 요약 3줄 — 현재 국면 진단 + 핵심 위기·기회 + 오늘 반드시 해야 할 것. 차분하고 날카롭게.",
 
-  "issue_review": {{
-    "issue_top5": [
-      {{"rank": 1, "name": "이슈명", "count": 기사수, "side": "우리유리|상대유리|중립", "impact": "이슈·반응·판세지수에 미친 영향 1줄", "diagnosis": "AI 진단 — 투표율·지지율 영향 + 세그먼트별(2030/4050/60+) + 지역별(창원/김해/서부권) 분석 2줄"}}
+  "situation_diagnosis": {{
+    "issue_state": [
+      {{"rank": 1, "name": "이슈명", "count": 기사수, "side": "우리유리|상대유리|중립",
+        "spreading": "확산 상태 — 확산 중|정체|소멸 중",
+        "diagnosis": "무엇이 확산되고 있는가. 팩트만. 1줄"}}
     ],
-    "reaction_top5": [
-      {{"rank": 1, "keyword": "키워드", "sentiment": "긍정|부정|혼합", "volume": "높음|보통|낮음", "insight": "시민 반응 핵심 — 어떤 세그먼트가 어떻게 반응하는지 1줄"}}
+    "reaction_state": [
+      {{"rank": 1, "keyword": "키워드", "sentiment": "긍정|부정|혼합", "volume": "높음|보통|낮음",
+        "stability": "안정|혼합|불안정",
+        "reacting_segment": "주로 반응하는 세그먼트 (2030/4050/60+)",
+        "reacting_region": "주로 반응하는 지역 (창원/김해/서부권/전체)",
+        "strategic_meaning": "공격기회|방어위험|관찰항목"}}
     ],
-    "our_diagnosis": "우리 후보 종합 진단 — 강점·약점·기회·위협 + 투표율/지지율 영향 (세그먼트별) 3줄",
-    "opp_diagnosis": "상대 후보 종합 진단 — 강점·약점 + 우리가 공략할 틈 3줄"
+    "our_candidate": "우리 후보 진단 — 강점·약점·기회·위협. 불확실한 시그널은 '시그널 약함' 또는 '혼합'으로 명시. 3줄",
+    "opp_candidate": "상대 후보 진단 — 강점·약점 + 공략 가능한 틈. 3줄",
+    "exposure_gap": {{
+      "kim_articles": 김경수기사수, "park_articles": 박완수기사수,
+      "insight": "노출 격차 해석 1줄"
+    }}
   }},
 
-  "strategy": {{
-    "short_term": [
-      {{
-        "title": "단기 전략 제목",
-        "issue_context": "어떤 이슈에 대응하는 전략인지",
-        "action": "구체적 실행 방안 2줄",
-        "expected_impact": "이 전략 실행 시 투표율·지지율 예상 영향 (세그먼트별 수치 포함)",
-        "risk": "리스크 — 기존 지지층 이해관계·후보 공약과 충돌 가능성",
-        "timeline": "이번 주|다음 주"
-      }}
-    ],
-    "mid_long_term": [
-      {{
-        "title": "중장기 전략 제목",
-        "rationale": "후보 이미지·공약·정치커리어를 고려한 근거",
-        "action": "실행 방향 2줄",
-        "target_segment": "공략 대상 (스윙/보수 이탈/무당층 등)",
-        "synergy": "단기 전략과의 연계점"
-      }}
-    ]
+  "decision_layer": {{
+    "moment_type": "지금은 어떤 국면인가 (공격 국면|방어 국면|관찰 국면|전환 국면)",
+    "must_protect": "반드시 지켜야 할 것 — 이탈 방지 대상·방어 필수 이슈",
+    "can_push": "밀어볼 수 있는 것 — 공격 가능 이슈·확산 가능 메시지"
   }},
+
+  "strategies": [
+    {{
+      "title": "전략 제목",
+      "condition": "이 전략을 실행하는 조건 (if 이슈가 확산되고 반응이 긍정이면 → push)",
+      "action": "구체적 실행 방안 2줄",
+      "target": "타겟 세그먼트/지역",
+      "intended_effect": "의도하는 효과 — 구체적이되 과도한 인과 주장 금지",
+      "risk": "리스크 — 다른 세그먼트 역효과·기존 지지층 충돌 가능성",
+      "timeline": "{today_str}({weekday_kr}) 즉시|오늘 오후|내일|이번 주"
+    }}
+  ],
 
   "messages": [
     {{
       "priority": 1,
-      "target": "대상 (전체|2030|4050|60+|김해|서부권 등)",
-      "message": "핵심 메시지 (후보 발언용, 20자 이내)",
-      "sub_message": "보조 메시지/근거",
-      "channel": "채널 (SNS|언론브리핑|현장|카드뉴스 등)",
-      "caution": "주의사항 — 이 메시지가 다른 세그먼트에 미칠 역효과"
+      "target": "대상 세그먼트/지역",
+      "message": "핵심 메시지 (20자 이내)",
+      "sub_message": "근거·보조 메시지",
+      "channel": "채널",
+      "caution": "이 메시지가 다른 세그먼트에 미칠 역효과"
     }}
   ],
 
   "execution": [
     {{
-      "when": "시간 (오늘 즉시|오늘 오전|오늘 오후|내일|이번 주 중)",
+      "when": "{today_str}({weekday_kr}) 즉시|오전|오후 또는 구체 날짜",
       "what": "할 일",
-      "who": "담당 (대변인실|홍보팀|정책팀|후보|현장팀)",
-      "kpi": "측정 기준 — 위클리 리포트에서 확인할 지표"
+      "who": "담당",
+      "kpi": "측정 기준"
     }}
-  ]
+  ],
+
+  "kpi_monitoring": [
+    {{"metric": "모니터링 지표", "current": "현재 상태", "target": "목표", "check_timing": "확인 시점"}}
+  ],
+
+  "risk_management": [
+    {{"risk": "위험 요소", "trigger": "이것이 발생하면", "response": "이렇게 대응", "owner": "담당"}}
+  ],
+
+  "beta_reference": {{
+    "leading_index": 판세지수값,
+    "note": "전략 판단 근거로 단독 사용 금지. 방향성 참고용. 안정화 중인 beta 지표."
+  }}
 }}
 
-작성 원칙:
-1. 간결하되 핵심 포함 — 캠프는 바쁘다. 한 문장이 하나의 판단을 담아야 함
-2. 데이터 근거 필수 — 기사수, 투표율, 지지율, 연령 세그먼트 수치를 반드시 인용
-3. 단기 대응 시 중장기 충돌 검토 — "이 메시지가 40-50대 공략에 효과적이나, 20대 부동층과는 거리감 발생 가능" 식의 다각화 분석
-4. 상대 현직 성과 직접 부정 금지 → "더 잘할 수 있다" 확장 프레임
-5. 중앙당 이슈 편승 금지 → "경남만 보고 간다" 원칙
-6. 실행 후 측정 가능해야 함 — KPI를 반드시 명시
-7. youth_strategy 보고서 스타일 참고: 구분표(X민심 vs 여론조사), 단기/중기 과제 분리, 메시지 전환표
-8. **중요: 이슈지수, 반응지수, 판세지수 등 자체 지수 수치를 리포트 본문에 절대 언급하지 마라.** 지수는 아직 안정화 중이므로 리포트 글에 포함시키면 안 됨. 대신 기사수, 여론조사 수치, 투표율, 지지율 등 원천 데이터만 인용할 것. 지수 데이터는 내부 분석 참고용으로만 활용하고 텍스트에는 쓰지 않는다."""
+========================================
+작성 원칙
+========================================
+1. 진단(diagnosis)과 권고(recommendation)를 명확히 구분하라. 진단은 팩트, 권고는 판단.
+2. 불확실한 시그널은 확정적으로 쓰지 마라 — "시그널 약함", "혼합", "추가 확인 필요" 명시.
+3. 반응(reaction)이 이슈 볼륨보다 중요하다. 기사 100건이라도 시민 반응 없으면 아직 체감 전.
+4. 전략은 조건 기반(condition-based)으로 작성 — "만약 ~이면 → ~한다" 형식.
+5. 시그널이 좁으면 전체 캠페인 대응이 아닌 지역/세그먼트 한정 대응을 권고하라.
+6. 상대 현직 성과 직접 부정 금지 → "더 잘할 수 있다" 확장 프레임.
+7. 중앙당 이슈 편승 금지 → "경남만 보고 간다" 원칙.
+8. **자체 지수(이슈지수·반응지수·판세지수) 수치와 감성 raw값을 본문에 직접 언급하지 마라.** 기사수, 여론조사, 투표율, 지지율 등 원천 데이터만 인용.
+9. 톤: 차분하고 날카롭게. 내부용. 실행 지향. 학술적이거나 과장하지 않는다.
+10. execution의 when은 구체 날짜 ({today_str} 기준)로 작성.
+
+========================================
+진영 판단 원칙 (side 판정 필수 준수)
+========================================
+11. 현직 도지사(박완수)의 선거 직전 대규모 재정 지출(민생지원금·추경 등)은 "선심성 논란"이 동반되므로 무조건 상대유리가 아니다. 논란이 붙은 경우 → 상대불리 또는 양면 판정.
+12. 국민의힘·보수 진영의 부정 이미지 이슈(재산 과다·내홍·커닝·비리 등)는 우리유리로 판정. 야당 부정 뉴스를 상대유리로 잘못 분류하지 마라.
+13. 현직의 정책 발표라도 시민 반응에서 비판·논란이 감지되면 양면(우리유리+상대유리) 또는 상대불리로 판정해야 한다. 발표 자체가 아닌 시민 반응 톤을 기준으로 판단.
+14. 대통령·여당 지도부의 경남 방문·지지 발언은 우리유리. 단, "중앙 의존" 비판이 동반되면 양면 판정.
+15. 김경수 후보 관련 사법·도덕성 이슈는 상대유리. 단, 이미 해소된 과거 이슈의 재소환은 시그널 강도를 낮게 판정.
+16. 판단이 애매한 경우 "중립"이 아닌, 양면 분석을 하라 — "우리에게는 ~한 측면이 유리하나, ~한 측면에서 상대에게도 활용 여지 있음" 식으로 서술.
+17. 이재명 정부/여당 정책(분양·공급·예산 등)이 성과로 보도되면 → 우리유리. 동일 정책이 "선거 전 쏟아내기", "선심성", "포퓰리즘" 비판 프레임으로 보도되면 → 상대유리 (우리 정부 공격). 기사 톤을 반드시 확인하고 판단."""
+
+        system_msg = """You are generating a Korean election campaign strategy report for internal campaign use.
+
+This is NOT a forecasting report. This is a diagnosis-first strategy report.
+Purpose: understand current political condition → interpret signals → recommend strategic actions.
+
+IMPORTANT:
+- Do NOT center the report around predictive polling or confidence bands.
+- Do NOT overclaim causal certainty. When evidence is weak, say "시그널 약함" or "혼합".
+- Leading Index (판세지수) is only a beta reference. It must NOT drive the report.
+
+CORE ANALYTIC FRAME (use in order):
+1. Issue state (무엇이 확산되고 있는가)
+2. Reaction state (사람들이 어떻게 반응하는가) — MORE IMPORTANT than issue volume
+3. Segment reaction (어떤 세그먼트가 반응하는가)
+4. Regional reaction (어떤 지역이 반응하는가)
+5. Organization signal (동원 가능한 신호)
+6. Strategic judgment (공격 기회 / 방어 위험 / 관찰 항목)
+
+MANDATORY DIAGNOSIS LOGIC — for each issue, explicitly answer:
+- is the reaction stable, mixed, or unstable?
+- is this an attack opportunity, defense risk, or watch item?
+- which segment/region is most affected?
+
+STRATEGY LOGIC — condition-based:
+- if issue spreads but reaction is weak → monitor, avoid overreaction
+- if reaction is expanding and sentiment is favorable → push
+- if reaction is expanding and sentiment is unfavorable → counter or pivot
+- if segment reaction is localized → region-specific action only
+- Do NOT recommend broad campaign actions when signal is narrow.
+
+REACTION DATA: 반응지수는 실제 블로그/카페/유튜브댓글/커뮤니티(디시/에펨/클리앙/더쿠/네이트판/82쿡/경남맘카페)/뉴스댓글에서 수집한 실데이터입니다. 반응 상세 데이터의 소스별 감성을 진단에 적극 활용하세요.
+
+OUTPUT: Valid JSON only. No markdown, no code blocks. Start with { end with }. Write in Korean. Calm, sharp, execution-oriented tone."""
 
         resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8000,
+            model="claude-opus-4-6",
+            max_tokens=16000,
+            system=system_msg,
             messages=[{"role": "user", "content": prompt}],
         )
         text = resp.content[0].text.strip()
@@ -259,8 +378,10 @@ def daily_briefing(force: bool = False):
         data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
         data["date"] = today
 
-        _cache["daily"]["date"] = today
-        _cache["daily"]["data"] = data
+        # 에러가 아닐 때만 캐시
+        if not data.get("error"):
+            _cache["daily"]["date"] = today
+            _cache["daily"]["data"] = data
         return data
 
     except Exception as e:
@@ -273,7 +394,8 @@ def daily_briefing(force: bool = False):
 def weekly_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
     week_key = datetime.now().strftime("%Y-W%W")
-    if not force and _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"]:
+    # 1주 1회 제한 — 같은 주에 이미 생성했으면 캐시 반환 (force 무시)
+    if _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
         return _cache["weekly"]["data"]
 
     snap = _load_snap()
@@ -360,7 +482,7 @@ def weekly_briefing(force: bool = False):
 }}"""
 
         resp = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-opus-4-6",
             max_tokens=3000,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -377,3 +499,22 @@ def weekly_briefing(force: bool = False):
         import traceback
         traceback.print_exc()
         return {"error": str(e), "generated_at": datetime.now().isoformat()}
+
+
+@router.get("/training-data")
+def training_data():
+    """학습데이터 목록 반환 (최근 30일)"""
+    training_dir = LEGACY_DATA / "training_data"
+    if not training_dir.exists():
+        return {"days": [], "total": 0}
+
+    days = []
+    for fp in sorted(training_dir.glob("*.json"), reverse=True):
+        try:
+            with open(fp) as f:
+                d = json.load(f)
+            days.append(d)
+        except Exception:
+            pass
+
+    return {"days": days[:30], "total": len(days)}

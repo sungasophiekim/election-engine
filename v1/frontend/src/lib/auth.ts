@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
 interface AuthState {
   token: string | null;
   username: string | null;
@@ -23,7 +25,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   login: async (username: string, password: string) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -56,7 +58,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   logout: () => {
     const token = get().token;
     if (token) {
-      fetch(`/api/auth/logout?token=${token}`, { method: "POST" }).catch(() => {});
+      fetch(`${API_BASE}/api/auth/logout?token=${token}`, { method: "POST" }).catch(() => {});
     }
     localStorage.removeItem("ee_token");
     localStorage.removeItem("ee_username");
@@ -69,7 +71,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     const token = get().token;
     if (!token) return false;
     try {
-      const res = await fetch(`/api/auth/me?token=${token}`);
+      const res = await fetch(`${API_BASE}/api/auth/me?token=${token}`);
       if (!res.ok) {
         get().logout();
         return false;
@@ -78,6 +80,8 @@ export const useAuth = create<AuthState>((set, get) => ({
       set({ username: data.username, tier: data.tier, label: data.label });
       return true;
     } catch {
+      // 네트워크 에러 시에도 토큰 클리어 → 로그인 화면으로
+      get().logout();
       return false;
     }
   },

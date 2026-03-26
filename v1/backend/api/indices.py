@@ -48,25 +48,9 @@ def current_indices():
         kim_mentions = sum(v.get("mention_count", 0) if i == 0 else int(v.get("mention_count", 0) * 0.5) for i, v in enumerate(kim_sorted))
         park_mentions = sum(v.get("mention_count", 0) if i == 0 else int(v.get("mention_count", 0) * 0.5) for i, v in enumerate(park_sorted))
 
-    # 반응지수: 후보별 감성 비교 (0건 제외 + 언급량 가중 평균)
-    kim_weighted_sum, kim_weight_total = 0, 0
-    for v in kim_buzz.values():
-        mc = v.get("mention_count", 0)
-        if mc == 0:
-            continue  # 뉴스 없는 키워드 제외
-        sent = v.get("ai_sentiment", {}).get("net_sentiment", 0)
-        kim_weighted_sum += sent * mc
-        kim_weight_total += mc
-    park_weighted_sum, park_weight_total = 0, 0
-    for v in park_buzz.values():
-        mc = v.get("mention_count", 0)
-        if mc == 0:
-            continue
-        sent = v.get("ai_sentiment", {}).get("net_sentiment", 0)
-        park_weighted_sum += sent * mc
-        park_weight_total += mc
-    kim_sent_avg = kim_weighted_sum / kim_weight_total if kim_weight_total > 0 else 0
-    park_sent_avg = park_weighted_sum / park_weight_total if park_weight_total > 0 else 0
+    # 반응지수: 50pt 스케일 (cluster_reaction에서)
+    cluster_rx = snap.get("cluster_reaction", {})
+    reaction_index = cluster_rx.get("reaction_index", 50.0)
 
     # 판세지수: correction에서
     corr = snap.get("turnout", {}).get("correction", {})
@@ -82,35 +66,24 @@ def current_indices():
 
     return {
         "issue": {
-            "kim": {"mentions": kim_mentions, "keywords": len(kim_buzz)},
-            "park": {"mentions": park_mentions, "keywords": len(park_buzz)},
-            "gap": kim_mentions - park_mentions,
-            "grade": "우세" if kim_mentions - park_mentions > 20 else "열세" if kim_mentions - park_mentions < -20 else "접전",
+            "index": cluster_issue.get("issue_index", 50),
+            "kim": {"mentions": kim_mentions, "score": cluster_issue.get("kim_score", 0), "keywords": len(kim_buzz)},
+            "park": {"mentions": park_mentions, "score": cluster_issue.get("park_score", 0), "keywords": len(park_buzz)},
+            "gap": round(cluster_issue.get("issue_index", 50) - 50, 1),
+            "grade": "우세" if cluster_issue.get("issue_index", 50) > 55 else "열세" if cluster_issue.get("issue_index", 50) < 45 else "접전",
             "updated_at": enrichment_ts,
             "sources": {
                 "news_updated_at": src_ts.get("news_updated_at"),
-                "blog_updated_at": src_ts.get("blog_updated_at"),
-                "cafe_updated_at": src_ts.get("cafe_updated_at"),
-                "youtube_updated_at": src_ts.get("youtube_updated_at"),
-                "trends_updated_at": src_ts.get("trends_updated_at"),
-                "community_updated_at": src_ts.get("community_updated_at"),
-                "datalab_updated_at": src_ts.get("datalab_updated_at"),
             },
         },
         "reaction": {
-            "kim": {"sentiment": round(kim_sent_avg, 3), "pct": round(kim_sent_avg * 100), "keywords": len(kim_buzz)},
-            "park": {"sentiment": round(park_sent_avg, 3), "pct": round(park_sent_avg * 100), "keywords": len(park_buzz)},
-            "gap": round((kim_sent_avg - park_sent_avg) * 100),
-            "grade": "우세" if (kim_sent_avg - park_sent_avg) * 100 > 15 else "열세" if (kim_sent_avg - park_sent_avg) * 100 < -15 else "접전",
-            "updated_at": enrichment_ts,
-            "sources": {
-                "community_updated_at": src_ts.get("community_updated_at"),
-                "social_updated_at": src_ts.get("blog_updated_at"),
-                "youtube_updated_at": src_ts.get("youtube_updated_at"),
-                "comments_updated_at": src_ts.get("news_updated_at"),
-                "trends_updated_at": src_ts.get("trends_updated_at"),
-                "sentiment_updated_at": src_ts.get("sentiment_updated_at"),
-            },
+            "index": reaction_index,
+            "gap": round(reaction_index - 50, 1),
+            "grade": "우세" if reaction_index > 55 else "열세" if reaction_index < 45 else "접전",
+            "updated_at": cluster_rx.get("updated_at", enrichment_ts),
+            "total_mentions": cluster_rx.get("total_mentions", 0),
+            "sources_collected": cluster_rx.get("sources_collected", []),
+            "keywords_analyzed": cluster_rx.get("keywords_analyzed", 0),
         },
         "pandse": {
             "index": corr.get("pandse_index", 50),
@@ -130,6 +103,8 @@ def current_indices():
         },
         "cluster_updated_at": cluster_ts,
         "pandse_alert": snap.get("pandse_alert"),
+        "ai_issue_summary": snap.get("ai_issue_summary", ""),
+        "ai_reaction_summary": snap.get("ai_reaction_summary", ""),
     }
 
 
@@ -159,6 +134,6 @@ def index_history():
             }
             for h in daily
         ],
-        "candidate_trend": candidate_history[-48:],  # 최근 48건 (8시간분)
+        "candidate_trend": candidate_history[-168:],  # 최근 168건 (7일 × 24시간)
         "days": len(daily),
     }

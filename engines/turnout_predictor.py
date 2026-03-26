@@ -252,39 +252,47 @@ _PREMIUM_KEYWORDS = {
 
 
 def _load_enrichment_snapshot() -> dict:
-    """enrichment_snapshot.json 로드 (캐시)"""
+    """enrichment_snapshot.json 로드"""
     try:
         import json
-        with open("data/enrichment_snapshot.json") as f:
+        from pathlib import Path
+        p = Path(__file__).resolve().parent.parent / "data" / "enrichment_snapshot.json"
+        with open(p) as f:
             return json.load(f)
     except Exception:
         return {}
 
 
 def _auto_president_effect() -> dict:
-    """대통령 효과 — 뉴스 감성에서 '이재명/대통령/여당' 키워드 자동 추출"""
+    """대통령 효과 — 국정지지율 + 뉴스 클러스터에서 대통령 관련 이슈"""
     snap = _load_enrichment_snapshot()
-    ii = snap.get("issue_indices", {})
-    ri = snap.get("reaction_indices", {})
-    keywords = ["이재명", "대통령", "여당", "민주당", "정부"]
-    scores = []
-    sentiments = []
-    for kw in keywords:
-        for k, v in ii.items():
-            if kw in k:
-                scores.append(v.get("index", 0))
-        for k, v in ri.items():
-            if kw in k:
-                sentiments.append(v.get("net_sentiment", 0))
-    if not scores and not sentiments:
-        return {"name": "대통령 효과 전이율", "value": +1.8, "confidence": "high",
-                "reason": "갤럽 67%, 정당 +12%p. 경남 할인 적용 (기본값)"}
-    avg_score = sum(scores) / len(scores) if scores else 50
-    avg_sent = sum(sentiments) / len(sentiments) if sentiments else 0
-    # 이슈 활성도 + 감성 방향 → 값 산출
-    value = round(max(-3.0, min(3.0, (avg_score - 50) * 0.05 + avg_sent * 3)), 1)
-    return {"name": "대통령 효과 전이율", "value": value, "confidence": "high",
-            "reason": f"이슈{avg_score:.0f} 감성{avg_sent:+.2f} → 자동산출 {value:+.1f}"}
+    np_data = snap.get("national_poll", {})
+    clusters = snap.get("news_clusters", [])
+
+    approval = np_data.get("president_approval", 0)
+    party_gap = np_data.get("party_gap", 0)  # 민주 - 국힘
+
+    # 클러스터에서 대통령/이재명 관련 이슈 감성
+    pres_clusters = [c for c in clusters if any(kw in c.get("name", "") for kw in ["이재명", "대통령", "정부", "여당"])]
+    pres_sent = sum(c.get("sentiment", 0) for c in pres_clusters) / len(pres_clusters) if pres_clusters else 0
+
+    if approval > 0:
+        # 지지율 60%+ → 강한 효과, 50% → 중립, 40%- → 역효과
+        # 경남 할인 30% 적용
+        base = (approval - 50) * 0.06 * 0.7
+        # 정당 격차 보너스
+        party_bonus = min(1.0, party_gap * 0.03) if party_gap > 0 else max(-0.5, party_gap * 0.02)
+        # 클러스터 감성 보너스
+        cluster_bonus = pres_sent * 0.01
+        value = round(max(-3.0, min(3.0, base + party_bonus + cluster_bonus)), 1)
+        detail = f"지지율{approval}% 정당격차{party_gap:+.0f}%p"
+        if pres_clusters:
+            detail += f" 클러스터{len(pres_clusters)}건({pres_sent:+.0f})"
+        return {"name": "대통령 효과 전이율", "value": value, "confidence": "high",
+                "reason": detail}
+
+    return {"name": "대통령 효과 전이율", "value": +1.8, "confidence": "high",
+            "reason": "갤럽 67%, 정당 +12%p. 경남 할인 적용 (기본값)"}
 
 
 def _auto_conservative_base() -> dict:
@@ -292,234 +300,175 @@ def _auto_conservative_base() -> dict:
     snap = _load_enrichment_snapshot()
     np_data = snap.get("national_poll", {})
 
-    if np_data:
-        dem = np_data.get("dem_support", 0)    # 민주당 지지율
-        ppp = np_data.get("ppp_support", 0)    # 국힘 지지율
-        gap = dem - ppp  # 민주 - 국힘
+    dem = np_data.get("dem_support", 0)
+    ppp = np_data.get("ppp_support", 0)
 
-        if gap and dem > 0 and ppp > 0:
-            # 정당 격차 기반: 민주 +12%p면 보수 약세 → 김 유리
-            # 국힘 우세면 보수 강세 → 박 유리
-            # 경남은 전국 대비 보수 +10~15%p 할인 적용
-            gyeongnam_gap = gap - 12  # 경남 보수 할인 (-12%p)
-            value = round(max(-2.5, min(1.0, gyeongnam_gap * 0.08)), 1)
-            return {
-                "name": "보수 기저 (정당지지율)",
-                "value": value,
-                "confidence": "high",
-                "reason": f"민주{dem}% 국힘{ppp}% 격차{gap:+.0f}%p → 경남할인 후 {value:+.1f}",
-            }
+    if dem > 0 and ppp > 0:
+        gap = dem - ppp
+        # 경남 보수 할인: 전국 대비 보수 +12%p
+        gyeongnam_gap = gap - 12
+        value = round(max(-2.5, min(1.5, gyeongnam_gap * 0.08)), 1)
+        return {
+            "name": "보수 기저 (정당지지율)",
+            "value": value,
+            "confidence": "high",
+            "reason": f"민주{dem}% 국힘{ppp}% 격차{gap:+.0f}%p → 경남할인 후 {value:+.1f}",
+        }
 
-    # 폴백: 고정값
     return {
         "name": "보수 기저 (정당지지율)",
         "value": -1.0,
         "confidence": "high",
-        "reason": "정당지지율 데이터 없음. 역대 보수 평균 57% 기반 (기본값)",
+        "reason": "정당지지율 데이터 없음 (기본값)",
     }
 
 
 def _auto_ruling_rally() -> dict:
-    """여당 결집 — '국정안정/여당/결집' 뉴스 감성 자동"""
+    """여당 결집 — 클러스터 우리유리 비율 + 국정지지율"""
     snap = _load_enrichment_snapshot()
-    ri = snap.get("reaction_indices", {})
-    keywords = ["여당", "결집", "국정", "민주당", "단결"]
-    sentiments = []
-    for kw in keywords:
-        for k, v in ri.items():
-            if kw in k:
-                sentiments.append(v.get("net_sentiment", 0))
-    if not sentiments:
-        return {"name": "여당 결집 + 전략적 투표", "value": +0.7, "confidence": "low",
-                "reason": "KNN '국정안정 여당' 52.4% (기본값)"}
-    avg = sum(sentiments) / len(sentiments)
-    value = round(max(-2.0, min(2.0, avg * 3)), 1)
-    return {"name": "여당 결집 + 전략적 투표", "value": value, "confidence": "low",
-            "reason": f"여당 관련 감성 {avg:+.2f} → 자동산출 {value:+.1f}"}
+    ci = snap.get("cluster_issue", {})
+    np_data = snap.get("national_poll", {})
+
+    issue_idx = ci.get("issue_index", 50)
+    approval = np_data.get("president_approval", 0)
+
+    if ci.get("total", 0) > 0:
+        # 이슈 우위(>55) + 높은 지지율 → 여당 결집 강화
+        issue_bonus = (issue_idx - 50) * 0.04
+        approval_bonus = (approval - 50) * 0.02 if approval > 0 else 0
+        value = round(max(-2.0, min(2.0, issue_bonus + approval_bonus)), 1)
+        return {"name": "여당 결집 + 전략적 투표", "value": value, "confidence": "medium",
+                "reason": f"이슈지수{issue_idx:.1f}pt 지지율{approval}% → {value:+.1f}"}
+
+    return {"name": "여당 결집 + 전략적 투표", "value": +0.7, "confidence": "low",
+            "reason": "KNN '국정안정 여당' 52.4% (기본값)"}
 
 
 def _auto_conservative_rally() -> dict:
-    """보수 결집 — '국힘/보수/위기감' 뉴스 감성 자동"""
+    """보수 결집 — 상대유리 이슈 비율 + 국힘 지지율"""
     snap = _load_enrichment_snapshot()
-    ri = snap.get("reaction_indices", {})
-    keywords = ["국민의힘", "국힘", "보수", "야당", "위기"]
-    sentiments = []
-    for kw in keywords:
-        for k, v in ri.items():
-            if kw in k:
-                sentiments.append(v.get("net_sentiment", 0))
-    if not sentiments:
-        return {"name": "보수 결집 (위기감 동원)", "value": -0.8, "confidence": "medium",
-                "reason": "여당 압도 시 위기감 동원 (기본값)"}
-    avg = sum(sentiments) / len(sentiments)
-    # 보수 관련 감성이 부정적이면 → 보수 위기감 강화 → 결집 증가 → 박 유리
-    value = round(max(-3.0, min(0.0, avg * -2)), 1)
-    return {"name": "보수 결집 (위기감 동원)", "value": value, "confidence": "medium",
-            "reason": f"보수 관련 감성 {avg:+.2f} → 위기감 결집 {value:+.1f}"}
+    ci = snap.get("cluster_issue", {})
+    np_data = snap.get("national_poll", {})
+    clusters = snap.get("news_clusters", [])
+
+    ppp = np_data.get("ppp_support", 0)
+    opp_count = ci.get("park_count", 0)
+    total = ci.get("total", 0)
+
+    # 상대유리 클러스터에서 위기감/네거티브 감지
+    opp_clusters = [c for c in clusters if "상대" in c.get("side", "")]
+    opp_intensity = sum(abs(c.get("sentiment", 0)) for c in opp_clusters) / len(opp_clusters) if opp_clusters else 0
+
+    if total > 0:
+        opp_ratio = opp_count / total  # 상대유리 비율
+        # 상대유리 비율 낮으면 → 보수 위기감 ↑ → 결집 ↑ → 박 유리
+        # 상대유리 비율 높으면 → 보수 안심 → 결집 약화
+        crisis = max(0, 0.5 - opp_ratio)  # 상대 점유 낮을수록 위기감
+        ppp_factor = max(0, (30 - ppp) * 0.03) if ppp > 0 else 0.3  # 국힘 지지율 낮을수록 위기감
+        value = round(max(-3.0, min(0.0, -(crisis + ppp_factor) * 2)), 1)
+        return {"name": "보수 결집 (위기감 동원)", "value": value, "confidence": "medium",
+                "reason": f"상대유리{opp_count}/{total}건 국힘{ppp}% 위기감{crisis:.2f} → {value:+.1f}"}
+
+    return {"name": "보수 결집 (위기감 동원)", "value": -0.8, "confidence": "medium",
+            "reason": "여당 압도 시 위기감 동원 (기본값)"}
 
 
 def _auto_candidate_negative() -> dict:
-    """후보 네거티브 — candidate_buzz에서 김경수 부정 감성 비율 추출"""
+    """후보 네거티브 — 뉴스 클러스터에서 상대유리(김경수 공격) 이슈 강도"""
     snap = _load_enrichment_snapshot()
-    buzz = snap.get("candidate_buzz", {})
+    clusters = snap.get("news_clusters", [])
 
-    kim_buzz = {k: v for k, v in buzz.items() if "김경수" in k}
-    if not kim_buzz:
-        return {"name": "후보 네거티브", "value": -1.2, "confidence": "medium",
-                "reason": "candidate_buzz 데이터 없음 (기본값)"}
+    # 상대유리 클러스터 중 네거티브 공격성 분석
+    neg_clusters = [c for c in clusters if "상대" in c.get("side", "")]
+    if not neg_clusters:
+        return {"name": "후보 네거티브", "value": 0.0, "confidence": "medium",
+                "reason": "상대유리 클러스터 없음 → 네거티브 없음"}
 
-    # 6분류에서 "부정" 비율 추출
-    total_neg = 0
-    total_all = 0
-    total_mentions = 0
-    for kw, b in kim_buzz.items():
-        s6 = b.get("ai_sentiment", {}).get("sentiment_6way", {})
-        neg = s6.get("부정", 0)
-        all_s = sum(s6.values()) if s6 else 1
-        total_neg += neg
-        total_all += all_s
-        total_mentions += b.get("mention_count", 0)
+    total_neg_articles = sum(c.get("count", 0) for c in neg_clusters)
+    total_all = sum(c.get("count", 0) for c in clusters)
+    neg_ratio = total_neg_articles / max(total_all, 1)
+    avg_intensity = sum(abs(c.get("sentiment", 0)) for c in neg_clusters) / len(neg_clusters)
 
-    neg_ratio = total_neg / max(total_all, 1)  # 0~1
-
-    # 부정 비율 → 팩터값
-    # 0% 부정 → 0 (네거티브 없음)
-    # 10% 부정 → -0.5
-    # 30%+ 부정 → -2.0 (강한 네거티브)
-    value = round(max(-3.0, min(0.0, neg_ratio * -8)), 1)
+    # 네거티브 비율 × 강도 → 팩터값
+    # 10% 비율·낮은 강도 → -0.3, 30%+ 비율·높은 강도 → -2.5
+    value = round(max(-3.0, min(0.0, -neg_ratio * avg_intensity * 0.08)), 1)
 
     return {
         "name": "후보 네거티브",
         "value": value,
-        "confidence": "medium" if total_mentions > 10 else "low",
-        "reason": f"김경수 {len(kim_buzz)}개 키워드 부정비율 {neg_ratio:.0%} ({total_neg}/{total_all}) → {value:+.1f}",
+        "confidence": "medium" if total_all > 20 else "low",
+        "reason": f"상대유리 {len(neg_clusters)}건({total_neg_articles}/{total_all}) 강도{avg_intensity:.0f} → {value:+.1f}",
     }
 
 
 def _auto_incumbent_premium() -> dict:
-    """현직 프리미엄 — '박완수/도정/경남도청' 감성 자동"""
+    """현직 프리미엄 — 클러스터에서 박완수/도정 관련 이슈 감성"""
     snap = _load_enrichment_snapshot()
-    ri = snap.get("reaction_indices", {})
-    keywords = ["박완수", "도정", "경남도청", "도지사"]
-    sentiments = []
-    for kw in keywords:
-        for k, v in ri.items():
-            if kw in k:
-                sentiments.append(v.get("net_sentiment", 0))
-    if not sentiments:
-        return {"name": "현직 프리미엄", "value": -1.5, "confidence": "medium",
-                "reason": "도정평가 긍정 29% (기본값)"}
-    avg = sum(sentiments) / len(sentiments)
-    # 현직 감성이 긍정이면 → 현직 프리미엄 강화 (박 유리)
-    value = round(max(-3.0, min(0.0, -0.5 + avg * -3)), 1)
-    return {"name": "현직 프리미엄", "value": value, "confidence": "medium",
-            "reason": f"현직 관련 감성 {avg:+.2f} → 자동산출 {value:+.1f}"}
+    clusters = snap.get("news_clusters", [])
+
+    # 현직 관련 클러스터: 박완수/도정/예산/현직
+    inc_clusters = [c for c in clusters if any(kw in c.get("name", "") for kw in ["박완수", "도정", "도청", "추경", "예산", "현직"])]
+    # 현직 책임 이슈 (사건사고 등): 우리유리인데 현직 관련
+    inc_neg = [c for c in clusters if "우리" in c.get("side", "") and any(kw in c.get("name", "") for kw in ["사고", "사망", "관리", "부실"])]
+
+    if inc_clusters or inc_neg:
+        # 상대유리 현직 이슈 → 현직 프리미엄 강화 (박 유리)
+        # 우리유리 현직 이슈 (사고 등) → 현직 프리미엄 약화 (김 유리)
+        pos_count = sum(c.get("count", 0) for c in inc_clusters if "상대" in c.get("side", ""))
+        neg_count = sum(c.get("count", 0) for c in inc_clusters if "우리" in c.get("side", ""))
+        neg_count += sum(c.get("count", 0) for c in inc_neg)
+
+        net = pos_count - neg_count
+        # 현직 긍정 넘으면 → 박 유리(-), 현직 부정 넘으면 → 김 유리(약화)
+        value = round(max(-3.0, min(0.0, -1.0 - net * 0.05)), 1)
+        return {"name": "현직 프리미엄", "value": value, "confidence": "medium",
+                "reason": f"현직관련: 상대유리{pos_count}건 우리유리{neg_count}건 → {value:+.1f}"}
+
+    return {"name": "현직 프리미엄", "value": -1.5, "confidence": "medium",
+            "reason": "현직 관련 클러스터 없음 (기본값)"}
 
 
 def _auto_poll_inertia() -> dict:
-    """여론관성 — 여론조사 추세/모멘텀/격차에서 자동 산출"""
+    """여론관성 — 여론조사 격차에서 자동 산출"""
     snap = _load_enrichment_snapshot()
-    # polling history에서 최근 추세 가져오기
-    try:
-        import json
-        with open("data/enrichment_snapshot.json") as f:
-            s = json.load(f)
-        # auto_polls에서 최신 격차
-        auto = s.get("auto_polls", [])
-        if auto and len(auto) > 0:
-            latest = auto[0]
-            gap = latest.get("gap", 0)
-            # 격차 기반: +10%p면 강한 여론관성, 0이면 중립
+    auto = snap.get("auto_polls", [])
+
+    if auto:
+        latest = auto[0] if isinstance(auto[0], dict) else {}
+        gap = latest.get("gap", 0)
+        if gap != 0:
             value = round(max(-2.0, min(2.0, gap * 0.15)), 1)
             return {"name": "여론관성", "value": value, "confidence": "medium",
                     "reason": f"최신 여론 격차 {gap:+.1f}%p → 관성 {value:+.1f}"}
-    except Exception:
-        pass
-    # POLL_DATA에서 최신
-    try:
-        from lib.pollData import POLL_DATA  # type: ignore
-    except Exception:
-        pass
+
     return {"name": "여론관성", "value": +0.5, "confidence": "medium",
             "reason": "여론조사 추세 상승 모멘텀 (기본값)"}
 
 
 def _compute_candidate_premium() -> dict:
-    """후보 프리미엄(김경수 정책 키워드)을 이슈/리액션 데이터에서 실시간 계산."""
-    try:
-        import json
-        with open("data/enrichment_snapshot.json") as f:
-            snap = json.load(f)
-        ii = snap.get("issue_indices", {})
-        ri = snap.get("reaction_indices", {})
-    except Exception:
+    """후보 프리미엄 — 클러스터에서 김경수 관련 우리유리 이슈 감성"""
+    snap = _load_enrichment_snapshot()
+    clusters = snap.get("news_clusters", [])
+
+    # 우리유리 클러스터의 긍정 감성 강도 = 김경수 브랜드 파워
+    our_clusters = [c for c in clusters if "우리" in c.get("side", "")]
+    if not our_clusters:
         return {"name": "후보 프리미엄 (정책)", "value": 0.0, "confidence": "low",
-                "reason": "데이터 없음", "detail": {}}
+                "reason": "우리유리 클러스터 없음"}
 
-    issue_scores = []
-    rx_scores = []
-    sentiments = []
-    matched = []
+    avg_sent = sum(c.get("sentiment", 0) for c in our_clusters) / len(our_clusters)
+    avg_count = sum(c.get("count", 0) for c in our_clusters) / len(our_clusters)
 
-    for cat, kws in _PREMIUM_KEYWORDS.items():
-        for kw in kws:
-            # 정확 매칭 → 부분 매칭
-            i_match = ii.get(kw)
-            r_match = ri.get(kw)
-            if not i_match:
-                for k, v in ii.items():
-                    if kw in k or k in kw:
-                        i_match = v
-                        break
-            if not r_match:
-                for k, v in ri.items():
-                    if kw in k or k in kw:
-                        r_match = v
-                        break
-
-            i_score = i_match.get("index", 0) if i_match else 0
-            r_score = r_match.get("final_score", 0) if r_match else 0
-            r_sent = r_match.get("net_sentiment", 0) if r_match else 0
-
-            if i_score > 0 or r_score > 0:
-                issue_scores.append(i_score)
-                rx_scores.append(r_score)
-                sentiments.append(r_sent)
-                matched.append(kw)
-
-    if not matched:
-        return {"name": "후보 프리미엄 (정책)", "value": 0.0, "confidence": "low",
-                "reason": "매칭 키워드 없음", "detail": {}}
-
-    avg_issue = sum(issue_scores) / len(issue_scores)
-    avg_rx = sum(rx_scores) / len(rx_scores)
-    avg_sent = sum(sentiments) / len(sentiments)
-
-    # 지표화: 이슈 활성도 + 감성 방향 + 반응 강도
-    issue_factor = (avg_issue - 50) * 0.3      # 이슈 50 이상 = 활발한 논의
-    sentiment_factor = avg_sent * 15            # 긍정 0.5 → +7.5점
-    rx_factor = (avg_rx - 40) * 0.2            # 반응 40 이상 = 관심 높음
-
-    total = round(issue_factor + sentiment_factor + rx_factor, 1)
-    # %p 환산: 점수를 직접 사용 (범위 제한)
-    value = round(max(-3.0, min(3.0, total * 0.15)), 1)
-    confidence = "high" if len(matched) >= 6 and avg_sent > 0.3 else "medium" if len(matched) >= 3 else "low"
+    # 높은 긍정 감성 + 높은 커버리지 → 강한 후보 프리미엄
+    sent_factor = avg_sent * 0.02  # 감성 50 → +1.0
+    volume_factor = min(0.5, avg_count * 0.03)  # 기사수 보너스
+    value = round(max(-1.0, min(2.0, sent_factor + volume_factor)), 1)
 
     return {
         "name": "후보 프리미엄 (정책)",
         "value": value,
-        "confidence": confidence,
-        "reason": f"부울경·경제·산업·청년 {len(matched)}개 키워드 이슈{avg_issue:.0f} 감성{avg_sent:+.2f}",
-        "detail": {
-            "matched_keywords": len(matched),
-            "avg_issue": round(avg_issue, 1),
-            "avg_reaction": round(avg_rx, 1),
-            "avg_sentiment": round(avg_sent, 3),
-            "issue_factor": round(issue_factor, 1),
-            "sentiment_factor": round(sentiment_factor, 1),
-            "rx_factor": round(rx_factor, 1),
-            "total_score": total,
-        },
+        "confidence": "medium" if len(our_clusters) >= 3 else "low",
+        "reason": f"우리유리 {len(our_clusters)}건 감성{avg_sent:+.0f} 평균{avg_count:.0f}건 → {value:+.1f}",
     }
 
 

@@ -26,27 +26,57 @@ export default function IndicesPanel() {
             <span className="text-[10px] text-gray-300 font-bold">이슈지수 <span className="text-[7px] text-amber-500/60 font-normal">beta</span> <span className="timestamp font-normal ml-1">{fmtTs(issue?.updated_at)}</span></span>
             <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border ${gradeColor(issue?.grade)}`}>{issue?.grade}</span>
           </div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-center">
-              <div className="text-[8px] text-blue-400 anim-slide" style={{animationDelay:"0.1s"}}>김경수</div>
-              <div className="text-[22px] font-black wr-metric text-blue-400 pulse anim-num" style={{animationDelay:"0.3s"}}>{issue?.kim?.mentions || 0}</div>
-              <div className="text-[7px] text-gray-600">{issue?.kim?.keywords || 0}개</div>
+          {(() => {
+            const idx = issue?.index || 50;
+            const delta = idx - 50;
+            const color = idx >= 55 ? "text-emerald-400" : idx <= 45 ? "text-rose-500" : "text-cyan-400";
+            const barColor = idx >= 55 ? "#10b981" : idx <= 45 ? "#ef4444" : "#06b6d4";
+            const direction = delta > 0 ? "김경수 유리" : delta < 0 ? "박완수 유리" : "중립";
+            return (
+              <>
+                <div className="text-center mb-2">
+                  <div className={`text-[28px] font-black wr-metric leading-none pulse ${color}`}>
+                    {idx.toFixed(1)}<span className="text-[9px] text-gray-500 ml-0.5">pt</span>
+                  </div>
+                  <div className={`text-[9px] font-bold mt-0.5 gap-blink ${delta > 0 ? "text-blue-400" : delta < 0 ? "text-red-400" : "text-gray-400"}`}>
+                    {direction} ({delta > 0 ? "+" : ""}{delta.toFixed(1)})
+                  </div>
+                </div>
+                <div className="relative h-3 bg-[#0e1825] rounded-full overflow-hidden mb-2">
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-600 z-10" />
+                  <div className="flex h-full">
+                    <div className="bg-red-900/40" style={{ width: "50%" }} />
+                    <div className="bg-blue-900/40" style={{ width: "50%" }} />
+                  </div>
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 z-20 pulse"
+                    style={{
+                      left: `${idx}%`,
+                      transform: `translate(-50%, -50%)`,
+                      backgroundColor: barColor,
+                      borderColor: barColor,
+                      boxShadow: `0 0 6px ${barColor}80`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[7px] text-gray-600 mb-1">
+                  <span className="text-red-400/60">← 박 유리</span>
+                  <span>50</span>
+                  <span className="text-blue-400/60">김 유리 →</span>
+                </div>
+                <div className="flex justify-between text-[7px] text-gray-600">
+                  <span>우리 {issue?.kim?.mentions||0}건({issue?.kim?.score||0})</span>
+                  <span>상대 {issue?.park?.mentions||0}건({issue?.park?.score||0})</span>
+                </div>
+              </>
+            );
+          })()}
+          {(indices as any)?.ai_issue_summary ? (
+            <div className="text-[8px] text-cyan-400/80 leading-relaxed mt-1">
+              🤖 {(indices as any).ai_issue_summary}
             </div>
-            <div className={`text-[13px] font-black wr-metric gap-blink anim-num ${(issue?.gap||0) > 0 ? "text-blue-400" : (issue?.gap||0) < 0 ? "text-red-400" : "text-gray-400"}`} style={{animationDelay:"0.5s"}}>
-              격차 {issue?.gap > 0 ? "+" : ""}{issue?.gap || 0}
-            </div>
-            <div className="text-center">
-              <div className="text-[8px] text-red-400 anim-slide" style={{animationDelay:"0.2s"}}>박완수</div>
-              <div className="text-[22px] font-black wr-metric text-red-400 pulse anim-num" style={{animationDelay:"0.4s"}}>{issue?.park?.mentions || 0}</div>
-              <div className="text-[7px] text-gray-600">{issue?.park?.keywords || 0}개</div>
-            </div>
-          </div>
-          <div className="text-[7px] text-gray-600 leading-relaxed">
-            {(issue?.kim?.keywords||0) + (issue?.park?.keywords||0)}개 미디어채널에서 후보별 키워드 기반 뉴스 언급량 집계.
-            24시간 내 네이버 뉴스 수집 후 후보 연결 기사 수로 점수화.
-          </div>
-          {/* 미니 차트 — 후보별 2라인 */}
-          {candidateTrend.length >= 2 && <DualChart data={candidateTrend} kimField="issue_kim" parkField="issue_park" />}
+          ) : null}
+          {candidateTrend.length >= 2 && <MiniChart data={candidateTrend} field="issue_index" color="#10b981" label="이슈" />}
         </div>
 
         {/* 반응지수 */}
@@ -56,38 +86,59 @@ export default function IndicesPanel() {
             <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border ${gradeColor(reaction?.grade)}`}>{reaction?.grade}</span>
           </div>
           {(() => {
-            const kimP = reaction?.kim?.pct || 0;
-            const parkP = reaction?.park?.pct || 0;
-            const gap = kimP - parkP;
+            const idx = reaction?.index || 50;
+            const delta = idx - 50;
+            const color = idx >= 55 ? "text-emerald-400" : idx <= 45 ? "text-rose-500" : "text-cyan-400";
+            const barColor = idx >= 55 ? "#10b981" : idx <= 45 ? "#ef4444" : "#06b6d4";
+            const direction = delta > 0 ? "김경수 유리" : delta < 0 ? "박완수 유리" : "중립";
             return (
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-center">
-                  <div className="text-[8px] text-blue-400 anim-slide" style={{animationDelay:"0.1s"}}>김경수</div>
-                  <div className={`text-[22px] font-black wr-metric pulse anim-num ${kimP >= 0 ? "text-emerald-400" : "text-rose-400"}`} style={{animationDelay:"0.3s"}}>
-                    {kimP > 0 ? "+" : ""}{kimP}
+              <>
+                <div className="text-center mb-2">
+                  <div className={`text-[28px] font-black wr-metric leading-none pulse ${color}`}>
+                    {idx.toFixed(1)}<span className="text-[9px] text-gray-500 ml-0.5">pt</span>
                   </div>
-                  <div className="text-[7px] text-gray-600">{reaction?.kim?.keywords||0}개</div>
-                </div>
-                <div className="text-center px-1">
-                  <div className={`text-[13px] font-black wr-metric gap-blink anim-num ${gap > 0 ? "text-blue-400" : gap < 0 ? "text-red-400" : "text-gray-400"}`} style={{animationDelay:"0.5s"}}>
-                    격차 {gap > 0 ? "+" : ""}{gap}
+                  <div className={`text-[9px] font-bold mt-0.5 gap-blink ${delta > 0 ? "text-blue-400" : delta < 0 ? "text-red-400" : "text-gray-400"}`}>
+                    {direction} ({delta > 0 ? "+" : ""}{delta.toFixed(1)})
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-[8px] text-red-400 anim-slide" style={{animationDelay:"0.2s"}}>박완수</div>
-                  <div className={`text-[22px] font-black wr-metric pulse anim-num ${parkP >= 0 ? "text-emerald-400" : "text-rose-400"}`} style={{animationDelay:"0.4s"}}>
-                    {parkP > 0 ? "+" : ""}{parkP}
+                <div className="relative h-3 bg-[#0e1825] rounded-full overflow-hidden mb-2">
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-600 z-10" />
+                  <div className="flex h-full">
+                    <div className="bg-red-900/40" style={{ width: "50%" }} />
+                    <div className="bg-blue-900/40" style={{ width: "50%" }} />
                   </div>
-                  <div className="text-[7px] text-gray-600">{reaction?.park?.keywords||0}개</div>
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 z-20 pulse"
+                    style={{
+                      left: `${idx}%`,
+                      transform: `translate(-50%, -50%)`,
+                      backgroundColor: barColor,
+                      borderColor: barColor,
+                      boxShadow: `0 0 6px ${barColor}80`,
+                    }}
+                  />
                 </div>
-              </div>
+                <div className="flex justify-between text-[7px] text-gray-600 mb-1">
+                  <span className="text-red-400/60">← 박 유리</span>
+                  <span>50</span>
+                  <span className="text-blue-400/60">김 유리 →</span>
+                </div>
+              </>
             );
           })()}
+          {(indices as any)?.ai_reaction_summary ? (
+            <div className="text-[8px] text-cyan-400/80 leading-relaxed">
+              🤖 {(indices as any).ai_reaction_summary}
+            </div>
+          ) : null}
           <div className="text-[7px] text-gray-600 leading-relaxed">
-            {(reaction?.kim?.keywords||0) + (reaction?.park?.keywords||0)}개 채널(커뮤니티·댓글·SNS) 감성 분석.
-            AI 6분류 · 30분 갱신
+            {reaction?.total_mentions ? (
+              <>{reaction.total_mentions.toLocaleString()}건 수집 · {(reaction.sources_collected || []).join(" · ")}</>
+            ) : (
+              <>5개 채널 실데이터 감성 분석</>
+            )}
           </div>
-          {candidateTrend.length >= 2 && <DualChart data={candidateTrend} kimField="reaction_kim" parkField="reaction_park" />}
+          {candidateTrend.length >= 2 && <MiniChart data={candidateTrend} field="reaction_index" color="#f59e0b" label="반응" />}
         </div>
 
         {/* 판세지수 — 게이지 바 */}

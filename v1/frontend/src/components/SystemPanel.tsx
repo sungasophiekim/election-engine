@@ -24,23 +24,23 @@ function IssueTab({ indices }: { indices: any }) {
       <div>
         <div className="text-[11px] text-cyan-300 font-bold mb-1">지표 설명</div>
         <p className="text-[10px] text-gray-400 leading-relaxed">
-          이슈가 얼마나 &quot;터졌는가&quot;를 측정하는 순수 규모·속도 지표입니다.
-          감성(긍정/부정)이 아닌, 이슈의 확산 규모와 속도만을 측정합니다.
+          미디어에서 어느 쪽이 유리한 이슈를 점유하고 있는지를 측정하는 가중지수입니다.
+          광역 뉴스 수집(~250건) → AI 클러스터링(TOP 10 이슈) → 진영 판단 → 기사수 x 감성강도로 가중 점수화.
+          50pt = 중립, &gt;50 우리 유리, &lt;50 상대 유리.
         </p>
       </div>
       <div>
-        <div className="text-[11px] text-cyan-300 font-bold mb-1">구성요소 (100점 만점)</div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">산출 방식</div>
         <div className="space-y-1">
           {[
-            { name: "뉴스 볼륨", pts: 25, desc: "Naver News API 기반 중복제거 기사 수" },
-            { name: "미디어 티어", pts: 20, desc: "TV·포털·1티어 매체 비중 분류" },
-            { name: "확산 속도", pts: 30, desc: "6h/18h 속도비 + 이상치 + 전일비" },
-            { name: "후보 연결도", pts: 15, desc: "직접언급·정책·지역 연관도" },
-            { name: "채널 다양성", pts: 10, desc: "5개+ 채널 동시 감지 시 만점" },
+            { name: "광역 뉴스 수집", desc: "11개 쿼리로 경남 관련 뉴스 ~250건 수집 (Naver News API)" },
+            { name: "AI 클러스터링", desc: "Claude Haiku가 사건별 TOP 10 이슈로 분류 + 진영(우리유리/상대유리) 판단" },
+            { name: "감성강도 부여", desc: "각 클러스터에 -100~+100 감성 점수 (김경수 관점)" },
+            { name: "가중점수 산출", desc: "각 클러스터: 기사수 x |감성강도| (최소 10) = 임팩트 점수" },
+            { name: "지수화", desc: "우리 점수 / (우리 + 상대) x 100 → 50pt 기준 스케일" },
           ].map((c) => (
             <div key={c.name} className="flex items-center gap-2 py-1 border-b border-[#121e33] last:border-0">
-              <span className="text-[10px] text-gray-300 w-20 shrink-0">{c.name}</span>
-              <span className="text-[9px] font-mono text-cyan-400 w-8 shrink-0">{c.pts}점</span>
+              <span className="text-[10px] text-gray-300 w-28 shrink-0">{c.name}</span>
               <span className="text-[9px] text-gray-500">{c.desc}</span>
             </div>
           ))}
@@ -50,26 +50,25 @@ function IssueTab({ indices }: { indices: any }) {
         <div className="text-[11px] text-cyan-300 font-bold mb-1">등급 기준</div>
         <div className="flex gap-2 flex-wrap">
           {[
-            { g: "EXPLOSIVE", t: "≥80", c: "text-red-400" },
-            { g: "HOT", t: "≥60", c: "text-orange-400" },
-            { g: "ACTIVE", t: "≥40", c: "text-yellow-400" },
-            { g: "LOW", t: "≥20", c: "text-gray-400" },
-            { g: "DORMANT", t: "<20", c: "text-gray-600" },
+            { g: "우세", t: ">55pt", c: "text-emerald-400" },
+            { g: "접전", t: "45~55pt", c: "text-gray-400" },
+            { g: "열세", t: "<45pt", c: "text-rose-400" },
           ].map((g) => (
-            <span key={g.g} className={`text-[9px] font-bold ${g.c}`}>{g.g}({g.t})</span>
+            <span key={g.g} className={`text-[9px] font-bold ${g.c}`}>{g.g} ({g.t})</span>
           ))}
         </div>
       </div>
       <div>
-        <div className="text-[11px] text-cyan-300 font-bold mb-2">데이터 소스 (7개 채널)</div>
-        <SourceRow name="뉴스 (Naver News API)" updatedAt={issue?.sources?.news_updated_at} />
-        <SourceRow name="블로그 (Naver Blog)" updatedAt={issue?.sources?.blog_updated_at} />
-        <SourceRow name="카페 (Naver Cafe)" updatedAt={issue?.sources?.cafe_updated_at} />
-        <SourceRow name="유튜브 (YouTube API)" updatedAt={issue?.sources?.youtube_updated_at} />
-        <SourceRow name="구글트렌드 (Google Trends)" updatedAt={issue?.sources?.trends_updated_at} />
-        <SourceRow name="커뮤니티 (19+곳)" updatedAt={issue?.sources?.community_updated_at} />
-        <SourceRow name="네이버 데이터랩" updatedAt={issue?.sources?.datalab_updated_at} />
-        <div className="mt-2 text-[9px] text-gray-600">업데이트 주기: 10분 간격 자동 수집</div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">현재 값</div>
+        <div className="text-[10px] text-gray-400">
+          {issue?.index?.toFixed(1) || 50}pt | 우리 {issue?.kim?.mentions||0}건(가중 {issue?.kim?.score||0}) vs 상대 {issue?.park?.mentions||0}건(가중 {issue?.park?.score||0})
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-2">데이터 소스</div>
+        <SourceRow name="뉴스 (Naver News API · 광역 11쿼리)" updatedAt={issue?.sources?.news_updated_at} />
+        <SourceRow name="AI 클러스터링 (Claude Haiku)" updatedAt={indices?.cluster_updated_at} />
+        <div className="mt-2 text-[9px] text-gray-600">업데이트 주기: 1시간 간격 자동 수집 · AI 비용 ~$0.01/회</div>
       </div>
     </div>
   );
@@ -82,56 +81,62 @@ function ReactionTab({ indices }: { indices: any }) {
       <div>
         <div className="text-[11px] text-cyan-300 font-bold mb-1">지표 설명</div>
         <p className="text-[10px] text-gray-400 leading-relaxed">
-          사람들이 &quot;어떻게 반응하는가&quot;를 측정하는 감성·참여·바이럴 지표입니다.
-          커뮤니티 공명, 콘텐츠 생성량, 감성 방향, 검색 반응, 유튜브 인게이지먼트를 종합 분석합니다.
+          뉴스 이슈에 대해 시민들이 실제로 어떻게 반응하는지를 측정하는 실데이터 감성 지표입니다.
+          이슈지수에서 추출한 TOP 10 이슈 키워드로 5개 채널을 검색하여 실제 여론 감성을 수집합니다.
         </p>
       </div>
       <div>
-        <div className="text-[11px] text-cyan-300 font-bold mb-1">구성요소 (100점 만점)</div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">파이프라인</div>
         <div className="space-y-1">
           {[
-            { name: "커뮤니티 공명", pts: 25, desc: "19+ 커뮤니티 바이럴 패턴 감지" },
-            { name: "콘텐츠 생성", pts: 20, desc: "블로그·카페·유튜브 게시량 추적" },
-            { name: "감성 방향", pts: 20, desc: "뉴스(35%)+블로그(25%)+카페(20%)+유튜브(15%)+댓글(25%)" },
-            { name: "검색 반응", pts: 15, desc: "구글트렌드 관심도·7일변화·급등감지" },
-            { name: "유튜브 인게이지먼트", pts: 20, desc: "댓글수·좋아요·조회수·댓글감성" },
+            { name: "1. 키워드 추출", desc: "이슈지수 AI 클러스터 TOP 10 이슈명을 검색 키워드로 사용" },
+            { name: "2. 블로그 수집", desc: "Naver Blog API — 키워드별 최신 30건 제목+감성 분석" },
+            { name: "3. 카페 수집", desc: "Naver Cafe API — 키워드별 최신 30건 제목+감성 분석" },
+            { name: "4. 유튜브 댓글", desc: "YouTube API — 키워드별 상위 2영상 × 20댓글 감성 분석" },
+            { name: "5. 커뮤니티", desc: "디시/에펨/클리앙/더쿠/네이트판/82쿡 + 경남 맘카페 4곳 (10곳)" },
+            { name: "6. 뉴스 댓글", desc: "네이버 뉴스 댓글 API — 상위 3기사 × 15댓글 + 공감수" },
           ].map((c) => (
             <div key={c.name} className="flex items-center gap-2 py-1 border-b border-[#121e33] last:border-0">
               <span className="text-[10px] text-gray-300 w-28 shrink-0">{c.name}</span>
-              <span className="text-[9px] font-mono text-cyan-400 w-8 shrink-0">{c.pts}점</span>
               <span className="text-[9px] text-gray-500">{c.desc}</span>
             </div>
           ))}
         </div>
       </div>
       <div>
-        <div className="text-[11px] text-cyan-300 font-bold mb-1">속도 보너스</div>
-        <p className="text-[9px] text-gray-400">
-          이상치+서프라이즈 ≥80 → <span className="text-amber-400">x1.15</span> · 이상치 or 서프라이즈 ≥60 → <span className="text-amber-400">x1.10</span>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">지수 산출</div>
+        <p className="text-[9px] text-gray-400 leading-relaxed">
+          각 이슈별 5개 소스 감성 평균 → 우리유리 긍정 vs 상대유리 긍정 비율 → 50pt 기준 스케일.
+          &gt;50 = 우리에게 유리한 여론, &lt;50 = 상대에게 유리한 여론. 이슈지수·판세지수와 동일 스케일.
         </p>
       </div>
       <div>
         <div className="text-[11px] text-cyan-300 font-bold mb-1">등급 기준</div>
         <div className="flex gap-2 flex-wrap">
           {[
-            { g: "VIRAL", t: "≥75", c: "text-red-400" },
-            { g: "ENGAGED", t: "≥50", c: "text-orange-400" },
-            { g: "RIPPLE", t: "≥25", c: "text-yellow-400" },
-            { g: "SILENT", t: "<25", c: "text-gray-600" },
+            { g: "우세", t: ">55pt", c: "text-emerald-400" },
+            { g: "접전", t: "45~55pt", c: "text-gray-400" },
+            { g: "열세", t: "<45pt", c: "text-rose-400" },
           ].map((g) => (
-            <span key={g.g} className={`text-[9px] font-bold ${g.c}`}>{g.g}({g.t})</span>
+            <span key={g.g} className={`text-[9px] font-bold ${g.c}`}>{g.g} ({g.t})</span>
           ))}
         </div>
       </div>
       <div>
-        <div className="text-[11px] text-cyan-300 font-bold mb-2">데이터 소스 (6개 레이어)</div>
-        <SourceRow name="커뮤니티 (19+곳)" updatedAt={reaction?.sources?.community_updated_at} />
-        <SourceRow name="블로그 / 카페" updatedAt={reaction?.sources?.social_updated_at} />
-        <SourceRow name="유튜브 (YouTube API)" updatedAt={reaction?.sources?.youtube_updated_at} />
-        <SourceRow name="뉴스 댓글" updatedAt={reaction?.sources?.comments_updated_at} />
-        <SourceRow name="구글트렌드" updatedAt={reaction?.sources?.trends_updated_at} />
-        <SourceRow name="감성 분석 (Claude AI)" updatedAt={reaction?.sources?.sentiment_updated_at} />
-        <div className="mt-2 text-[9px] text-gray-600">업데이트 주기: 10분 간격 자동 수집</div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">현재 값</div>
+        <div className="text-[10px] text-gray-400">
+          {reaction?.index?.toFixed(1) || 50}pt | {reaction?.total_mentions?.toLocaleString()||0}건 수집 | {reaction?.keywords_analyzed||0}개 이슈 분석
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-2">데이터 소스 (5개 채널 · 병렬 수집)</div>
+        <SourceRow name="블로그 (Naver Blog API)" updatedAt={reaction?.updated_at} />
+        <SourceRow name="카페 (Naver Cafe API)" updatedAt={reaction?.updated_at} />
+        <SourceRow name="유튜브 댓글 (YouTube Data API)" updatedAt={reaction?.updated_at} />
+        <SourceRow name="커뮤니티 (디시/에펨/클리앙/더쿠/네이트판/82쿡)" updatedAt={reaction?.updated_at} />
+        <SourceRow name="경남 맘카페 (창원줌마렐라/김해/진주/양산)" updatedAt={reaction?.updated_at} />
+        <SourceRow name="뉴스 댓글 (네이버 뉴스 댓글 API)" updatedAt={reaction?.updated_at} />
+        <div className="mt-2 text-[9px] text-gray-600">업데이트 주기: 1시간 간격 · 이슈 수집 직후 자동 실행</div>
       </div>
     </div>
   );
@@ -186,7 +191,7 @@ function PandseTab({ indices }: { indices: any }) {
         <SourceRow name="국정지지율 (Gallup 등)" updatedAt={pandse?.sources?.national_poll_updated_at} />
         <SourceRow name="경제지표 (정부 통계)" updatedAt={pandse?.sources?.economic_updated_at} />
         <div className="mt-2 text-[9px] text-gray-600">
-          엔진 연산: 10분 간격 · 여론조사: 발표 시 · 국정지지율: 주 1~2회 · 경제지표: 일/주간
+          엔진 연산: 1시간 간격 · 여론조사: 발표 시 · 국정지지율: 주 1~2회 · 경제지표: 일/주간
         </div>
       </div>
     </div>

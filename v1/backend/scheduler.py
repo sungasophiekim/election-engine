@@ -164,23 +164,66 @@ def _update_all():
 
         # AI 사건별 클러스터링 — 제목 기반
         scored_clusters = _ai_cluster_events(all_articles)
+        # AI 한줄 해석 추출
+        _ai_issue_summary = scored_clusters[0].pop("_issue_summary", "") if scored_clusters else ""
+        _ai_reaction_summary = scored_clusters[0].pop("_reaction_summary", "") if scored_clusters else ""
+        for c in scored_clusters:
+            c.pop("_issue_summary", None)
+            c.pop("_reaction_summary", None)
         snap["news_clusters"] = scored_clusters[:12]
         snap["news_clusters_timestamp"] = datetime.now().isoformat()
+        snap["ai_issue_summary"] = _ai_issue_summary
+        snap["ai_reaction_summary"] = _ai_reaction_summary
         src_ts["cluster_updated_at"] = datetime.now().isoformat()
 
-        # ── 3.5 클러스터 기반 이슈/반응지수 (통합) ──
-        our_count = sum(c.get("count", 0) for c in scored_clusters if "우리" in c.get("side", ""))
-        opp_count = sum(c.get("count", 0) for c in scored_clusters if "상대" in c.get("side", ""))
-        neutral_count = sum(c.get("count", 0) for c in scored_clusters if "중립" in c.get("side", ""))
+        # ── 3.5 클러스터 기반 이슈지수 (가중지수: 기사수 × 감성강도) ──
+        our_score, opp_score = 0.0, 0.0
+        our_count, opp_count, neutral_count = 0, 0, 0
+        for c in scored_clusters:
+            cnt = c.get("count", 0)
+            # 감성강도: 0~100 (절대값), 최소 10 보장 (건수만 있어도 반영)
+            intensity = max(10, abs(c.get("sentiment", 0)))
+            impact = cnt * intensity
+            side = c.get("side", "")
+            if "우리" in side:
+                our_score += impact
+                our_count += cnt
+            elif "상대" in side:
+                opp_score += impact
+                opp_count += cnt
+            else:
+                neutral_count += cnt
+
+        # 지수화: 50pt 기준 (our_score / total_score × 100), 데이터 없으면 50
+        total_score = our_score + opp_score
+        issue_index = round(our_score / total_score * 100, 1) if total_score > 0 else 50.0
+
         snap["cluster_issue"] = {
             "kim_count": our_count,
             "park_count": opp_count,
             "neutral_count": neutral_count,
             "total": our_count + opp_count + neutral_count,
+            "kim_score": round(our_score),
+            "park_score": round(opp_score),
+            "issue_index": issue_index,  # 50=중립, >50 우리유리, <50 상대유리
             "updated_at": datetime.now().isoformat(),
         }
 
+        # 반응지수: 클러스터 키워드 → 실데이터 수집 (블로그/카페/유튜브/커뮤니티/뉴스댓글)
         print(f"[{_now()}] 클러스터: {len(scored_clusters)}개 (TOP: {scored_clusters[0]['name'] if scored_clusters else '없음'}) | 우리{our_count} 상대{opp_count} 중립{neutral_count}", flush=True)
+
+        try:
+            reaction_data = _collect_cluster_reactions(scored_clusters)
+            if reaction_data and reaction_data.get("total_mentions", 0) > 0:
+                snap["cluster_reaction"] = reaction_data
+                print(f"[{_now()}] 반응지수(실데이터): {reaction_data['reaction_index']:.1f}pt | {reaction_data['total_mentions']}건 수집", flush=True)
+            else:
+                # 폴백: AI 예측 기반 50pt 스케일
+                snap["cluster_reaction"] = _ai_fallback_reaction(scored_clusters)
+                print(f"[{_now()}] 반응지수(AI폴백): {snap['cluster_reaction'].get('reaction_index', 50):.1f}pt", flush=True)
+        except Exception as e:
+            print(f"[{_now()}] 반응수집 오류, AI폴백 사용: {e}", flush=True)
+            snap["cluster_reaction"] = _ai_fallback_reaction(scored_clusters)
 
         # ── 4. 후보 버즈 수집 ──
         kw_path = LEGACY_DATA / "monitor_keywords.json"
@@ -398,10 +441,14 @@ def _ai_cluster_events(articles: list) -> list:
 {titles_text}
 
 다음 JSON 형식으로 답변 (코드블록 없이 순수 JSON만):
-[
-  {{"name": "사건 한줄 요약 (20자 이내)", "count": 관련기사수, "side": "우리 유리|상대 유리|중립", "tip": "캠프 대응 Tip 2줄 이내", "articles": ["대표 기사 제목1", "대표 기사 제목2"]}},
-  ...
-]
+{{
+  "clusters": [
+    {{"name": "사건 한줄 요약 (20자 이내)", "count": 관련기사수, "side": "우리 유리|상대 유리|중립", "sentiment": 감성점수(-100~+100), "community_expected": "긍정|부정|중립", "tip": "캠프 대응 Tip 2줄 이내", "articles": ["대표 기사 제목1", "대표 기사 제목2"]}},
+    ...
+  ],
+  "issue_summary": "이슈지수 한줄 해석 (오늘 미디어에서 어느 쪽이 유리한지 20자 요약)",
+  "reaction_summary": "반응지수 한줄 해석 (시민 여론 감성이 어느 쪽에 유리한지 20자 요약)"
+}}
 
 판단 기준 (side) — 중립은 최소화, 적극적으로 판단:
 - "우리 유리": 김경수/민주당에 긍정적, 박완수/국민의힘을 비판, 이재명 대통령 행사/방문/성과, 정부 정책 성과, 야당 내부 갈등
@@ -410,14 +457,22 @@ def _ai_cluster_events(articles: list) -> list:
 
 필수 규칙:
 - 이재명 대통령 경남 방문/행사(KF-21 출고식 등) → 반드시 "우리 유리"
-- 박완수 도정 예산/추경/성과 발표 → 반드시 "상대 유리"
+- 박완수 도정 예산/추경/성과 발표 → 기본 "상대 유리". 단, 선심성 논란/비판이 동반되면 "우리 유리"로 전환
 - 김경수/민주당 네거티브 공격 기사 → 반드시 "상대 유리"
 - 국민의힘 내부 갈등/컷오프 논란 → 반드시 "우리 유리"
+- 국민의힘/보수 진영 부정 이미지 이슈(재산 과다, 비리, 커닝, 도덕성) → 반드시 "우리 유리". 야당 부정 뉴스를 상대유리로 분류하지 마라
 - 현직 도정 관련 사건·사고·관리부실(안전사고, 시설관리 등) → 반드시 "우리 유리" (현직 책임)
+- 선거 직전 현직의 대규모 재정 지출(민생지원금·추경 등)에 "선심성", "표 매수", "돈 뿌리기" 등 비판 톤이 기사에 포함되면 → "우리 유리"
+- 광역단체장/국회의원 재산공개에서 국민의힘 인사가 상위권 → "우리 유리" (부자 정당 프레임)
+- 이재명 정부/여당 정책(분양·공급·예산 등)이 성과로 보도되면 → "우리 유리". 동일 정책이 "선거 전 쏟아내기", "선심성", "포퓰리즘" 등 비판 프레임으로 보도되면 → "상대 유리" (우리 정부 공격). 기사 톤을 반드시 확인하고 판단
 - 조금이라도 한쪽에 유리하면 중립 대신 해당 진영으로 판단
 - 경남 선거와 무관한 뉴스는 제외
 - 기사 수 많은 순
-- tip: 김경수 캠프 전략팀 관점, 구체적 행동 2줄 이내, 짧은 단어 위주"""
+- tip: 김경수 캠프 전략팀 관점, 구체적 행동 2줄 이내, 짧은 단어 위주
+- sentiment: 김경수에게 긍정이면 +, 부정이면 - (-100~+100)
+- community_expected: 일반 시민 커뮤니티에서 예상되는 반응 (긍정/부정/중립)
+
+issue_summary와 reaction_summary는 반드시 포함 (clusters 배열 밖 최상위 필드)"""
 
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
@@ -433,19 +488,48 @@ def _ai_cluster_events(articles: list) -> list:
             if text.startswith("json"):
                 text = text[4:]
 
-        clusters = json.loads(text)
+        parsed = json.loads(text)
+
+        # 래퍼 객체 형식: {"clusters": [...], "issue_summary": "...", "reaction_summary": "..."}
+        # 또는 배열 형식: [...]  (폴백)
+        if isinstance(parsed, dict) and "clusters" in parsed:
+            cluster_list = parsed["clusters"]
+            issue_summary = parsed.get("issue_summary", "")
+            reaction_summary = parsed.get("reaction_summary", "")
+        elif isinstance(parsed, list):
+            cluster_list = parsed
+            issue_summary = ""
+            reaction_summary = ""
+            # 배열 마지막에 summary 객체가 있을 수 있음
+            for c in cluster_list:
+                if "issue_summary" in c:
+                    issue_summary = c["issue_summary"]
+                    reaction_summary = c.get("reaction_summary", "")
+        else:
+            cluster_list = []
+            issue_summary = ""
+            reaction_summary = ""
 
         result = []
-        for c in clusters[:12]:
+        for c in cluster_list[:12]:
+            if "issue_summary" in c:
+                continue
             result.append({
                 "name": c.get("name", ""),
                 "count": c.get("count", 0),
                 "side": c.get("side", "중립"),
+                "sentiment": c.get("sentiment", 0),
+                "community_expected": c.get("community_expected", "중립"),
                 "tip": c.get("tip", ""),
                 "articles": [{"title": t, "source": ""} for t in c.get("articles", [])[:3]],
             })
 
-        print(f"[{_now()}] AI 클러스터링 성공: {len(result)}개 사건", flush=True)
+        # summary를 첫 번째 클러스터에 메타로 첨부 (snap 저장용)
+        if result:
+            result[0]["_issue_summary"] = issue_summary
+            result[0]["_reaction_summary"] = reaction_summary
+
+        print(f"[{_now()}] AI 클러스터링 성공: {len(result)}개 사건 | 해석: {bool(issue_summary)}", flush=True)
         return result
 
     except Exception as e:
@@ -464,7 +548,18 @@ def _ai_cluster_events(articles: list) -> list:
 
         result = []
         for cat, c in sorted(cats.items(), key=lambda x: -x[1]["count"]):
-            side = "우리 측" if c["kim"] > c["park"] * 2 else "상대 측 (현직)" if c["park"] > c["kim"] * 2 else "중립"
+            # 진영 판정: 카테고리 + 언급비율 기반
+            cat_lower = cat.lower() if cat else ""
+            if any(kw in cat_lower for kw in ["사법", "스캔들", "드루킹"]):
+                side = "상대 유리"
+            elif any(kw in cat_lower for kw in ["정당/정치"]) and c["park"] > c["kim"]:
+                side = "우리 유리"  # 국민의힘 부정 뉴스
+            elif c["kim"] > c["park"] * 2:
+                side = "우리 유리"
+            elif c["park"] > c["kim"] * 2:
+                side = "상대 유리"
+            else:
+                side = "중립"
             result.append({
                 "name": cat, "count": c["count"], "articles": c["articles"],
                 "side": side, "urgency": "즉시" if c["count"] >= 10 else "오늘 내" if c["count"] >= 5 else "모니터링",
@@ -473,6 +568,208 @@ def _ai_cluster_events(articles: list) -> list:
                 "score": min(100, c["count"] * 5),
             })
         return result[:12]
+
+
+def _ai_fallback_reaction(clusters: list) -> dict:
+    """AI 클러스터 감성으로 반응지수 50pt 폴백 계산"""
+    our_score, opp_score = 0.0, 0.0
+    for c in clusters:
+        cnt = c.get("count", 0)
+        sent = c.get("sentiment", 0)
+        impact = cnt * abs(sent) / 100  # 정규화
+        if "우리" in c.get("side", ""):
+            if sent > 0:
+                our_score += impact
+            else:
+                opp_score += impact
+        elif "상대" in c.get("side", ""):
+            if sent < 0:
+                our_score += impact  # 상대에 부정 = 우리에 유리
+            else:
+                opp_score += impact
+    total = our_score + opp_score
+    idx = round(our_score / total * 100, 1) if total > 0 else 50.0
+    return {"reaction_index": idx, "updated_at": datetime.now().isoformat()}
+
+
+def _collect_cluster_reactions(clusters: list) -> dict:
+    """클러스터 키워드 → 블로그/카페/유튜브댓글/커뮤니티/뉴스댓글 수집 → AI 감성 종합"""
+    if not clusters:
+        return {}
+
+    _ensure_env()
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    # 상위 10개 클러스터 키워드 추출
+    keywords = []
+    for c in clusters[:10]:
+        name = c.get("name", "")
+        if name:
+            # 짧은 핵심 키워드로 변환 (20자 이내 → 그대로 사용)
+            keywords.append({"keyword": name, "side": c.get("side", "중립")})
+
+    if not keywords:
+        return {}
+
+    print(f"[{_now()}] 반응수집 시작: {len(keywords)}개 키워드", flush=True)
+
+    # 소스별 수집 결과
+    all_reactions = []
+
+    def _collect_one(kw_info):
+        """단일 키워드에 대해 4개 소스 수집"""
+        kw = kw_info["keyword"]
+        side = kw_info["side"]
+        result = {"keyword": kw, "side": side, "sources": {}}
+
+        # 1. 블로그 + 카페
+        try:
+            from collectors.social_collector import search_blogs, search_cafes
+            blog = search_blogs(kw, display=30)
+            result["sources"]["blog"] = {
+                "count": blog.recent_24h,
+                "total": blog.total_count,
+                "net_sentiment": blog.net_sentiment,
+                "titles": [item.get("title", "") for item in blog.top_items[:3]],
+            }
+        except Exception as e:
+            print(f"[{_now()}] 블로그 수집 실패({kw[:10]}): {e}", flush=True)
+
+        try:
+            from collectors.social_collector import search_cafes
+            cafe = search_cafes(kw, display=30)
+            result["sources"]["cafe"] = {
+                "count": cafe.recent_24h,
+                "total": cafe.total_count,
+                "net_sentiment": cafe.net_sentiment,
+                "titles": [item.get("title", "") for item in cafe.top_items[:3]],
+            }
+        except Exception as e:
+            print(f"[{_now()}] 카페 수집 실패({kw[:10]}): {e}", flush=True)
+
+        # 2. 유튜브 댓글
+        try:
+            from collectors.youtube_collector import fetch_keyword_comments as yt_comments
+            yt = yt_comments(kw, top_n_videos=2, max_comments_per_video=20)
+            result["sources"]["youtube"] = {
+                "videos": yt.videos_analyzed,
+                "comments": yt.total_comments,
+                "net_sentiment": yt.net_sentiment,
+                "positive_ratio": yt.positive_ratio,
+                "negative_ratio": yt.negative_ratio,
+            }
+        except Exception as e:
+            print(f"[{_now()}] 유튜브 수집 실패({kw[:10]}): {e}", flush=True)
+
+        # 3. 커뮤니티 (주요 5개만 — 디시, 에펨, 클리앙, 더쿠, 네이트판)
+        try:
+            from collectors.community_collector import search_community
+            comm_total = 0
+            comm_sent_sum = 0.0
+            comm_count = 0
+            comm_titles = []
+            for cid in ["dcinside", "fmkorea", "clien", "theqoo", "natepann", "82cook", "momcafe_changwon", "momcafe_gimhae", "momcafe_jinju", "momcafe_yangsan"]:
+                try:
+                    sig = search_community(kw, cid)
+                    if sig.result_count > 0:
+                        comm_total += sig.result_count
+                        sent = sig.positive_ratio - sig.negative_ratio
+                        comm_sent_sum += sent
+                        comm_count += 1
+                        comm_titles.extend(sig.recent_titles[:2])
+                except Exception:
+                    pass
+            result["sources"]["community"] = {
+                "mentions": comm_total,
+                "net_sentiment": round(comm_sent_sum / comm_count, 3) if comm_count > 0 else 0,
+                "sites_active": comm_count,
+                "titles": comm_titles[:5],
+            }
+        except Exception as e:
+            print(f"[{_now()}] 커뮤니티 수집 실패({kw[:10]}): {e}", flush=True)
+
+        # 4. 뉴스 댓글
+        try:
+            from collectors.news_comment_collector import fetch_keyword_comments as news_comments
+            nc = news_comments(kw, max_articles=3, max_comments_per_article=15)
+            result["sources"]["news_comments"] = {
+                "articles": nc.articles_analyzed,
+                "comments": nc.total_comments,
+                "net_sentiment": nc.net_sentiment,
+                "likes": nc.total_likes,
+                "dislikes": nc.total_dislikes,
+                "reaction_grade": nc.reaction_grade,
+            }
+        except Exception as e:
+            print(f"[{_now()}] 뉴스댓글 수집 실패({kw[:10]}): {e}", flush=True)
+
+        return result
+
+    # 병렬 수집 (3 workers — API rate limit 고려)
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = {pool.submit(_collect_one, kw): kw for kw in keywords}
+        for fut in as_completed(futures):
+            try:
+                all_reactions.append(fut.result())
+            except Exception:
+                pass
+
+    # ── 종합: 우리/상대별 실제 반응 감성 집계 ──
+    our_sentiments = []
+    opp_sentiments = []
+    total_mentions = 0
+    source_details = []
+
+    for rx in all_reactions:
+        side = rx["side"]
+        sources = rx["sources"]
+        kw_sent_values = []
+
+        for src_name, src_data in sources.items():
+            sent = src_data.get("net_sentiment", 0)
+            count = src_data.get("count", 0) or src_data.get("comments", 0) or src_data.get("mentions", 0)
+            total_mentions += count
+            if sent != 0:
+                kw_sent_values.append(sent)
+
+        if kw_sent_values:
+            avg_sent = sum(kw_sent_values) / len(kw_sent_values)
+            if "우리" in side:
+                our_sentiments.append(avg_sent)
+            elif "상대" in side:
+                opp_sentiments.append(avg_sent)
+
+        source_details.append(rx)
+
+    # 50pt 스케일 지수화: 우리 감성합 vs 상대 감성합(뒤집기)
+    our_score = sum(our_sentiments) / len(our_sentiments) if our_sentiments else 0  # -1~+1
+    opp_score = sum(opp_sentiments) / len(opp_sentiments) if opp_sentiments else 0  # -1~+1 (김경수 관점, 보통 마이너스)
+
+    # 우리 긍정 → +, 상대 부정(=우리에게 유리) → + 로 통합
+    our_total = max(0, our_score)        # 우리유리 이슈에 대한 시민 긍정도
+    opp_total = max(0, -opp_score)       # 상대유리 이슈에 대한 시민 부정도(=우리에게 유리)
+    combined = our_total + opp_total
+    against = max(0, -our_score) + max(0, opp_score)  # 우리 불리 방향
+
+    total_weight = combined + against
+    reaction_index = round(combined / total_weight * 100, 1) if total_weight > 0 else 50.0
+
+    collected_sources = set()
+    for rx in all_reactions:
+        collected_sources.update(rx.get("sources", {}).keys())
+
+    print(f"[{_now()}] 반응수집 완료: {len(all_reactions)}개 키워드 × {len(collected_sources)}개 소스 | 총 {total_mentions}건 | 반응지수 {reaction_index:.1f}pt", flush=True)
+
+    return {
+        "reaction_index": reaction_index,  # 50pt 기준
+        "kim_sentiment": round(our_score * 100),
+        "park_sentiment": round(-opp_score * 100),
+        "total_mentions": total_mentions,
+        "sources_collected": list(collected_sources),
+        "keywords_analyzed": len(all_reactions),
+        "details": source_details,
+        "updated_at": datetime.now().isoformat(),
+    }
 
 
 def _ai_classify_batch(articles: list) -> int:
@@ -518,7 +815,7 @@ def _ai_classify_batch(articles: list) -> int:
 
 
 def _save_indices_history(snap: dict):
-    """후보별 지표 히스토리 저장 (indices_history.json에 append)"""
+    """3개 지수 히스토리 저장 (indices_history.json에 append) — 1시간마다"""
     hist_path = LEGACY_DATA / "indices_history.json"
     history = []
     try:
@@ -527,29 +824,26 @@ def _save_indices_history(snap: dict):
     except Exception:
         pass
 
-    buzz = snap.get("candidate_buzz", {})
-    broad = snap.get("broad_issue", {})
-    kim_m = broad.get("kim_count", 0) or sum(v.get("mention_count", 0) for k, v in buzz.items() if "김경수" in k)
-    park_m = broad.get("park_count", 0) or sum(v.get("mention_count", 0) for k, v in buzz.items() if "박완수" in k)
-    kim_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for k, v in buzz.items() if "김경수" in k]
-    park_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for k, v in buzz.items() if "박완수" in k]
-    kim_sent = round(sum(kim_sents) / max(len(kim_sents), 1) * 100)
-    park_sent = round(sum(park_sents) / max(len(park_sents), 1) * 100)
+    ci = snap.get("cluster_issue", {})
+    cr = snap.get("cluster_reaction", {})
     pandse = snap.get("turnout", {}).get("correction", {}).get("pandse_index", 50)
 
     entry = {
         "timestamp": datetime.now().isoformat(),
         "date": datetime.now().strftime("%m.%d %H:%M"),
-        "issue_kim": kim_m,
-        "issue_park": park_m,
-        "reaction_kim": kim_sent,
-        "reaction_park": park_sent,
+        "issue_index": ci.get("issue_index", 50),
+        "reaction_index": cr.get("reaction_index", 50),
         "pandse": pandse,
+        # 하위 호환: 차트에서 사용
+        "issue_kim": ci.get("kim_count", 0),
+        "issue_park": ci.get("park_count", 0),
+        "reaction_kim": cr.get("kim_sentiment", 0),
+        "reaction_park": cr.get("park_sentiment", 0),
     }
 
-    # 최근 100개만 유지
+    # 최근 168개 유지 (7일 × 24시간)
     history.append(entry)
-    history = history[-100:]
+    history = history[-168:]
 
     with open(hist_path, "w") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
@@ -590,35 +884,104 @@ def _ai_pandse_alert(prev: float, now: float, delta: float, factors: list) -> di
 
 
 def _daily_snapshot():
-    """일일 스냅샷 (08:00)"""
+    """일일 학습데이터 스냅샷 (08:00) — 3개 지수 + 이슈 클러스터 + 반응 상세 + 여론조사"""
     try:
         snap = _load_snap()
         today = datetime.now().strftime("%Y-%m-%d")
-        ii = snap.get("issue_indices", {})
-        ri = snap.get("reaction_indices", {})
-        corr = snap.get("turnout", {}).get("correction", {})
 
+        ci = snap.get("cluster_issue", {})
+        cr = snap.get("cluster_reaction", {})
+        corr = snap.get("turnout", {}).get("correction", {})
+        np_data = snap.get("national_poll", {})
+        clusters = snap.get("news_clusters", [])
+
+        # ── 1. 일일 스냅샷 (기존 호환) ──
+        INDEX_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
         snapshot = {
             "date": today,
             "timestamp": datetime.now().isoformat(),
+            "issue_index": ci.get("issue_index", 50),
+            "reaction_index": cr.get("reaction_index", 50),
             "leading_index": corr.get("pandse_index", 50),
-            "leading_direction": "stable",
-            "issue_index_avg": round(sum(v.get("index", 0) for v in ii.values()) / max(len(ii), 1), 1) if ii else 0,
-            "reaction_index_avg": round(sum(v.get("final_score", 0) for v in ri.values()) / max(len(ri), 1), 1) if ri else 0,
-            "opp_issue_avg": 45.0,
-            "opp_reaction_avg": 31.5,
-            "poll_actual_kim": 44.0,
-            "poll_actual_park": 33.4,
-            "poll_source": "여론조사꽃 2026-03-19",
-            "actions_count": 0,
+            "issue_index_avg": ci.get("issue_index", 50),
+            "reaction_index_avg": cr.get("reaction_index", 50),
             "data_quality": "auto",
         }
-
-        INDEX_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
         fp = INDEX_HISTORY_DIR / f"snapshot_{today}.json"
         with open(fp, "w") as f:
             json.dump(snapshot, f, ensure_ascii=False, indent=2)
-        print(f"[{_now()}] 스냅샷: {fp.name}", flush=True)
+
+        # ── 2. 학습데이터 (일별 전체 컨텍스트 저장) ──
+        TRAINING_DIR = LEGACY_DATA / "training_data"
+        TRAINING_DIR.mkdir(parents=True, exist_ok=True)
+
+        training = {
+            "date": today,
+            "timestamp": datetime.now().isoformat(),
+            "d_day": corr.get("d_day", 0),
+
+            # 3개 지수
+            "indices": {
+                "issue_index": ci.get("issue_index", 50),
+                "reaction_index": cr.get("reaction_index", 50),
+                "pandse_index": corr.get("pandse_index", 50),
+            },
+
+            # 이슈 상세
+            "issue_detail": {
+                "kim_count": ci.get("kim_count", 0),
+                "park_count": ci.get("park_count", 0),
+                "kim_score": ci.get("kim_score", 0),
+                "park_score": ci.get("park_score", 0),
+            },
+
+            # 반응 상세
+            "reaction_detail": {
+                "total_mentions": cr.get("total_mentions", 0),
+                "sources_collected": cr.get("sources_collected", []),
+                "kim_sentiment": cr.get("kim_sentiment", 0),
+                "park_sentiment": cr.get("park_sentiment", 0),
+            },
+
+            # 판세 팩터
+            "pandse_factors": corr.get("factors", []),
+
+            # 뉴스 클러스터 TOP 10
+            "top_issues": [
+                {
+                    "name": c.get("name", ""),
+                    "count": c.get("count", 0),
+                    "side": c.get("side", ""),
+                    "sentiment": c.get("sentiment", 0),
+                    "community_expected": c.get("community_expected", ""),
+                    "tip": c.get("tip", ""),
+                }
+                for c in clusters[:10]
+            ],
+
+            # AI 해석
+            "ai_summary": {
+                "issue": snap.get("ai_issue_summary", ""),
+                "reaction": snap.get("ai_reaction_summary", ""),
+            },
+
+            # 여론조사
+            "poll": {
+                "president_approval": np_data.get("president_approval", 0),
+                "dem_support": np_data.get("dem_support", 0),
+                "ppp_support": np_data.get("ppp_support", 0),
+                "party_gap": np_data.get("party_gap", 0),
+            },
+
+            # 반응 수집 키워드별 상세 (학습용)
+            "reaction_by_keyword": cr.get("details", []),
+        }
+
+        tp = TRAINING_DIR / f"{today}.json"
+        with open(tp, "w") as f:
+            json.dump(training, f, ensure_ascii=False, indent=2)
+
+        print(f"[{_now()}] 일일 스냅샷 + 학습데이터 저장: {fp.name}, {tp.name}", flush=True)
     except Exception as e:
         print(f"[{_now()}] 스냅샷 오류: {e}", flush=True)
 
@@ -627,7 +990,7 @@ def _scheduler_loop():
     """메인 루프"""
     print(f"[{_now()}] === 스케줄러 v2 시작 (광역수집 + AI분류) ===", flush=True)
 
-    # 시작 시 즉시 실행
+    # 시작 시 즉시 전체 갱신 실행
     _update_all()
 
     tick = 0
@@ -635,8 +998,8 @@ def _scheduler_loop():
         time.sleep(60)
         tick += 1
 
-        # 10분마다 전체 갱신
-        if tick % 10 == 0:
+        # 60분마다 전체 갱신 (이슈수집 → 반응수집 포함)
+        if tick % 60 == 0:
             _update_all()
 
         # 매일 08:00 스냅샷
