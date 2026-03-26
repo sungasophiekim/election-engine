@@ -235,6 +235,7 @@ def _update_all():
 
         # ── 4. 후보 버즈 수집 ──
         kw_path = LEGACY_DATA / "monitor_keywords.json"
+        kw_data = {"keywords": []}
         try:
             with open(kw_path) as f:
                 kw_data = json.load(f)

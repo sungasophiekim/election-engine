@@ -1,0 +1,425 @@
+{
+  "keywords": [
+    {
+      "keyword": "김경수 경남",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 공약",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 복귀",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "박완수 경남",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 공약",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "전희영 경남",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate"
+    },
+    {
+      "keyword": "국민의힘 경남",
+      "category": "정당",
+      "priority": "medium",
+      "type": "candidate"
+    },
+    {
+      "keyword": "민주당 경남",
+      "category": "정당",
+      "priority": "medium",
+      "type": "candidate"
+    },
+    {
+      "keyword": "경남도지사 선거",
+      "category": "선거",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남도지사 공약",
+      "category": "선거",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 여론조사",
+      "category": "선거",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 단수공천",
+      "category": "선거",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 사법리스크",
+      "category": "선거",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "부울경 행정통합",
+      "category": "공약",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 우주항공",
+      "category": "공약",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "창원 특례시",
+      "category": "공약",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 교통 BRT",
+      "category": "공약",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 청년 정책",
+      "category": "공약",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 KTX",
+      "category": "공약",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 균형발전",
+      "category": "공약",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 추경",
+      "category": "이슈",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 민생",
+      "category": "이슈",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 생활지원금",
+      "category": "이슈",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 소상공인",
+      "category": "이슈",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "서부경남",
+      "category": "이슈",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 조선업 일자리",
+      "category": "산업",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 방산",
+      "category": "산업",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 AI",
+      "category": "산업",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 로봇",
+      "category": "산업",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 산업단지",
+      "category": "산업",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 관광",
+      "category": "산업",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 물가",
+      "category": "생활",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 아파트",
+      "category": "생활",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 교육",
+      "category": "생활",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 맘카페",
+      "category": "생활",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 도정",
+      "category": "생활",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 청년 일자리",
+      "category": "세대",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 노인 복지",
+      "category": "세대",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "창원 선거",
+      "category": "지역",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "김해 선거",
+      "category": "지역",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "양산 선거",
+      "category": "지역",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "진주 선거",
+      "category": "지역",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "거제 선거",
+      "category": "지역",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "통영 선거",
+      "category": "지역",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "사천 선거",
+      "category": "지역",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "밀양 선거",
+      "category": "지역",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남도 정책",
+      "category": "상대감시",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남도 지원금",
+      "category": "상대감시",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남도청 발표",
+      "category": "상대감시",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남도 추경",
+      "category": "상대감시",
+      "priority": "high",
+      "type": "issue"
+    },
+    {
+      "keyword": "KNN 선거",
+      "category": "미디어",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "MBC경남 선거",
+      "category": "미디어",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남신문 선거",
+      "category": "미디어",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "부산일보 경남",
+      "category": "미디어",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 투표율",
+      "category": "동원",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 사전투표",
+      "category": "동원",
+      "priority": "medium",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 노동조합",
+      "category": "동원",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "경남 자영업",
+      "category": "동원",
+      "priority": "low",
+      "type": "issue"
+    },
+    {
+      "keyword": "김경수 도지사",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 메가시티",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 청년",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 산업",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "김경수 일자리",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_kim"
+    },
+    {
+      "keyword": "박완수 도지사",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 도정",
+      "category": "후보",
+      "priority": "high",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 성과",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 스마트산단",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 추경",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 복지",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_park"
+    },
+    {
+      "keyword": "박완수 BRT",
+      "category": "후보",
+      "priority": "medium",
+      "type": "candidate_park"
+    }
+  ],
+  "updated_at": "2026-03-25"
+}
