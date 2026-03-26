@@ -202,9 +202,15 @@ def _update_all():
             else:
                 neutral_count += cnt
 
-        # 지수화: 50pt 기준 (our_score / total_score × 100), 데이터 없으면 50
+        # 지수화: 50pt 기준, 데이터 없으면 50
+        # our 100% → 65pt (cap), opp 100% → 35pt (cap), 동률 → 50pt
         total_score = our_score + opp_score
-        issue_index = round(our_score / total_score * 100, 1) if total_score > 0 else 50.0
+        if total_score > 0:
+            raw_ratio = our_score / total_score  # 0.0 ~ 1.0
+            issue_index = round(50 + (raw_ratio - 0.5) * 30, 1)  # ±15pt 범위
+            issue_index = max(35, min(65, issue_index))
+        else:
+            issue_index = 50.0
 
         snap["cluster_issue"] = {
             "kim_count": our_count,
@@ -761,8 +767,13 @@ def _collect_cluster_reactions(clusters: list) -> dict:
     opp_weight = opp_intensity * len(opp_sentiments)
     total_weight = our_weight + opp_weight
 
-    # 50pt 기준: 우리유리 이슈에 반응이 더 크면 >50
-    reaction_index = round(our_weight / total_weight * 100, 1) if total_weight > 0 else 50.0
+    # 50pt 기준: 우리유리 이슈에 반응이 더 크면 >50, ±15pt 범위 cap
+    if total_weight > 0:
+        raw_ratio = our_weight / total_weight  # 0.0 ~ 1.0
+        reaction_index = round(50 + (raw_ratio - 0.5) * 30, 1)
+        reaction_index = max(35, min(65, reaction_index))
+    else:
+        reaction_index = 50.0
 
     collected_sources = set()
     for rx in all_reactions:
