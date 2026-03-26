@@ -19,14 +19,14 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "중립적-비판적",
+        "dominant_tone": "중립~부정",
         "mobilization_detected": false,
         "sentiment_6way": {
           "지지": 3,
           "스윙": 2,
           "부정": 4,
           "정체성": 2,
-          "정책": 3,
+          "정책": 2,
           "중립": 4
         },
         "strength_topics": [],
@@ -35,7 +35,7 @@
         "negative_ratio": 0.3333333333333333,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "복귀 정치와 정책 공약 평가가 엇갈리며 혼합된 반응 보임.",
+        "summary": "김경수의 정책 공약은 호평받으나 현직 도지사의 적극행정 논란으로 평가가 엇갈림",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -47,92 +47,10 @@
       "ai_sentiment": {
         "keyword": "김경수 공약",
         "total_analyzed": 15,
-        "positive": 5,
-        "negative": 2,
-        "neutral": 8,
-        "net_sentiment": 0.2,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "정책 중심 긍정",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 4,
-          "스윙": 2,
-          "부정": 1,
-          "정체성": 1,
-          "정책": 6,
-          "중립": 5
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.3333333333333333,
-        "negative_ratio": 0.13333333333333333,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "메가시티, 청년 정책 등 공약 발표에 대한 정책 평가 중심.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "김경수 복귀": {
-      "mention_count": 4,
-      "velocity": 0.4,
-      "ai_sentiment": {
-        "keyword": "김경수 복귀",
-        "total_analyzed": 15,
-        "positive": 2,
-        "negative": 3,
-        "neutral": 5,
-        "net_sentiment": -0.1,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "의문적",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 1,
-          "스윙": 2,
-          "부정": 2,
-          "정체성": 1,
-          "정책": 1,
-          "중립": 3
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.13333333333333333,
-        "negative_ratio": 0.2,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "정치 복귀에 대한 회의적 평가와 차기 리더십 평가 엇갈림.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "박완수 경남": {
-      "mention_count": 85,
-      "velocity": 8.5,
-      "ai_sentiment": {
-        "keyword": "박완수 경남",
-        "total_analyzed": 15,
         "positive": 6,
-        "negative": 2,
-        "neutral": 5,
-        "net_sentiment": 0.308,
+        "negative": 1,
+        "neutral": 8,
+        "net_sentiment": 0.333,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -146,19 +64,101 @@
         "mobilization_detected": false,
         "sentiment_6way": {
           "지지": 4,
-          "스윙": 1,
+          "스윙": 2,
           "부정": 1,
-          "정체성": 2,
-          "정책": 4,
-          "중립": 3
+          "정체성": 1,
+          "정책": 7,
+          "중립": 5
         },
         "strength_topics": [],
         "weakness_topics": [],
         "positive_ratio": 0.4,
+        "negative_ratio": 0.06666666666666667,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "부울경 메가시티와 청년 정책 중심의 공약들이 정책 중심으로 활발히 논의되고 있음",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "김경수 복귀": {
+      "mention_count": 4,
+      "velocity": 0.4,
+      "ai_sentiment": {
+        "keyword": "김경수 복귀",
+        "total_analyzed": 15,
+        "positive": 3,
+        "negative": 2,
+        "neutral": 11,
+        "net_sentiment": 0.062,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "중립",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 2,
+          "스윙": 1,
+          "부정": 2,
+          "정체성": 1,
+          "정책": 1,
+          "중립": 9
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.2,
         "negative_ratio": 0.13333333333333333,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "도정 운영과 행정 성과에 대한 긍정적 평가 우세.",
+        "summary": "김경수의 정치 복귀가 국정 전환의 계기가 될 수 있다는 평가와 우려가 공존",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "박완수 경남": {
+      "mention_count": 86,
+      "velocity": 8.6,
+      "ai_sentiment": {
+        "keyword": "박완수 경남",
+        "total_analyzed": 15,
+        "positive": 6,
+        "negative": 3,
+        "neutral": 12,
+        "net_sentiment": 0.143,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "긍정적~중립",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 2,
+          "스윙": 1,
+          "부정": 2,
+          "정체성": 2,
+          "정책": 4,
+          "중립": 10
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.4,
+        "negative_ratio": 0.2,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "박완수 도지사의 도정 성과 홍보와 간담회 활동이 주를 이루며 관권 의혹도 제기됨",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -172,49 +172,8 @@
         "total_analyzed": 15,
         "positive": 3,
         "negative": 2,
-        "neutral": 6,
-        "net_sentiment": 0.091,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "정책 중심",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 2,
-          "스윙": 1,
-          "부정": 1,
-          "정체성": 1,
-          "정책": 4,
-          "중립": 4
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.2,
-        "negative_ratio": 0.13333333333333333,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "현직의 장점을 활용한 공약과 간담회 중심의 행보 보도.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "전희영 경남": {
-      "mention_count": 5,
-      "velocity": 0.5,
-      "ai_sentiment": {
-        "keyword": "전희영 경남",
-        "total_analyzed": 15,
-        "positive": 2,
-        "negative": 1,
-        "neutral": 8,
-        "net_sentiment": 0.091,
+        "neutral": 9,
+        "net_sentiment": 0.071,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -229,26 +188,31 @@
         "sentiment_6way": {
           "지지": 1,
           "스윙": 1,
-          "부정": 0,
+          "부정": 2,
           "정체성": 1,
-          "정책": 2,
+          "정책": 5,
           "중립": 6
         },
         "strength_topics": [],
         "weakness_topics": [],
-        "positive_ratio": 0.13333333333333333,
-        "negative_ratio": 0.06666666666666667,
+        "positive_ratio": 0.2,
+        "negative_ratio": 0.13333333333333333,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "진보당 후보 관련 중립적 보도와 청년 정책 주장 중심.",
+        "summary": "박완수의 민생 안정 공약이 제시되고 있으나 선거 직전 현금성 복지 논란도 대두",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
       }
     },
+    "전희영 경남": {
+      "mention_count": 5,
+      "velocity": 0.5,
+      "ai_sentiment": {}
+    },
     "국민의힘 경남": {
-      "mention_count": 260,
-      "velocity": 26.0,
+      "mention_count": 261,
+      "velocity": 26.1,
       "ai_sentiment": {
         "keyword": "국민의힘 경남",
         "total_analyzed": 15,
@@ -265,15 +229,15 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "비판적",
+        "dominant_tone": "부정적",
         "mobilization_detected": false,
         "sentiment_6way": {
           "지지": 2,
           "스윙": 1,
           "부정": 6,
           "정체성": 2,
-          "정책": 2,
-          "중립": 2
+          "정책": 1,
+          "중립": 3
         },
         "strength_topics": [],
         "weakness_topics": [],
@@ -281,58 +245,17 @@
         "negative_ratio": 0.5333333333333333,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "범죄 공천 논란과 관권선거 의혹으로 부정적 평가가 지배적.",
+        "summary": "범죄 공천 논란과 비리 의혹으로 국민의힘 경남의 이미지가 크게 손상되고 있는 상황",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
       }
     },
     "민주당 경남": {
-      "mention_count": 203,
-      "velocity": 20.3,
+      "mention_count": 204,
+      "velocity": 20.4,
       "ai_sentiment": {
         "keyword": "민주당 경남",
-        "total_analyzed": 15,
-        "positive": 2,
-        "negative": 5,
-        "neutral": 6,
-        "net_sentiment": -0.231,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "부정적",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 1,
-          "스윙": 1,
-          "부정": 4,
-          "정체성": 1,
-          "정책": 1,
-          "중립": 4
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.13333333333333333,
-        "negative_ratio": 0.3333333333333333,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "네거티브 전략과 관권선거 의혹으로 비판적 평가 우세.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "김경수 도지사": {
-      "mention_count": 7,
-      "velocity": 0.7,
-      "ai_sentiment": {
-        "keyword": "김경수 도지사",
         "total_analyzed": 15,
         "positive": 3,
         "negative": 6,
@@ -347,14 +270,14 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "비판적-중립",
+        "dominant_tone": "부정적",
         "mobilization_detected": false,
         "sentiment_6way": {
           "지지": 2,
           "스윙": 1,
           "부정": 5,
-          "정체성": 1,
-          "정책": 2,
+          "정체성": 2,
+          "정책": 1,
           "중립": 4
         },
         "strength_topics": [],
@@ -363,7 +286,48 @@
         "negative_ratio": 0.4,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "관권선거 의혹과 선거 개입 논란으로 비판이 우세.",
+        "summary": "민주당의 경남 공천에 범죄 논란과 관권 의혹이 제기되며 부정적 평가가 우세",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "김경수 도지사": {
+      "mention_count": 7,
+      "velocity": 0.7,
+      "ai_sentiment": {
+        "keyword": "김경수 도지사",
+        "total_analyzed": 15,
+        "positive": 5,
+        "negative": 4,
+        "neutral": 7,
+        "net_sentiment": 0.062,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "중립",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 2,
+          "스윙": 2,
+          "부정": 3,
+          "정체성": 2,
+          "정책": 4,
+          "중립": 6
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.3333333333333333,
+        "negative_ratio": 0.26666666666666666,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "현직 도지사로서의 행정 평가와 선거 후보자로서의 공약이 혼재되어 평가가 엇갈림",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -377,172 +341,8 @@
         "total_analyzed": 15,
         "positive": 7,
         "negative": 1,
-        "neutral": 3,
-        "net_sentiment": 0.545,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "정책 지지",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 5,
-          "스윙": 2,
-          "부정": 0,
-          "정체성": 1,
-          "정책": 7,
-          "중립": 2
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.4666666666666667,
-        "negative_ratio": 0.06666666666666667,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "부울경 메가시티 공약에 대한 적극적 지지와 정책 논의 중심.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "김경수 청년": {
-      "mention_count": 14,
-      "velocity": 1.4,
-      "ai_sentiment": {
-        "keyword": "김경수 청년",
-        "total_analyzed": 15,
-        "positive": 3,
-        "negative": 4,
-        "neutral": 5,
-        "net_sentiment": -0.083,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "비판적",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 2,
-          "스윙": 1,
-          "부정": 3,
-          "정체성": 1,
-          "정책": 2,
-          "중립": 4
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.2,
-        "negative_ratio": 0.26666666666666666,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "청년 정책과 유출 문제에 대해 현정부와 야당 모두 비판 우세.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "김경수 산업": {
-      "mention_count": 4,
-      "velocity": 0.4,
-      "ai_sentiment": {
-        "keyword": "김경수 산업",
-        "total_analyzed": 15,
-        "positive": 4,
-        "negative": 3,
-        "neutral": 5,
-        "net_sentiment": 0.083,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "중립 정책 중심",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 2,
-          "스윙": 2,
-          "부정": 2,
-          "정체성": 1,
-          "정책": 3,
-          "중립": 3
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.26666666666666666,
-        "negative_ratio": 0.2,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "지방시대와 산업 정책에 대한 중립적 보도.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "김경수 일자리": {
-      "mention_count": 5,
-      "velocity": 0.5,
-      "ai_sentiment": {
-        "keyword": "김경수 일자리",
-        "total_analyzed": 15,
-        "positive": 2,
-        "negative": 4,
-        "neutral": 5,
-        "net_sentiment": -0.182,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "비판적",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 1,
-          "스윙": 1,
-          "부정": 3,
-          "정체성": 1,
-          "정책": 2,
-          "중립": 3
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.13333333333333333,
-        "negative_ratio": 0.26666666666666666,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "청년 유출 문제 지적으로 도정 성과 비판이 두드러짐.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
-    },
-    "박완수 도지사": {
-      "mention_count": 39,
-      "velocity": 3.9,
-      "ai_sentiment": {
-        "keyword": "박완수 도지사",
-        "total_analyzed": 15,
-        "positive": 7,
-        "negative": 1,
-        "neutral": 5,
-        "net_sentiment": 0.462,
+        "neutral": 4,
+        "net_sentiment": 0.5,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -559,8 +359,8 @@
           "스윙": 1,
           "부정": 1,
           "정체성": 1,
-          "정책": 5,
-          "중립": 3
+          "정책": 8,
+          "중립": 2
         },
         "strength_topics": [],
         "weakness_topics": [],
@@ -568,7 +368,171 @@
         "negative_ratio": 0.06666666666666667,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "도정 성과와 에너지 정책 등에서 긍정적 평가 우세.",
+        "summary": "부울경 메가시티 복원은 경남의 주요 공약으로 적극 추진되고 있으며 지지도 높음",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "김경수 청년": {
+      "mention_count": 14,
+      "velocity": 1.4,
+      "ai_sentiment": {
+        "keyword": "김경수 청년",
+        "total_analyzed": 15,
+        "positive": 2,
+        "negative": 6,
+        "neutral": 7,
+        "net_sentiment": -0.267,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "부정적",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 1,
+          "스윙": 1,
+          "부정": 5,
+          "정체성": 1,
+          "정책": 2,
+          "중립": 6
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.13333333333333333,
+        "negative_ratio": 0.4,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "경남 청년 유출 문제에 대한 김경수-박완수의 책임론으로 비판이 집중됨",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "김경수 산업": {
+      "mention_count": 4,
+      "velocity": 0.4,
+      "ai_sentiment": {
+        "keyword": "김경수 산업",
+        "total_analyzed": 15,
+        "positive": 4,
+        "negative": 2,
+        "neutral": 8,
+        "net_sentiment": 0.143,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "중립",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 2,
+          "스윙": 1,
+          "부정": 2,
+          "정체성": 1,
+          "정책": 3,
+          "중립": 7
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.26666666666666666,
+        "negative_ratio": 0.13333333333333333,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "지방산업 육성과 경제 성장을 강조하는 정책이 제시되고 있으나 구체성 논의 필요",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "김경수 일자리": {
+      "mention_count": 5,
+      "velocity": 0.5,
+      "ai_sentiment": {
+        "keyword": "김경수 일자리",
+        "total_analyzed": 15,
+        "positive": 2,
+        "negative": 4,
+        "neutral": 8,
+        "net_sentiment": -0.143,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "부정적",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 1,
+          "스윙": 1,
+          "부정": 3,
+          "정체성": 1,
+          "정책": 2,
+          "중립": 7
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.13333333333333333,
+        "negative_ratio": 0.26666666666666666,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "경남의 청년 유출 문제가 심각하다는 지적으로 현 정책에 대한 비판이 강함",
+        "risk": "",
+        "opportunity": "",
+        "model": "claude-haiku-batch"
+      }
+    },
+    "박완수 도지사": {
+      "mention_count": 40,
+      "velocity": 4.0,
+      "ai_sentiment": {
+        "keyword": "박완수 도지사",
+        "total_analyzed": 15,
+        "positive": 8,
+        "negative": 2,
+        "neutral": 11,
+        "net_sentiment": 0.286,
+        "about_us": {
+          "positive": 0,
+          "negative": 0
+        },
+        "about_opponent": {
+          "positive": 0,
+          "negative": 0
+        },
+        "tone_distribution": {},
+        "dominant_tone": "긍정적",
+        "mobilization_detected": false,
+        "sentiment_6way": {
+          "지지": 3,
+          "스윙": 1,
+          "부정": 2,
+          "정체성": 2,
+          "정책": 6,
+          "중립": 9
+        },
+        "strength_topics": [],
+        "weakness_topics": [],
+        "positive_ratio": 0.5333333333333333,
+        "negative_ratio": 0.13333333333333333,
+        "key_frames": [],
+        "key_narratives": [],
+        "summary": "박완수 도지사의 도정 성과와 행정 업무 추진이 긍정적으로 보도되고 있음",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -582,7 +546,7 @@
         "total_analyzed": 15,
         "positive": 4,
         "negative": 4,
-        "neutral": 5,
+        "neutral": 9,
         "net_sentiment": 0.0,
         "about_us": {
           "positive": 0,
@@ -593,15 +557,15 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "엇갈림",
+        "dominant_tone": "중립",
         "mobilization_detected": false,
         "sentiment_6way": {
-          "지시": 2,
-          "스윙": 1,
+          "지지": 1,
+          "스윙": 2,
           "부정": 3,
           "정체성": 1,
           "정책": 3,
-          "중립": 3
+          "중립": 8
         },
         "strength_topics": [],
         "weakness_topics": [],
@@ -609,7 +573,7 @@
         "negative_ratio": 0.26666666666666666,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "적극 행정 평가와 선거 운동 의혹 논란이 대립.",
+        "summary": "박완수 도정의 적극행정과 간담회 활동이 선거운동 논란으로 평가가 엇갈림",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -623,8 +587,8 @@
         "total_analyzed": 15,
         "positive": 8,
         "negative": 0,
-        "neutral": 3,
-        "net_sentiment": 0.727,
+        "neutral": 8,
+        "net_sentiment": 0.5,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -637,12 +601,12 @@
         "dominant_tone": "긍정적",
         "mobilization_detected": false,
         "sentiment_6way": {
-          "지지": 6,
-          "스윙": 1,
+          "지지": 4,
+          "스윙": 0,
           "부정": 0,
-          "정체성": 1,
+          "정체성": 2,
           "정책": 6,
-          "중립": 2
+          "중립": 6
         },
         "strength_topics": [],
         "weakness_topics": [],
@@ -650,7 +614,7 @@
         "negative_ratio": 0.0,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "농수산물 수출, 항공산업, 적극행정 등 도정 성과를 높이 평가.",
+        "summary": "박완수 도정의 농수산물 수출, 산업 성과 등이 객관적 성과로 긍정 평가됨",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -662,10 +626,10 @@
       "ai_sentiment": {
         "keyword": "박완수 스마트산단",
         "total_analyzed": 15,
-        "positive": 5,
+        "positive": 4,
         "negative": 0,
-        "neutral": 5,
-        "net_sentiment": 0.5,
+        "neutral": 10,
+        "net_sentiment": 0.286,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -675,23 +639,23 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "긍정 정책",
+        "dominant_tone": "",
         "mobilization_detected": false,
         "sentiment_6way": {
-          "지지": 3,
-          "스윙": 1,
+          "지지": 1,
+          "스윙": 0,
           "부정": 0,
           "정체성": 1,
           "정책": 5,
-          "중립": 3
+          "중립": 8
         },
         "strength_topics": [],
         "weakness_topics": [],
-        "positive_ratio": 0.3333333333333333,
+        "positive_ratio": 0.26666666666666666,
         "negative_ratio": 0.0,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "AI, 스마트농업 등 혁신 정책에 대한 긍정적 보도.",
+        "summary": "",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -700,43 +664,7 @@
     "박완수 추경": {
       "mention_count": 7,
       "velocity": 0.7,
-      "ai_sentiment": {
-        "keyword": "박완수 추경",
-        "total_analyzed": 15,
-        "positive": 5,
-        "negative": 3,
-        "neutral": 4,
-        "net_sentiment": 0.167,
-        "about_us": {
-          "positive": 0,
-          "negative": 0
-        },
-        "about_opponent": {
-          "positive": 0,
-          "negative": 0
-        },
-        "tone_distribution": {},
-        "dominant_tone": "엇갈림",
-        "mobilization_detected": false,
-        "sentiment_6way": {
-          "지지": 3,
-          "스윙": 1,
-          "부정": 2,
-          "정체성": 1,
-          "정책": 4,
-          "중립": 2
-        },
-        "strength_topics": [],
-        "weakness_topics": [],
-        "positive_ratio": 0.3333333333333333,
-        "negative_ratio": 0.2,
-        "key_frames": [],
-        "key_narratives": [],
-        "summary": "민생 지원 정책 평가와 선거 시점 논란이 공존.",
-        "risk": "",
-        "opportunity": "",
-        "model": "claude-haiku-batch"
-      }
+      "ai_sentiment": {}
     },
     "박완수 복지": {
       "mention_count": 8,
@@ -744,10 +672,10 @@
       "ai_sentiment": {
         "keyword": "박완수 복지",
         "total_analyzed": 15,
-        "positive": 4,
-        "negative": 3,
-        "neutral": 6,
-        "net_sentiment": 0.077,
+        "positive": 2,
+        "negative": 4,
+        "neutral": 7,
+        "net_sentiment": -0.154,
         "about_us": {
           "positive": 0,
           "negative": 0
@@ -757,23 +685,23 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "엇갈림",
+        "dominant_tone": "부정적",
         "mobilization_detected": false,
         "sentiment_6way": {
-          "지지": 2,
+          "지지": 0,
           "스윙": 1,
-          "부정": 2,
+          "부정": 3,
           "정체성": 1,
-          "정책": 4,
-          "중립": 4
+          "정책": 3,
+          "중립": 6
         },
         "strength_topics": [],
         "weakness_topics": [],
-        "positive_ratio": 0.26666666666666666,
-        "negative_ratio": 0.2,
+        "positive_ratio": 0.13333333333333333,
+        "negative_ratio": 0.26666666666666666,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "복지 정책 평가와 선거 시기 논란이 함께 제기됨.",
+        "summary": "박완수의 선거 직전 현금성 복지 정책이 선거 전략 논란으로 부정적 평가 받음",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -785,9 +713,9 @@
       "ai_sentiment": {
         "keyword": "박완수 BRT",
         "total_analyzed": 15,
-        "positive": 1,
-        "negative": 1,
-        "neutral": 8,
+        "positive": 0,
+        "negative": 0,
+        "neutral": 14,
         "net_sentiment": 0.0,
         "about_us": {
           "positive": 0,
@@ -798,23 +726,23 @@
           "negative": 0
         },
         "tone_distribution": {},
-        "dominant_tone": "중립 보도",
+        "dominant_tone": "중립",
         "mobilization_detected": false,
         "sentiment_6way": {
           "지지": 0,
           "스윙": 0,
           "부정": 0,
           "정체성": 0,
-          "정책": 1,
-          "중립": 9
+          "정책": 0,
+          "중립": 14
         },
         "strength_topics": [],
         "weakness_topics": [],
-        "positive_ratio": 0.06666666666666667,
-        "negative_ratio": 0.06666666666666667,
+        "positive_ratio": 0.0,
+        "negative_ratio": 0.0,
         "key_frames": [],
         "key_narratives": [],
-        "summary": "일정 보도와 정책협의회 관련 중립적 보도만 존재.",
+        "summary": "박완수 도지사의 일정 보도로 대부분 중립적 뉴스성 보도",
         "risk": "",
         "opportunity": "",
         "model": "claude-haiku-batch"
@@ -5467,12 +5395,12 @@
     },
     "경남 여론조사": {
       "keyword": "경남 여론조사",
-      "index": 16.1,
-      "final_score": 16.1,
+      "index": 15.6,
+      "final_score": 15.6,
       "grade": "SILENT",
       "direction": "mixed",
       "components": {
-        "community_resonance": 15.2,
+        "community_resonance": 14.7,
         "content_creation": 0.0,
         "sentiment_direction": 0.9,
         "search_reaction": 0.0,
@@ -5524,15 +5452,6 @@
         },
         {
           "segment": "30s_M",
-          "label": "3050 남성 중도진보",
-          "source": "bobae",
-          "mentions": 41,
-          "sentiment": 0.17,
-          "viral": false,
-          "intensity": 1.0
-        },
-        {
-          "segment": "30s_M",
           "label": "3040 진보 남성",
           "source": "todayhumor",
           "mentions": 30,
@@ -5548,6 +5467,15 @@
           "sentiment": 0.16,
           "viral": false,
           "intensity": 1.0
+        },
+        {
+          "segment": "20s_F",
+          "label": "1020 여성 진보",
+          "source": "instiz",
+          "mentions": 18,
+          "sentiment": 0.17,
+          "viral": false,
+          "intensity": 0.9
         },
         {
           "segment": "30s_M",
@@ -5606,12 +5534,12 @@
     },
     "경남도지사 선거": {
       "keyword": "경남도지사 선거",
-      "index": 23.2,
-      "final_score": 23.2,
+      "index": 15.2,
+      "final_score": 15.2,
       "grade": "SILENT",
       "direction": "mixed",
       "components": {
-        "community_resonance": 22.3,
+        "community_resonance": 14.2,
         "content_creation": 0.0,
         "sentiment_direction": 1.0,
         "search_reaction": 0.0,
@@ -5663,28 +5591,10 @@
         },
         {
           "segment": "30s_M",
-          "label": "3040 진보 남성",
-          "source": "todayhumor",
-          "mentions": 36,
-          "sentiment": 0.04,
-          "viral": true,
-          "intensity": 1.0
-        },
-        {
-          "segment": "30s_M",
           "label": "3050 남성 중도진보",
           "source": "bobae",
           "mentions": 34,
           "sentiment": -0.13,
-          "viral": false,
-          "intensity": 1.0
-        },
-        {
-          "segment": "20s_F",
-          "label": "2030 여성 진보",
-          "source": "theqoo",
-          "mentions": 21,
-          "sentiment": 0.05,
           "viral": false,
           "intensity": 1.0
         },
@@ -5699,25 +5609,43 @@
         },
         {
           "segment": "30s_M",
-          "label": "3040 남성 중도",
-          "source": "mlbpark",
-          "mentions": 16,
+          "label": "3040 진보",
+          "source": "clien",
+          "mentions": 12,
           "sentiment": 0.0,
           "viral": false,
-          "intensity": 0.8
+          "intensity": 0.6
+        },
+        {
+          "segment": "40s_M",
+          "label": "3050 중도",
+          "source": "ppomppu",
+          "mentions": 12,
+          "sentiment": 0.0,
+          "viral": false,
+          "intensity": 0.6
+        },
+        {
+          "segment": "30s_M",
+          "label": "3050 진보 결집",
+          "source": "damoa",
+          "mentions": 9,
+          "sentiment": 0.0,
+          "viral": false,
+          "intensity": 0.45
         }
       ],
       "primary_driver": "community",
-      "explanation": "Rx 23 [SILENT] 방향:혼재 신뢰:20% (1/5 layer) 주요:community(22)"
+      "explanation": "Rx 15 [SILENT] 방향:혼재 신뢰:20% (1/5 layer) 주요:community(14)"
     },
     "경남도지사 공약": {
       "keyword": "경남도지사 공약",
-      "index": 22.4,
-      "final_score": 22.4,
+      "index": 21.8,
+      "final_score": 21.8,
       "grade": "SILENT",
       "direction": "neutral",
       "components": {
-        "community_resonance": 22.3,
+        "community_resonance": 21.7,
         "content_creation": 0.0,
         "sentiment_direction": 0.1,
         "search_reaction": 0.0,
@@ -5768,15 +5696,6 @@
           "intensity": 1.0
         },
         {
-          "segment": "30s_M",
-          "label": "3040 진보 남성",
-          "source": "todayhumor",
-          "mentions": 22,
-          "sentiment": -0.05,
-          "viral": false,
-          "intensity": 1.0
-        },
-        {
           "segment": "20s_M",
           "label": "2030 일반",
           "source": "ruliweb",
@@ -5811,6 +5730,15 @@
           "sentiment": 0.0,
           "viral": false,
           "intensity": 0.4
+        },
+        {
+          "segment": "30s_M",
+          "label": "3040 진보",
+          "source": "clien",
+          "mentions": 7,
+          "sentiment": -0.14,
+          "viral": false,
+          "intensity": 0.35
         }
       ],
       "primary_driver": "community",
@@ -5851,12 +5779,12 @@
     },
     "경남 단수공천": {
       "keyword": "경남 단수공천",
-      "index": 15.4,
-      "final_score": 15.4,
+      "index": 15.9,
+      "final_score": 15.9,
       "grade": "SILENT",
       "direction": "mixed",
       "components": {
-        "community_resonance": 14.2,
+        "community_resonance": 14.7,
         "content_creation": 0.0,
         "sentiment_direction": 1.2,
         "search_reaction": 0.0,
@@ -5867,7 +5795,7 @@
       "dominant_channel": "community",
       "velocity_flag": false,
       "velocity_multiplier": 1.0,
-      "net_sentiment": -0.1,
+      "net_sentiment": -0.097,
       "sentiment_target": "neutral",
       "dominant_tone": "중립",
       "mobilization_signal": false,
@@ -5934,6 +5862,15 @@
           "intensity": 0.45
         },
         {
+          "segment": "30s_M",
+          "label": "3050 남성 중도진보",
+          "source": "bobae",
+          "mentions": 8,
+          "sentiment": 0.12,
+          "viral": false,
+          "intensity": 0.4
+        },
+        {
           "segment": "40s_M",
           "label": "3050 중도",
           "source": "ppomppu",
@@ -5941,19 +5878,10 @@
           "sentiment": 0.0,
           "viral": false,
           "intensity": 0.35
-        },
-        {
-          "segment": "30s_M",
-          "label": "3040 진보",
-          "source": "clien",
-          "mentions": 6,
-          "sentiment": -0.17,
-          "viral": false,
-          "intensity": 0.3
         }
       ],
       "primary_driver": "community",
-      "explanation": "Rx 15 [SILENT] 방향:혼재 신뢰:20% (1/5 layer) 주요:community(14)"
+      "explanation": "Rx 16 [SILENT] 방향:혼재 신뢰:20% (1/5 layer) 주요:community(15)"
     },
     "경남 사법리스크": {
       "keyword": "경남 사법리스크",
@@ -5989,7 +5917,7 @@
           "segment": "20s_M",
           "label": "2030 남성 보수",
           "source": "fmkorea",
-          "mentions": 59,
+          "mentions": 58,
           "sentiment": 0.03,
           "viral": false,
           "intensity": 1.0
@@ -6050,12 +5978,12 @@
         },
         {
           "segment": "30s_M",
-          "label": "3040 진보",
-          "source": "clien",
-          "mentions": 6,
-          "sentiment": -0.33,
+          "label": "3050 남성 중도진보",
+          "source": "bobae",
+          "mentions": 7,
+          "sentiment": 0.0,
           "viral": false,
-          "intensity": 0.3
+          "intensity": 0.35
         }
       ],
       "primary_driver": "community",
@@ -8367,7 +8295,7 @@
     },
     "original_confidence": "high"
   },
-  "timestamp": "2026-03-26T20:24:41.558665",
+  "timestamp": "2026-03-26T20:28:59.324214",
   "leading_index": {
     "index": 53.4,
     "direction": "stable",
@@ -9011,21 +8939,21 @@
       "factors": [
         {
           "name": "대통령 효과 전이율",
-          "value": 0.8,
+          "value": 1.1,
           "confidence": "high",
-          "reason": "지지율67.0% 정당격차+26%p 클러스터1건(-65)"
+          "reason": "지지율67.0% 정당격차+26%p 클러스터1건(-40)"
         },
         {
           "name": "후보 네거티브",
-          "value": -0.7,
+          "value": -0.8,
           "confidence": "medium",
-          "reason": "상대유리 2건(12/53) 강도38 → -0.7"
+          "reason": "상대유리 3건(13/53) 강도38 → -0.8"
         },
         {
           "name": "현직 프리미엄",
-          "value": -1.1,
+          "value": -0.6,
           "confidence": "medium",
-          "reason": "현직관련: 상대유리4건 우리유리2건 → -1.1"
+          "reason": "현직관련: 상대유리0건 우리유리8건 → -0.6"
         },
         {
           "name": "보수 기저 (정당지지율)",
@@ -9035,15 +8963,15 @@
         },
         {
           "name": "여당 결집 + 전략적 투표",
-          "value": 0.6,
+          "value": 0.5,
           "confidence": "medium",
-          "reason": "이슈지수55.6pt 지지율67.0% → +0.6"
+          "reason": "이슈지수53.2pt 지지율67.0% → +0.5"
         },
         {
           "name": "보수 결집 (위기감 동원)",
           "value": -1.1,
           "confidence": "medium",
-          "reason": "상대유리12/53건 국힘20.0% 위기감0.27 → -1.1"
+          "reason": "상대유리13/53건 국힘20.0% 위기감0.25 → -1.1"
         },
         {
           "name": "투표율 차등 동원",
@@ -9053,9 +8981,9 @@
         },
         {
           "name": "후보 프리미엄 (정책)",
-          "value": -0.2,
+          "value": 1.1,
           "confidence": "medium",
-          "reason": "우리유리 4건 감성-20 평균7건 → -0.2"
+          "reason": "우리유리 4건 감성+45 평균5건 → +1.1"
         },
         {
           "name": "여론관성",
@@ -9064,22 +8992,22 @@
           "reason": "최신 여론 격차 +10.6%p → 관성 +1.6"
         }
       ],
-      "pandse_index": 51.4,
-      "pandse_gap": 0.56,
-      "pandse_kim": 50.3,
-      "pandse_park": 49.7,
+      "pandse_index": 52.8,
+      "pandse_gap": 1.12,
+      "pandse_kim": 50.6,
+      "pandse_park": 49.4,
       "base_gap": 1.47,
       "base_kim": 50.7,
       "base_park": 49.3,
-      "dynamic_gap": 1.29,
-      "dynamic_kim": 50.6,
-      "dynamic_park": 49.4,
+      "dynamic_gap": 1.4,
+      "dynamic_kim": 50.7,
+      "dynamic_park": 49.3,
       "mix": "기본 80% + 판세 20%",
       "d_day": 69,
       "mix_schedule": "D-90~60: 80:20 → D-60~30: 70:30 → D-30~14: 55:45 → D-14~7: 40:60 → D-7~1: 30:70"
     },
-    "strategic_insight": "기본모델: 김 50.7% 박 49.3% (gap +1.5%p). 판세지수: 51.4pt → 김 50.3% 박 49.7% (gap +0.6%p). 다이내믹(70:30): 김 50.6% 박 49.4% (gap +1.3%p).",
-    "computed_at": "2026-03-26T20:24:39.768874"
+    "strategic_insight": "기본모델: 김 50.7% 박 49.3% (gap +1.5%p). 판세지수: 52.8pt → 김 50.6% 박 49.4% (gap +1.1%p). 다이내믹(70:30): 김 50.7% 박 49.3% (gap +1.4%p).",
+    "computed_at": "2026-03-26T20:28:57.260306"
   },
   "auto_polls": [
     {
@@ -9154,96 +9082,34 @@
   },
   "news_clusters": [
     {
-      "name": "2026 경남 도지사 선거 공천·후보 경선",
-      "count": 12,
-      "side": "우리 유리",
-      "sentiment": 15,
-      "community_expected": "중립",
-      "tip": "보수 분화 심화 프레임 강조. 야당 단결 vs 여당 분열 구도 부각",
-      "articles": [
-        {
-          "title": "경남교육감…보수 분화·진보 결집 속 다자구도 격돌",
-          "source": ""
-        },
-        {
-          "title": "경남 선거판 달군 '간담회 논란'…민주·국힘 충돌 속 진보당도 공세",
-          "source": ""
-        },
-        {
-          "title": "구인모 거창군수, 경남 지자체장 최초 출마 선언…3선 도전",
-          "source": ""
-        }
-      ]
-    },
-    {
-      "name": "여당 비리·재산논란·공천 윤리 문제",
-      "count": 11,
-      "side": "우리 유리",
-      "sentiment": -65,
-      "community_expected": "부정",
-      "tip": "여당 도덕성 실격 프레임 지속 제기. 공천 비리 사례 구체화",
-      "articles": [
-        {
-          "title": "국힘 \"與 PK 공천 범죄 라인업\"",
-          "source": ""
-        },
-        {
-          "title": "5천만원이 33억 된 의원 / '음주폭행' 이혁재가 국힘 심사?",
-          "source": ""
-        },
-        {
-          "title": "\"엔비디아 팔았다\" 전국 광역단체장 중 재산 1위는 바로 '이 사람'",
-          "source": ""
-        }
-      ]
-    },
-    {
-      "name": "경남 농수산물 수출 신기록·경제실적",
+      "name": "공천 논란 및 비리 검증",
       "count": 8,
-      "side": "상대 유리",
-      "sentiment": -40,
-      "community_expected": "중립",
-      "tip": "현직 도정 성과 프레임 차단. 차기 공약으로 '더 큰 비전' 제시",
-      "articles": [
-        {
-          "title": "경남도, 농수산물 수출탑 시상식…최우수 시군에 진주시 선정",
-          "source": ""
-        },
-        {
-          "title": "경남 농수산물 수출 성과 한자리에…수출탑 시상식 개최",
-          "source": ""
-        },
-        {
-          "title": "'제30회 경상남도 농수산물 수출탑 시상식' 성료",
-          "source": ""
-        }
-      ]
-    },
-    {
-      "name": "KF-21 항공산업 양산 추진",
-      "count": 2,
-      "side": "중립",
-      "sentiment": 20,
+      "side": "우리 유리",
+      "sentiment": 45,
       "community_expected": "긍정",
-      "tip": "정부 국방사업 성과. 경남 일자리 창출 연결고리 강조",
+      "tip": "여당 공천 검증 지속 제기. 도덕성 기준 강조로 도덕적 우위 선점.",
       "articles": [
         {
-          "title": "KF-21 양산 돌입 경남 항공산업 도약 신호탄",
+          "title": "국힘 \"與 PK 공천 범죄 라인업\" 민주, 朴 겨냥 \"삭발하면 진다\"",
           "source": ""
         },
         {
-          "title": "경남도, KF-21 양산 1호기 출고",
+          "title": "5천만원이 33억 된 의원 / '음주폭행' 이혁재가 국힘 심사? / '6주택' 장동혁",
+          "source": ""
+        },
+        {
+          "title": "국힘 \"與 부울경에 범죄공천 라인업\"…민주 \"무능한 야당의 네거티브\"",
           "source": ""
         }
       ]
     },
     {
-      "name": "박완수 도정 재산공개·공약 발표",
-      "count": 4,
-      "side": "상대 유리",
-      "sentiment": -35,
-      "community_expected": "중립",
-      "tip": "도지사 성과 평가 자료로 활용되는 점 인식. 예산 낭비 프레임 제시",
+      "name": "박완수 도정 재산/선심성 논란",
+      "count": 6,
+      "side": "우리 유리",
+      "sentiment": 30,
+      "community_expected": "부정",
+      "tip": "현직 도지사 자산증식 구체적 추적. 선거 시점 생활지원금 선심성 프레임화.",
       "articles": [
         {
           "title": "박완수 경남지사 19억8000만원…8400여만원 감소",
@@ -9254,21 +9120,87 @@
           "source": ""
         },
         {
-          "title": "박완수 경남도지사, \"엄중한 안보 상황, 재향군인회 중심 지역 결집 기...",
+          "title": "생활지원금 10만 원 지급…4인 가구 최대 40만 원, 3,288억 투입",
           "source": ""
         }
       ]
     },
     {
-      "name": "창원NC파크 안전사고·유족 투쟁",
-      "count": 2,
-      "side": "우리 유리",
-      "sentiment": -75,
-      "community_expected": "부정",
-      "tip": "현직 도정 안전 관리 부실 프레임. 김경수 현장 방문·공감 행동 강조",
+      "name": "경남 수출·산업 성과",
+      "count": 7,
+      "side": "상대 유리",
+      "sentiment": -45,
+      "community_expected": "긍정",
+      "tip": "성과는 도정 업적이라고 재해석. 정책 방향성 비판으로 우리 방안 제시.",
       "articles": [
         {
-          "title": "\"눈 감으면 딸 얼굴 떠올라\"…투사가 된 유족 [창원NC파크 사고 1년, 남...]",
+          "title": "'제30회 경상남도 농수산물 수출탑 시상식' 성료",
+          "source": ""
+        },
+        {
+          "title": "경남도, 농수산물 수출탑 시상식…최우수 시군에 진주시 선정",
+          "source": ""
+        },
+        {
+          "title": "경남 농수산물 수출 성과 한자리에…수출탑 시상식 개최",
+          "source": ""
+        }
+      ]
+    },
+    {
+      "name": "지방선거 도지사 후보군 형성",
+      "count": 9,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "중립",
+      "tip": "김경수 후보 역할 강화. 박완수와의 정책 차이 분명히 드러내기.",
+      "articles": [
+        {
+          "title": "시교육감 선거 '3인 3색' 교육방향 눈길",
+          "source": ""
+        },
+        {
+          "title": "경남교육감…보수 분화·진보 결집 속 다자구도 격돌",
+          "source": ""
+        },
+        {
+          "title": "경남교육감 선거 보수·중도 후보군 압축 국면",
+          "source": ""
+        }
+      ]
+    },
+    {
+      "name": "2026 지방선거 기초 단체장 출마",
+      "count": 5,
+      "side": "중립",
+      "sentiment": 5,
+      "community_expected": "중립",
+      "tip": "기초 단체장 선거 관심 제고. 하향식 영향력 강화로 전략적 지역 장악.",
+      "articles": [
+        {
+          "title": "구인모 거창군수, 경남 지자체장 최초 출마 선언…3선 도전",
+          "source": ""
+        },
+        {
+          "title": "구인모 거창군수, '3선 도전' 선언…거창군, 권한대행 체제 돌입",
+          "source": ""
+        },
+        {
+          "title": "임철규 사천시장 예비후보, 사천 미래 100년 비전 제시",
+          "source": ""
+        }
+      ]
+    },
+    {
+      "name": "NC파크 사고 책임론",
+      "count": 2,
+      "side": "우리 유리",
+      "sentiment": 50,
+      "community_expected": "부정",
+      "tip": "안전사고 현직 책임 강조. 경찰 부실 발표 후속으로 도정 관리 부실 지적.",
+      "articles": [
+        {
+          "title": "\"눈 감으면 딸 얼굴 떠올라\"…투사가 된 유족 [창원NC파크 사고 1년, 남...",
           "source": ""
         },
         {
@@ -9278,61 +9210,79 @@
       ]
     },
     {
-      "name": "2026 경남 교육감 선거 주자 포진",
-      "count": 3,
-      "side": "중립",
-      "sentiment": 0,
-      "community_expected": "중립",
-      "tip": "진보 교육감 후보 결집 vs 보수 분화 구도 강조. 교육정책 공약 선제 발표",
-      "articles": [
-        {
-          "title": "시교육감 선거 '3인 3색' 교육방향 눈길",
-          "source": ""
-        },
-        {
-          "title": "경남교육감 선거 보수·중도 후보군 압축 국면",
-          "source": ""
-        },
-        {
-          "title": "경남교육감…보수 분화·진보 결집 속 다자구도 격돌",
-          "source": ""
-        }
-      ]
-    },
-    {
-      "name": "경남 청년 유출 전국 최악·정책 공약",
-      "count": 3,
+      "name": "청년 정책 및 인구 감소",
+      "count": 4,
       "side": "우리 유리",
-      "sentiment": 45,
-      "community_expected": "긍정",
-      "tip": "현 도정 청년 정책 실패 규정. 일자리·주거·문화 구체 공약 제시",
+      "sentiment": 55,
+      "community_expected": "부정",
+      "tip": "경남 청년 유출 수치화. 도정 미흡 지적 후 구체적 청년 공약 제시.",
       "articles": [
         {
           "title": "[세대공감] 청년을 머무르게 하는 지역의 조건",
           "source": ""
         },
         {
-          "title": "전희영 \"김경수·박완수 지사 임기에 경남 청년 유출 전국 최다\"",
+          "title": "진보당 전희영 \"청년 유출 전국 최다 경남, 거대 양당 정치가 방치한 증...",
           "source": ""
         },
         {
-          "title": "전희영 도지사 후보, 청년 정책 공약 발표",
+          "title": "전희영 \"김경수·박완수 지사 임기에 경남 청년 유출 전국 최다\"",
           "source": ""
         }
       ]
     },
     {
-      "name": "진해군항제·진주남강유등축제 개최",
-      "count": 5,
-      "side": "중립",
-      "sentiment": 25,
+      "name": "진해군항제 안전 관리",
+      "count": 3,
+      "side": "상대 유리",
+      "sentiment": -30,
       "community_expected": "긍정",
-      "tip": "지역 관광·축제 성과. 다음 정부 문화정책 비전 제시로 확장",
+      "tip": "축제 안전관리 강화를 도정 성과로 해석 차단. 근본적 예산 확대 공약 제시.",
       "articles": [
         {
           "title": "\"안심하고 축제 즐기세요\"…창원시 '제64회 진해군항제' 합동점검",
           "source": ""
         },
+        {
+          "title": "진해군항제 바가지요금 근절 총력",
+          "source": ""
+        },
+        {
+          "title": "진해군항제 바가지요금 '원스트라이크아웃제'",
+          "source": ""
+        }
+      ]
+    },
+    {
+      "name": "여당 지지층 결집",
+      "count": 3,
+      "side": "상대 유리",
+      "sentiment": -40,
+      "community_expected": "중립",
+      "tip": "여당 결집 기사에 대비. 우리 지지층 활성화로 상쇄.",
+      "articles": [
+        {
+          "title": "국민의힘 독점 경남도의회…불법계엄 옹호까지 [지방의회 되짚기 알바]",
+          "source": ""
+        },
+        {
+          "title": "국민의힘 \"국가 빚 6500조와 곰팡이 백신, 국민 심판만이 답\"",
+          "source": ""
+        },
+        {
+          "title": "송언석 \"민주당은 '범죄자 공화국'\"",
+          "source": ""
+        }
+      ]
+    },
+    {
+      "name": "문화·축제·체육",
+      "count": 6,
+      "side": "중립",
+      "sentiment": 10,
+      "community_expected": "긍정",
+      "tip": "지역 문화행사 후원. 주민 만족도 제고로 도정 평가 분리.",
+      "articles": [
         {
           "title": "2026 진주남강유등축제 '대한민국 등 공모대전' 개최",
           "source": ""
@@ -9340,97 +9290,132 @@
         {
           "title": "진주시, 진주남강유등축제 '대한민국 등 공모대전' 개최",
           "source": ""
-        }
-      ]
-    },
-    {
-      "name": "경남 의료·교육 인프라 확충",
-      "count": 3,
-      "side": "중립",
-      "sentiment": 30,
-      "community_expected": "긍정",
-      "tip": "지역 균형 발전 공약 보강. 낙후지역 인프라 격차 해소 전략 강조",
-      "articles": [
-        {
-          "title": "경남도·거창군·적십자, 거창적십자병원 이전·신축 업무협약",
-          "source": ""
         },
         {
-          "title": "부산해사국제상사법원 2028년 3월 1일 문 연다",
-          "source": ""
-        },
-        {
-          "title": "의령군·밀양시, 미래교육 상호 협력 체계 구축",
+          "title": "고성군 방문 스포츠 유치 또 1위…6년 연속 정상",
           "source": ""
         }
       ]
     }
   ],
-  "news_clusters_timestamp": "2026-03-26T20:23:11.608451",
+  "news_clusters_timestamp": "2026-03-26T20:27:25.870307",
   "source_timestamps": {
-    "news_updated_at": "2026-03-26T20:22:26.343733",
-    "cluster_updated_at": "2026-03-26T20:23:11.608490",
-    "sentiment_updated_at": "2026-03-26T20:24:14.249291",
-    "community_updated_at": "2026-03-26T20:24:39.746571",
-    "blog_updated_at": "2026-03-26T20:24:39.746571",
-    "cafe_updated_at": "2026-03-26T20:24:39.746571",
-    "youtube_updated_at": "2026-03-26T20:24:39.746571",
-    "trends_updated_at": "2026-03-26T20:24:39.746571",
-    "national_poll_updated_at": "2026-03-26T20:24:39.751774",
-    "pandse_updated_at": "2026-03-26T20:24:39.791007"
+    "news_updated_at": "2026-03-26T20:26:31.727532",
+    "cluster_updated_at": "2026-03-26T20:27:25.870322",
+    "sentiment_updated_at": "2026-03-26T20:28:31.590736",
+    "community_updated_at": "2026-03-26T20:28:57.232645",
+    "blog_updated_at": "2026-03-26T20:28:57.232645",
+    "cafe_updated_at": "2026-03-26T20:28:57.232645",
+    "youtube_updated_at": "2026-03-26T20:28:57.232645",
+    "trends_updated_at": "2026-03-26T20:28:57.232645",
+    "national_poll_updated_at": "2026-03-26T20:28:57.236590",
+    "pandse_updated_at": "2026-03-26T20:28:57.289684"
   },
   "broad_issue": {
     "kim_count": 3,
     "park_count": 7,
-    "total": 247,
-    "updated_at": "2026-03-26T20:22:26.343835"
+    "total": 249,
+    "updated_at": "2026-03-26T20:26:31.727845"
   },
   "cluster_issue": {
-    "kim_count": 28,
-    "park_count": 12,
-    "neutral_count": 13,
+    "kim_count": 20,
+    "park_count": 13,
+    "neutral_count": 20,
     "total": 53,
-    "kim_score": 1180,
-    "park_score": 460,
-    "issue_index": 55.6,
-    "updated_at": "2026-03-26T20:23:11.608543"
+    "kim_score": 860,
+    "park_score": 525,
+    "issue_index": 53.2,
+    "updated_at": "2026-03-26T20:27:25.870358"
   },
   "cluster_reaction": {
-    "reaction_index": 49.3,
-    "kim_sentiment": 23,
-    "park_sentiment": 51,
-    "total_mentions": 642,
+    "reaction_index": 51.3,
+    "kim_sentiment": 31,
+    "park_sentiment": 35,
+    "total_mentions": 2868,
     "sources_collected": [
-      "news_comments",
-      "community",
       "youtube",
+      "news_comments",
+      "cafe",
       "blog",
-      "cafe"
+      "community"
     ],
     "keywords_analyzed": 10,
     "details": [
       {
-        "keyword": "2026 경남 도지사 선거 공천·후보 경선",
+        "keyword": "경남 수출·산업 성과",
+        "side": "상대 유리",
+        "sources": {
+          "blog": {
+            "count": 30,
+            "total": 16082,
+            "net_sentiment": 0.667,
+            "titles": [
+              "2026/03/26: 상한가종목/ 상승률 상위종목/ 오늘의 주요... ",
+              "KF-21 제작사 KF-21 보라매 전투기의 제작사",
+              "[전문가 칼럼] KF-21 블록1 초도양산(LRIP) 진입의 공학적... "
+            ]
+          },
+          "cafe": {
+            "count": 0,
+            "total": 5931,
+            "net_sentiment": 0.933,
+            "titles": [
+              "경상남도보도자료20260326목요일",
+              "안전하고 포용적인 인공지능·디지털사회실현을 위해 4개기관이 앞장선다 / 대한민국기업의 전통과 미래,명...",
+              "신성델타테크(065350) 주가 종합 분석 3월 26일"
+            ]
+          },
+          "youtube": {
+            "videos": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "positive_ratio": 0.0,
+            "negative_ratio": 0.0
+          },
+          "community": {
+            "mentions": 103,
+            "net_sentiment": -0.27,
+            "sites_active": 6,
+            "titles": [
+              "하동 쌀, 사상 최대 수출 실적 달성! | 뉴스프리존",
+              "홍준표 경남 도정 2년 성과 3 - 홍준표 마이너 갤러리",
+              "한국의 반도체 국산화에 대해 냉정하게 바라봐야 하는 이유.jpg - 유머/움짤/이슈",
+              "일본의 극단적인 엔저 이유와 아베노믹스 - 미스터리/공포",
+              "이제 막 나가네요 '일본 소부장 기업 한국 오세요'…도쿄서 투자설명회"
+            ]
+          },
+          "news_comments": {
+            "articles": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "likes": 0,
+            "dislikes": 0,
+            "reaction_grade": "LOW"
+          }
+        }
+      },
+      {
+        "keyword": "공천 논란 및 비리 검증",
         "side": "우리 유리",
         "sources": {
           "blog": {
             "count": 30,
-            "total": 14237,
-            "net_sentiment": 0.1,
+            "total": 18275,
+            "net_sentiment": -0.834,
             "titles": [
-              "대구시장 후보 총정리, 각 당 명단과 지지율 흐름 한눈에 보기",
-              "오늘의 정치 뉴스 요약 2026년 3월 26일 18시 주요 정치 이슈... ",
-              "12년 순천 충격, '보수 심장' 대구에서 재현? 국힘 위기감 고조"
+              "6.3 지방선거]성남시장 김지호 예비후보, 민주당 최고위... ",
+              "청년 정치인 심사? 국힘 오디션 위원 위촉에 터진 논란의 전말",
+              "오늘의 키워드 - 2026년 3월26일"
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 3448,
-            "net_sentiment": 0.033,
+            "total": 5231,
+            "net_sentiment": -0.5,
             "titles": [
-              "[지방선거] 국민의힘 청주시장 이범석 컷오프! 부천·시흥 우선추천지역 확정",
-              "[한국남동발전(주)] 2026년 3월 26일 오늘의 기관 주요 뉴스브리핑",
-              "이 여론조사 맞는건가요?"
+              "[인사청문회] 선관위원 후보자 검증… 부정선거 논란부터 재산 의혹까지 쟁점 정리",
+              "“용인 미래 걸린 국가산단”…110만 시민 결집, 사수 대책위 출범",
+              "음주 폭행·고액 체납 이혁재, 국힘 청년 오디션 심사위원 논란 폭발!"
             ]
           },
           "youtube": {
@@ -9441,15 +9426,15 @@
             "negative_ratio": 0.0
           },
           "community": {
-            "mentions": 101,
-            "net_sentiment": -0.002,
+            "mentions": 36,
+            "net_sentiment": -0.577,
             "sites_active": 6,
             "titles": [
-              "[단독] 국민의힘 강원도지사 후보 전략공천 가나 - 국내보수 마이너 갤러리",
-              "&quot;친문·친노 구심점 역할&quot;…김두관, ‘김동연·김경수’ 띄워 이재명 일극체제 견제",
-              "간만에 창원 지역 [이슈/인물/구도] 로 판세 예측해봄. - 정치/시사",
-              "[속보]與 경남도지사 후보 김경수 단수 공천 - 정치/시사",
-              "민주당 경남지사 경선은 흥행할 수 있으려나요"
+              "&quot;비리백화점 윤석열 철저 검증&quot;…野경선날 尹만 때린 與 - 홍준표 마이너 갤러리",
+              "“김정재ㆍ김병욱 컷오프 하라” 포항시민단체 뿔났다 - 새로운보수당 마이너 갤러리",
+              "재명학) 이재명 문제점과 논란들 총정리 - 정치/시사",
+              "이재명 관련 논란들 간단하게만 정리한 56가지 내용 - 정치/시사",
+              "한국당, 공천 부적격자 기준 확정…입시비리·막말 시 배제"
             ]
           },
           "news_comments": {
@@ -9463,80 +9448,27 @@
         }
       },
       {
-        "keyword": "여당 비리·재산논란·공천 윤리 문제",
+        "keyword": "박완수 도정 재산/선심성 논란",
         "side": "우리 유리",
         "sources": {
           "blog": {
-            "count": 28,
-            "total": 13900,
-            "net_sentiment": -0.7,
+            "count": 0,
+            "total": 122,
+            "net_sentiment": -0.266,
             "titles": [
-              "[석간-뉴스] 李 “전기요금 웬만하면 유지, 전기 절약 부탁”... ",
-              "오늘의 키워드 - 2026년 3월26일",
-              "[비평] 대구시장 경선과 기득권의 성벽: 24년의 세월... "
+              "정치종합*헤드라인.청와대.국회정당.북한.행정부.국방외교.... ",
+              "260318 뉴스몰아보기",
+              "260311 뉴스몰아보기"
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 4102,
-            "net_sentiment": -0.733,
+            "total": 32,
+            "net_sentiment": -0.267,
             "titles": [
-              "[인사청문회] 선관위원 후보자 검증… 부정선거 논란부터 재산 의혹까지 쟁점 정리",
-              "위기의 보수",
-              "이재명 정부"
-            ]
-          },
-          "youtube": {
-            "videos": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "positive_ratio": 0.0,
-            "negative_ratio": 0.0
-          },
-          "community": {
-            "mentions": 8,
-            "net_sentiment": -0.613,
-            "sites_active": 3,
-            "titles": [
-              "그 가슴 후련한 청량감을 오래도록 잊지 못할 것이다. - 정치, 사회 갤러리",
-              "[Who Is ?] 이준석 전 국민의힘 대표 | 비즈니스포스트",
-              "간만에 창원 지역 [이슈/인물/구도] 로 판세 예측해봄. - 정치/시사",
-              "가장 뛰어난 세 AI 모델이 작성한 대한민국 정당사 칼럼 - 정치/시사",
-              "숨차뉴스 876 - 네이트 판"
-            ]
-          },
-          "news_comments": {
-            "articles": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "likes": 0,
-            "dislikes": 0,
-            "reaction_grade": "LOW"
-          }
-        }
-      },
-      {
-        "keyword": "경남 농수산물 수출 신기록·경제실적",
-        "side": "상대 유리",
-        "sources": {
-          "blog": {
-            "count": 3,
-            "total": 1346,
-            "net_sentiment": 0.334,
-            "titles": [
-              "260326 뉴스몰아보기",
-              "정책지식 2026.3.26.",
-              "시냇물이 조약돌을 나른다 (1)"
-            ]
-          },
-          "cafe": {
-            "count": 0,
-            "total": 548,
-            "net_sentiment": 0.567,
-            "titles": [
-              "세상을 바꾸는 AI",
-              "2026년03월25일 정부지원 [기술 분야] 뉴스",
-              "2026년03월24일 정부지원 [기술 분야] 뉴스"
+              "명태균 게이트",
+              "250327(목) 마음향기 뉴스브리핑",
+              "250317(월) 마음향기 뉴스브리핑"
             ]
           },
           "youtube": {
@@ -9563,27 +9495,27 @@
         }
       },
       {
-        "keyword": "KF-21 항공산업 양산 추진",
+        "keyword": "지방선거 도지사 후보군 형성",
         "side": "중립",
         "sources": {
           "blog": {
-            "count": 30,
-            "total": 7587,
-            "net_sentiment": 0.767,
+            "count": 21,
+            "total": 7508,
+            "net_sentiment": 0.266,
             "titles": [
-              "액기스 뉴스 20260326",
-              "[석간-뉴스] 李 “전기요금 웬만하면 유지, 전기 절약 부탁”... ",
-              "[ 국방 ] KF-21 보라매 전투기가 넘어야 할 과제"
+              "일본붕괴의 배후? 손정의에 의한 지배구조와 숨겨진 진실",
+              "김부겸 전 국무총리 프로필 인스타 나무위키, 나이, 고향, 학력... ",
+              "[6·3 지방선거] 청도군수·경북도의원·청도군의원 출마... "
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 2193,
-            "net_sentiment": 0.8,
+            "total": 2278,
+            "net_sentiment": 0.066,
             "titles": [
-              "26년 3월 26일 목요일 간추린 숏뉴스입니다.",
-              "2026.03.26(목) 급등주 시장분석 딥리서치",
-              "⏰ 2026.03.26(목) 10시~11시 장중 특징주 뉴스 (11건)"
+              "오늘의 주요뉴스 정리 2026. 3. 26",
+              "위기의 보수",
+              "국회의원브리핑20260325수요일"
             ]
           },
           "youtube": {
@@ -9594,15 +9526,15 @@
             "negative_ratio": 0.0
           },
           "community": {
-            "mentions": 104,
-            "net_sentiment": 0.012,
+            "mentions": 168,
+            "net_sentiment": -0.033,
             "sites_active": 6,
             "titles": [
-              "KAI, 한국형전투기 KF-21 20대 최초 양산계약 체결",
-              "‘KF-21’ 내년 우리 공군에 인도된다…최초 양산 1호기 최종 조립 착수 | BEMIL 군사세계",
-              "KF-21 실전배치 드디어 눈 앞…양산 1호기 내년 하반기 공군 인도 - 유머/움짤/이슈",
-              "F-22 랩터, 타이푼의 사례로 추정해보는 KF-21 초도생산량 축소의 이유 - 미스터리/공포",
-              "KAI, 방사청과 KF-21 최초양산 잔여계약 체결…2조3900억원 규모"
+              "경기도지사 선거 서막 올랐나… 벌써부터 지선 모드 - 더불어민주당 마이너 갤러리",
+              "경기도지사 적합도 여조 - 이준석 마이너 갤러리",
+              "지방 선거 당내 경선 언제부터임 ? - 정치/시사",
+              "이정현, 경기지사 전략공천 시사 - 정치/시사",
+              "오? 우상호 강원도지사 출마 얘기가 있나보네요?"
             ]
           },
           "news_comments": {
@@ -9616,27 +9548,27 @@
         }
       },
       {
-        "keyword": "창원NC파크 안전사고·유족 투쟁",
-        "side": "우리 유리",
+        "keyword": "2026 지방선거 기초 단체장 출마",
+        "side": "중립",
         "sources": {
           "blog": {
-            "count": 15,
-            "total": 2659,
-            "net_sentiment": -0.267,
+            "count": 30,
+            "total": 15364,
+            "net_sentiment": 0.166,
             "titles": [
-              "\"33㎏ 구조물 추락 참사 1년 만의 결론, 참사는 어떻게 일어났나?\"",
-              "3월 26일 오늘 뉴스 브리핑 TOP7 | 25조 추경 당정협의·석유... ",
-              "창원NC파크 추락사고 16명 송치, 충격적인 부실 실체"
+              "노관규 31%는 민주당 후보가 승리하기 위한 출발점이다",
+              "진보당 서울시당, 6·3 지방선거 출마 선언",
+              "[정치공학 및 선거지형 심층 분석 칼럼] 2026년 6.3 지방선거... "
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 3115,
-            "net_sentiment": 0.1,
+            "total": 3402,
+            "net_sentiment": 0.4,
             "titles": [
-              "NC파크 추락 사고 경찰 수사 결과 발표, 관계자 16명 검찰 송치…NC다이노스 “책임 다할 것”",
-              "이재명 대통령 시대",
-              "상승세 탄 국내 증시"
+              "[한국자산관리공사] 2026년 3월 26일 오늘의 기관 주요 뉴스브리핑",
+              "2026년03월26일 전라남도 뉴스",
+              "AI Times 뉴스 모음 - 2026년 03월 26일 (33건)"
             ]
           },
           "youtube": {
@@ -9647,14 +9579,67 @@
             "negative_ratio": 0.0
           },
           "community": {
-            "mentions": 94,
-            "net_sentiment": -0.048,
+            "mentions": 122,
+            "net_sentiment": 0.017,
+            "sites_active": 6,
+            "titles": [
+              "6·3 지방선거 | 전국 227곳 기초단체장 출마 예상자 (4) 호남권 - 새로운보수당 마이너 갤러리",
+              "조국, ‘SNL 코리아’ 출격…10월 재보선 전초전?",
+              "제 8회전국동시지방선거 광역단체장 예측및 후보군(2021년 10월 31일 기준) - 정치/시사",
+              "(망상주의) 2027 이준석 대통령 당선 프로젝트 - 정치/시사",
+              "다음 선거가 당장 내년이었군요."
+            ]
+          },
+          "news_comments": {
+            "articles": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "likes": 0,
+            "dislikes": 0,
+            "reaction_grade": "LOW"
+          }
+        }
+      },
+      {
+        "keyword": "NC파크 사고 책임론",
+        "side": "우리 유리",
+        "sources": {
+          "blog": {
+            "count": 0,
+            "total": 50,
+            "net_sentiment": 0.033,
+            "titles": [
+              "260323 뉴스몰아보기",
+              "20260319_뉴스 클리핑",
+              "260317 뉴스몰아보기"
+            ]
+          },
+          "cafe": {
+            "count": 0,
+            "total": 18,
+            "net_sentiment": -0.111,
+            "titles": [
+              "오늘의 산업 동향",
+              "북, 장거리순항미사일 발사…김정은 “핵무력 무한대 발전 총력” / KBS 2025.12.29. 2026/01/01/11/12/-A-...",
+              "AI 핫트렌드"
+            ]
+          },
+          "youtube": {
+            "videos": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "positive_ratio": 0.0,
+            "negative_ratio": 0.0
+          },
+          "community": {
+            "mentions": 124,
+            "net_sentiment": -0.098,
             "sites_active": 5,
             "titles": [
-              "‘창원NC파크 비극’…프로야구장 안전 대책, 12일 발표에 쏠린 눈 | EPN",
-              "창원 NC파크 구조물 추락, 중상 20대 여성 끝내 숨져…나머지 2명은 치료중",
-              "&quot;관중 사망 창원NC파크 사조위에 유족 배제…투명하게 조사해야&quot; - 야구",
+              "‘구조물 추락사고’ NC구단 &quot;피해자 위해 최선 다하겠다&quot;",
+              "‘부실 체결이 사고 불러왔다’…창원NC파크 참사 원인, 조사 결과 드러나 | EPN",
               "경남도, 창원NC파크 사고 사조위 운영 맡는다 - 야구",
+              "이번 창원NC파크 사망사고 관련 취재 정리.jpg - 야구",
               "창원NC파크 구조물 낙하로 중상 입은 여성, 끝내 사망"
             ]
           },
@@ -9669,182 +9654,27 @@
         }
       },
       {
-        "keyword": "박완수 도정 재산공개·공약 발표",
-        "side": "상대 유리",
-        "sources": {
-          "blog": {
-            "count": 1,
-            "total": 460,
-            "net_sentiment": 0.667,
-            "titles": [
-              "260325 뉴스몰아보기",
-              "김어준의 겸손은 힘들다 뉴스공장 요약 2026년 03월 24일 (화)",
-              "정치종합*헤드라인.청와대.국회정당.북한.행정부.국방외교.... "
-            ]
-          },
-          "cafe": {
-            "count": 0,
-            "total": 158,
-            "net_sentiment": 0.467,
-            "titles": [
-              "국회의원SNS소식20260324화요일",
-              "6.3 지방선거",
-              "[한국자산관리공사] 2026년 3월 4주차 기관 주요 뉴스브리핑"
-            ]
-          },
-          "youtube": {
-            "videos": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "positive_ratio": 0.0,
-            "negative_ratio": 0.0
-          },
-          "community": {
-            "mentions": 1,
-            "net_sentiment": 0.0,
-            "sites_active": 1,
-            "titles": [
-              "숨차뉴스 1137 박근혜에게는 2심 선고를, 이명박에게는 1심 선고를"
-            ]
-          },
-          "news_comments": {
-            "articles": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "likes": 0,
-            "dislikes": 0,
-            "reaction_grade": "LOW"
-          }
-        }
-      },
-      {
-        "keyword": "2026 경남 교육감 선거 주자 포진",
-        "side": "중립",
-        "sources": {
-          "blog": {
-            "count": 1,
-            "total": 281,
-            "net_sentiment": 0.033,
-            "titles": [
-              "정책지식 2026.3.26.",
-              "행정부.국방외교.정치일반=네이버(언론사제공) 2026년3월24일",
-              "행정부.국방외교.정치일반=네이버(언론사제공) 2026년3월23일"
-            ]
-          },
-          "cafe": {
-            "count": 0,
-            "total": 74,
-            "net_sentiment": -0.1,
-            "titles": [
-              "위기의 보수",
-              "국회의원SNS소식20260321토요일",
-              "6·3 지방선거"
-            ]
-          },
-          "youtube": {
-            "videos": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "positive_ratio": 0.0,
-            "negative_ratio": 0.0
-          },
-          "community": {
-            "mentions": 29,
-            "net_sentiment": 0.0,
-            "sites_active": 5,
-            "titles": [
-              "박종훈 경남교육감 ‘도지사 출마설’에 긍정 메시지 - 더불어민주당 마이너 갤러리",
-              "박종훈 경남교육감 도지사 출마하면 어느 정도임? - 더불어민주당 마이너 갤러리",
-              "제 8회전국동시지방선거 광역단체장 예측및 후보군(2021년 10월 31일 기준) - 정치/시사",
-              "240425 증시주요뉴스 - 주식",
-              "내가 생각하는 개혁안인데 어케 생각하세요?"
-            ]
-          },
-          "news_comments": {
-            "articles": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "likes": 0,
-            "dislikes": 0,
-            "reaction_grade": "LOW"
-          }
-        }
-      },
-      {
-        "keyword": "진해군항제·진주남강유등축제 개최",
-        "side": "중립",
-        "sources": {
-          "blog": {
-            "count": 7,
-            "total": 6767,
-            "net_sentiment": 0.0,
-            "titles": [
-              "2025년 경남여행 초보자를 위한 필수 명소 8곳",
-              "간추린 생활문화 뉴스모음 ❤️2026.03.26.목",
-              "국.중.박, 삼성 AI 언팩의 정교한 로고 인쇄부터 뫼비우스... "
-            ]
-          },
-          "cafe": {
-            "count": 0,
-            "total": 1368,
-            "net_sentiment": 0.1,
-            "titles": [
-              "2026년03월26일 경남축제 뉴스",
-              "[한국관광공사] 2026년 3월 25일 오늘의 기관 주요 뉴스브리핑",
-              "[한국관광공사] 2026년 3월 24일 오늘의 기관 주요 뉴스브리핑"
-            ]
-          },
-          "youtube": {
-            "videos": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "positive_ratio": 0.0,
-            "negative_ratio": 0.0
-          },
-          "community": {
-            "mentions": 85,
-            "net_sentiment": -0.01,
-            "sites_active": 6,
-            "titles": [
-              "진주시, ‘2024년 10월 축제 유공자’ 표창 | 뉴스프리존",
-              "홍보) 진주 남강유등축제 - S&amp;P 500 마이너 갤러리",
-              "(진지) 순천 호수공원, 진주 남강유등축제.jpg - 음식/여행",
-              "무료축제를 유료로 변경했다가 본전도 못건진 축제 - 유머/움짤/이슈",
-              "진주 유등축제가 너무나 기다려져요"
-            ]
-          },
-          "news_comments": {
-            "articles": 0,
-            "comments": 0,
-            "net_sentiment": 0.0,
-            "likes": 0,
-            "dislikes": 0,
-            "reaction_grade": "LOW"
-          }
-        }
-      },
-      {
-        "keyword": "경남 청년 유출 전국 최악·정책 공약",
+        "keyword": "청년 정책 및 인구 감소",
         "side": "우리 유리",
         "sources": {
           "blog": {
             "count": 30,
-            "total": 16817,
-            "net_sentiment": 0.334,
+            "total": 454403,
+            "net_sentiment": 0.4,
             "titles": [
-              "8대 핵심공약 정책 검토보고서",
-              "진보당 청년정책 기자회견···“청년 일자리 구조 개선 필요”",
-              "영남권 상권이 들썩 김부겸 대구 출마 임박 팍팍한 지방 경제... "
+              "고군면 키오스크 도입 문의가 증가한 상권",
+              "[월간 일본 부동산] 2026. 03월",
+              "미분양 주택, 2026년에도 지방에서 급증세 지속"
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 19108,
-            "net_sentiment": 0.3,
+            "total": 114138,
+            "net_sentiment": 0.466,
             "titles": [
-              "경상남도보도자료20260326목요일",
-              "26년03월26일(목) 주식뉴스모음",
-              "정책뉴스20260326목요일"
+              "만성 B형 간염 시장 보고서",
+              "스페셜코리아 - 해외감동사연@스페셜코리아•구독자 8.94만명•동영상 405개",
+              "부동산 대책과 자산 관리"
             ]
           },
           "youtube": {
@@ -9855,15 +9685,15 @@
             "negative_ratio": 0.0
           },
           "community": {
-            "mentions": 9,
-            "net_sentiment": -0.25,
-            "sites_active": 4,
+            "mentions": 857,
+            "net_sentiment": 0.007,
+            "sites_active": 6,
             "titles": [
-              "(장문 분석글) 15편 서울의 정치성향을 알아보자 - 이재명 마이너 갤러리",
-              "240315 증시주요뉴스 - 주식",
-              "240122 증시주요뉴스 - 주식",
-              "더쿠 - [긴글주의] 자유한국당 비판/정치와 사회(feat. 꺼무위키)",
-              "숨차뉴스 1043 사전 투표 5월 4.(목) ~ 5.(금) 6시 ~ 18시 신분증 필수"
+              "청년 비경제활동 인구 통계 분석: '쉬는 청년' 현황과 지원 정책 - 아르바이트 갤러리",
+              "합천군, 청년정책 선택과 집중으로 인구감소∙저출산 위기 극복 ‘총력’ | 뉴스프리존",
+              "[지역균형발전] 일자리가 사람을 이끄는 게 아니다 (feat. 부산, 인천 송도) - 미스터리/공포",
+              "지방청년들이 서울로 가는 이유들. - 미스터리/공포",
+              "'그냥 쉰다'는 청년층 늘어.. 외노자는 더 확대하기로.."
             ]
           },
           "news_comments": {
@@ -9877,27 +9707,27 @@
         }
       },
       {
-        "keyword": "경남 의료·교육 인프라 확충",
-        "side": "중립",
+        "keyword": "진해군항제 안전 관리",
+        "side": "상대 유리",
         "sources": {
           "blog": {
-            "count": 30,
-            "total": 78534,
-            "net_sentiment": 0.467,
+            "count": 17,
+            "total": 1418,
+            "net_sentiment": 0.134,
             "titles": [
-              "보길면 무선단말기 활용이 높은 운영 환경",
-              "서호면 무선단말기 수요가 꾸준한 운영 환경",
-              "화성 동탄2 의료복합단지: 수도권 남부 의료 거점의 탄생과... "
+              "[업데이트] 지멘스 솔루션 파트너 뉴스(3월 4주차)",
+              "서울근교 대부도독채펜션 오느른펜션 가족 단체펜션 시원한전망",
+              "[샤브마니아 진해점] 진해샤브샤브 / 진해맛집"
             ]
           },
           "cafe": {
             "count": 0,
-            "total": 25937,
-            "net_sentiment": 0.4,
+            "total": 283,
+            "net_sentiment": 0.167,
             "titles": [
-              "[기타] [전국] 소재부품장비산업 특화단지 공모 공고",
-              "[기타] [전국] 소재, 부품, 장비 산업 특화단지 공모",
-              "TIPS COIN 꿈 속 이야기 350탄~!! 윤석열 대통령과 정육점/ 장윤정과 땅 문서/ 훗날 필히 만나게 될 인연~!..."
+              "진해 벚꽃길 물든 군악 축제…2026 진해군악의장 페스티벌 27일 개막",
+              "2026년 3월 25일 수요일 내일의 날씨",
+              "2026년 3월 25일 수요일 아침뉴스 (주요신문 헤드라인)"
             ]
           },
           "youtube": {
@@ -9908,15 +9738,121 @@
             "negative_ratio": 0.0
           },
           "community": {
-            "mentions": 36,
-            "net_sentiment": -0.073,
+            "mentions": 23,
+            "net_sentiment": -0.013,
+            "sites_active": 4,
+            "titles": [
+              "&quot;벚꽃 사랑 할래요&quot;...진해 군항제 오늘 눈부신 개막",
+              "올봄 지역축제 ‘바가지 요금’ 근절 나선다…민관합동점검반 가동 | 퍼블릭뉴스",
+              "450만 몰린 진해 군항제의 인파 관리 방법",
+              "더쿠 - 창원시, '광역시 승격' 법률안 제출 '큰 걸음",
+              "황사조심하세요 - 네이트 판"
+            ]
+          },
+          "news_comments": {
+            "articles": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "likes": 0,
+            "dislikes": 0,
+            "reaction_grade": "LOW"
+          }
+        }
+      },
+      {
+        "keyword": "여당 지지층 결집",
+        "side": "상대 유리",
+        "sources": {
+          "blog": {
+            "count": 15,
+            "total": 9678,
+            "net_sentiment": 0.5,
+            "titles": [
+              "노관규 31%는 민주당 후보가 승리하기 위한 출발점이다",
+              "태세 전환에 나선 박형준                     - 우리 아이(?)가... ",
+              "김어준 성장의 한축을 담당했던 김어준의 수문장으로서의... "
+            ]
+          },
+          "cafe": {
+            "count": 0,
+            "total": 2789,
+            "net_sentiment": 0.8,
+            "titles": [
+              "위기의 보수",
+              "2026년 03월 25일 수요일 헤드라인뉴스",
+              "이재명 정부"
+            ]
+          },
+          "youtube": {
+            "videos": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "positive_ratio": 0.0,
+            "negative_ratio": 0.0
+          },
+          "community": {
+            "mentions": 99,
+            "net_sentiment": 0.235,
             "sites_active": 6,
             "titles": [
-              "[긴급진단] 정운용 &quot;공공의대는 국가 필수 조치…교육·인프라 함께 가 - 새로운 인천대 미니 갤러리",
-              "전라도에 의대 유치하려고 한다고 국회에서 토론회 한다길래 - 이재명 마이너 갤러리",
-              "240411 증시주요뉴스 - 주식",
-              "231108 증시주요뉴스 - 주식",
-              "정부 9월 말까지 전국민 70% 1차 접종 마무리할 예정"
+              "민주 “투표율 65% 넘으면 유리…尹 심판 위해 투표장으로”",
+              "尹, 5개월 만에 ‘반국가세력’ 언급…안보 힘주며 지지층 결집",
+              "보수지지층은 왜 부정선거를 주장할까? - 정치/시사",
+              "국힘이나 국힘패널들이 수준떨어지고 병신인 이유가 보임 ㅋㅋ - 정치/시사",
+              "결집이 우선입니다"
+            ]
+          },
+          "news_comments": {
+            "articles": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "likes": 0,
+            "dislikes": 0,
+            "reaction_grade": "LOW"
+          }
+        }
+      },
+      {
+        "keyword": "문화·축제·체육",
+        "side": "중립",
+        "sources": {
+          "blog": {
+            "count": 30,
+            "total": 217524,
+            "net_sentiment": 0.066,
+            "titles": [
+              "(EVENT)_2026 제13회 춘천 독서대전 비전선포식 독서문화축제",
+              "초등학교 꿈.끼 재능발표회 음향, 조명, 인생네컷 세팅완료.... ",
+              "제20회 한국후계농업경영인 전국대회 새별오름"
+            ]
+          },
+          "cafe": {
+            "count": 0,
+            "total": 153480,
+            "net_sentiment": 0.0,
+            "titles": [
+              "사상 낙동강정원 벚꽃축제",
+              "논산에서 가입",
+              "논산에서가입합니다"
+            ]
+          },
+          "youtube": {
+            "videos": 0,
+            "comments": 0,
+            "net_sentiment": 0.0,
+            "positive_ratio": 0.0,
+            "negative_ratio": 0.0
+          },
+          "community": {
+            "mentions": 1133,
+            "net_sentiment": -0.025,
+            "sites_active": 6,
+            "titles": [
+              "용인 에버랜드에서 게임문화축제 연다 - 게임와이 갤러리",
+              "동서대 수영야류 연구회, 전국대학생마당놀이축제 대상 수상",
+              "결국 '홈마존'까지 등장…대학 축제 몰려온 대포카메라에 갈등 - 유머/움짤/이슈",
+              "가변석 해체에 4천만 원..태권도축제 어쩌나 (춘천) - 국내축구",
+              "“여기나 저기나” 혈세로 만든 판박이 동네축제들"
             ]
           },
           "news_comments": {
@@ -9930,16 +9866,16 @@
         }
       }
     ],
-    "updated_at": "2026-03-26T20:23:46.702204"
+    "updated_at": "2026-03-26T20:28:02.052043"
   },
-  "ai_issue_summary": "여당 비리·분화 vs 현직 도정 실적 팽팽. 안전사고 책임 논란이 결정변수",
-  "ai_reaction_summary": "청년 유출·안전 문제로 민심 이탈 감지. 도정 교체론 대두 조짐",
+  "ai_issue_summary": "현직 도정 성과 부각 vs 청년 유출·선심성 논란 구도. 기초 단체장 선거 본격화로 기저 결집 경쟁 심화.",
+  "ai_reaction_summary": "여당 비리 검증 필요론 부상. 실질 정책과 안전 관리로 현직 도정 평가 재정의 필요.",
   "pandse_alert": {
-    "prev": 54.5,
-    "now": 51.4,
-    "delta": -3.1,
-    "direction": "down",
-    "memo": "# 판세지수 -3.1pt 하락 원인\n\n**현직 프리미엄 악화(-1.1pt) + 보수 결집 약화(-1.1pt)**가 주요인. 현직 관련 부정 이슈 증가 및 국힘 지지층 위기감 저하로 야권 결집 동력 상실.",
-    "timestamp": "2026-03-26T20:24:41.558551"
+    "prev": 51.4,
+    "now": 52.8,
+    "delta": 1.4,
+    "direction": "up",
+    "memo": "# 판세지수 +1.4pt 상승 원인\n\n**여론관성(+1.6pt)과 대통령 효과(+1.1pt) 확대가 주요인. 지지율 67% 상승 → 정당격차 확대(+26%p) 및 감성 지수 상승으로 우호적 여론 구조 형성.**",
+    "timestamp": "2026-03-26T20:28:59.324113"
   }
 }
