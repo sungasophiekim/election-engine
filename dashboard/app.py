@@ -23,6 +23,10 @@ from fastapi.templating import Jinja2Templates
 # Allow imports from project root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# ── data 디렉토리 초기화 ──
+_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+os.makedirs(_DATA_DIR, exist_ok=True)
+
 app = FastAPI(title="Election Engine Dashboard")
 
 # ── 자동 스냅샷 스케줄러 ──
@@ -118,9 +122,8 @@ def _auto_snapshot_loop():
         _t.sleep(300)  # 5분마다 체크
 
 
-# 백그라운드 스레드로 시작
-_auto_thread = threading.Thread(target=_auto_snapshot_loop, daemon=True)
-_auto_thread.start()
+# 백그라운드 스레드 — startup 이벤트에서 시작 (모든 전역변수 정의 후)
+_auto_thread = None
 templates = Jinja2Templates(
     directory=os.path.join(os.path.dirname(__file__), "templates")
 )
@@ -3963,3 +3966,14 @@ async def run_strategy(session_token: str = Cookie(default=None)):
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         _strategy_running = False
+
+
+# ---------------------------------------------------------------------------
+# Startup — 모든 전역변수 정의 완료 후 백그라운드 스레드 시작
+# ---------------------------------------------------------------------------
+@app.on_event("startup")
+async def _start_background_threads():
+    global _auto_thread
+    _auto_thread = threading.Thread(target=_auto_snapshot_loop, daemon=True)
+    _auto_thread.start()
+    print("[Startup] 자동 스냅샷 스레드 시작")
