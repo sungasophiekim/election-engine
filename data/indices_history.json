@@ -86,5 +86,60 @@
     "issue_park": 12,
     "reaction_kim": 24,
     "reaction_park": 70
+  },
+  {
+    "timestamp": "2026-03-26T21:09:23.850429",
+    "date": "03.26 21:09",
+    "issue_index": 51.3,
+    "reaction_index": 46.8,
+    "pandse": 53.2,
+    "issue_kim": 23,
+    "issue_park": 28,
+    "reaction_kim": 11,
+    "reaction_park": 28
+  },
+  {
+    "timestamp": "2026-03-26T21:37:45.384171",
+    "date": "03.26 21:37",
+    "issue_index": 59.3,
+    "reaction_index": 57.3,
+    "pandse": 53.3,
+    "issue_kim": 18,
+    "issue_park": 5,
+    "reaction_kim": 19,
+    "reaction_park": 33
+  },
+  {
+    "timestamp": "2026-03-26T21:51:42.860536",
+    "date": "03.26 21:51",
+    "issue_index": 55.4,
+    "reaction_index": 47.1,
+    "pandse": 53.2,
+    "issue_kim": 19,
+    "issue_park": 14,
+    "reaction_kim": 22,
+    "reaction_park": 66
+  },
+  {
+    "timestamp": "2026-03-26T22:17:14.321262",
+    "date": "03.26 22:17",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.5,
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-26T23:17:55.054859",
+    "date": "03.26 23:17",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.5,
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
   }
 ]
