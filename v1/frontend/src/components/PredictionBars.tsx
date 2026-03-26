@@ -52,7 +52,7 @@ export default function PredictionBars() {
 
   return (
     <div className="wr-card border-pulse relative scanline anim-in" style={{ animationDelay: "0.3s" }}>
-      <div className="wr-card-header">여론조사 vs 실투표 예측</div>
+      <div className="wr-card-header">여론조사 vs 실투표 예측 <span className="text-[7px] text-amber-500/60 font-normal normal-case tracking-normal">beta</span></div>
       <div className="px-4 py-3 grid grid-cols-3 gap-5">
         <Bar
           kim={poll.kim || 0} park={poll.park || 0}

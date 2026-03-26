@@ -119,7 +119,27 @@ def _update_all():
                 pass
 
         src_ts["news_updated_at"] = datetime.now().isoformat()
-        print(f"[{_now()}] 광역 수집: {len(all_articles)}건 ({len(BROAD_QUERIES)}쿼리)", flush=True)
+
+        # ── 1.5 광역 수집 기반 이슈지수 (중복 없는 정확한 집계) ──
+        seen_kim_titles = set()
+        seen_park_titles = set()
+        kim_articles = []
+        park_articles = []
+        for a in all_articles:
+            title = a.get("title", "")
+            if "김경수" in title and title not in seen_kim_titles:
+                seen_kim_titles.add(title)
+                kim_articles.append(a)
+            if "박완수" in title and title not in seen_park_titles:
+                seen_park_titles.add(title)
+                park_articles.append(a)
+        snap["broad_issue"] = {
+            "kim_count": len(kim_articles),
+            "park_count": len(park_articles),
+            "total": len(all_articles),
+            "updated_at": datetime.now().isoformat(),
+        }
+        print(f"[{_now()}] 광역 수집: {len(all_articles)}건 ({len(BROAD_QUERIES)}쿼리) | 김{len(kim_articles)} 박{len(park_articles)}", flush=True)
 
         # ── 2. AI 분류 (미분류만 — Haiku) ──
         unclassified = [a for a in all_articles if not a["category"]]
@@ -147,7 +167,20 @@ def _update_all():
         snap["news_clusters"] = scored_clusters[:12]
         snap["news_clusters_timestamp"] = datetime.now().isoformat()
         src_ts["cluster_updated_at"] = datetime.now().isoformat()
-        print(f"[{_now()}] 클러스터: {len(scored_clusters)}개 (TOP: {scored_clusters[0]['name'] if scored_clusters else '없음'})", flush=True)
+
+        # ── 3.5 클러스터 기반 이슈/반응지수 (통합) ──
+        our_count = sum(c.get("count", 0) for c in scored_clusters if "우리" in c.get("side", ""))
+        opp_count = sum(c.get("count", 0) for c in scored_clusters if "상대" in c.get("side", ""))
+        neutral_count = sum(c.get("count", 0) for c in scored_clusters if "중립" in c.get("side", ""))
+        snap["cluster_issue"] = {
+            "kim_count": our_count,
+            "park_count": opp_count,
+            "neutral_count": neutral_count,
+            "total": our_count + opp_count + neutral_count,
+            "updated_at": datetime.now().isoformat(),
+        }
+
+        print(f"[{_now()}] 클러스터: {len(scored_clusters)}개 (TOP: {scored_clusters[0]['name'] if scored_clusters else '없음'}) | 우리{our_count} 상대{opp_count} 중립{neutral_count}", flush=True)
 
         # ── 4. 후보 버즈 수집 ──
         kw_path = LEGACY_DATA / "monitor_keywords.json"
@@ -167,13 +200,16 @@ def _update_all():
 
             cand_ai = {}
             try:
-                from engines.ai_sentiment import analyze_candidate_buzz_batch
+                _ensure_env()  # API 키 확인
+                from engines.ai_sentiment import analyze_candidate_buzz_batch, _candidate_cache
+                _candidate_cache.clear()  # 이전 빈 캐시 제거
                 cand_ai = analyze_candidate_buzz_batch(
                     keyword_titles=cand_titles_map,
                     candidate_name=cfg.candidate_name, opponents=cfg.opponents,
                 )
-            except Exception:
-                pass
+                print(f"[{_now()}] AI 감성: {len(cand_ai)}개 분석", flush=True)
+            except Exception as e:
+                print(f"[{_now()}] AI 감성 경고: {e}", flush=True)
 
             buzz = {}
             for cs in cand_signals:
@@ -367,19 +403,21 @@ def _ai_cluster_events(articles: list) -> list:
   ...
 ]
 
-판단 기준 (side):
-- "우리 유리": 김경수/민주당에 긍정적이거나, 박완수/국민의힘을 비판하는 뉴스
-- "상대 유리": 박완수/국민의힘에 긍정적이거나, 김경수/민주당을 비판하는 뉴스
-- "중립": 양쪽 모두 해당하거나 판단 어려운 경우
+판단 기준 (side) — 중립은 최소화, 적극적으로 판단:
+- "우리 유리": 김경수/민주당에 긍정적, 박완수/국민의힘을 비판, 이재명 대통령 행사/방문/성과, 정부 정책 성과, 야당 내부 갈등
+- "상대 유리": 박완수/국민의힘에 긍정적, 김경수/민주당을 비판/공격, 현직 도정 성과 발표, 드루킹/사법리스크, 여당 비리/스캔들
+- "중립": 선거와 완전히 무관하거나, 양쪽에 동일하게 적용되는 경우만
 
-주의:
-- 이재명 대통령의 경남 방문/행사 참석 → 여당 후보(김경수)에게 유리 = "우리 유리"
-- 이재명/민주당에 대한 비판/공격 뉴스 → "상대 유리"
-- 박완수 도정 성과/정책 발표 → "상대 유리"
-- 박완수/국민의힘 내부 갈등/비판 → "우리 유리"
+필수 규칙:
+- 이재명 대통령 경남 방문/행사(KF-21 출고식 등) → 반드시 "우리 유리"
+- 박완수 도정 예산/추경/성과 발표 → 반드시 "상대 유리"
+- 김경수/민주당 네거티브 공격 기사 → 반드시 "상대 유리"
+- 국민의힘 내부 갈등/컷오프 논란 → 반드시 "우리 유리"
+- 현직 도정 관련 사건·사고·관리부실(안전사고, 시설관리 등) → 반드시 "우리 유리" (현직 책임)
+- 조금이라도 한쪽에 유리하면 중립 대신 해당 진영으로 판단
 - 경남 선거와 무관한 뉴스는 제외
-- 기사 수 많은 순으로 정렬
-- tip: 김경수 캠프 전략팀 관점에서 이 이슈에 어떻게 대응해야 하는지 구체적 행동 2줄 이내"""
+- 기사 수 많은 순
+- tip: 김경수 캠프 전략팀 관점, 구체적 행동 2줄 이내, 짧은 단어 위주"""
 
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
@@ -490,8 +528,9 @@ def _save_indices_history(snap: dict):
         pass
 
     buzz = snap.get("candidate_buzz", {})
-    kim_m = sum(v.get("mention_count", 0) for k, v in buzz.items() if "김경수" in k)
-    park_m = sum(v.get("mention_count", 0) for k, v in buzz.items() if "박완수" in k)
+    broad = snap.get("broad_issue", {})
+    kim_m = broad.get("kim_count", 0) or sum(v.get("mention_count", 0) for k, v in buzz.items() if "김경수" in k)
+    park_m = broad.get("park_count", 0) or sum(v.get("mention_count", 0) for k, v in buzz.items() if "박완수" in k)
     kim_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for k, v in buzz.items() if "김경수" in k]
     park_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for k, v in buzz.items() if "박완수" in k]
     kim_sent = round(sum(kim_sents) / max(len(kim_sents), 1) * 100)

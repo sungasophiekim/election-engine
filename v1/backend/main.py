@@ -16,12 +16,13 @@ from api.polls import router as polls_router
 from api.prediction import router as prediction_router
 from api.indices import router as indices_router
 from api.enrichment import router as enrichment_router
+from api.strategy import router as strategy_router
 
 app = FastAPI(title="Election Engine v1", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3002"],
+    allow_origins=["http://localhost:3002", "http://localhost:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,6 +33,7 @@ app.include_router(polls_router)
 app.include_router(prediction_router)
 app.include_router(indices_router)
 app.include_router(enrichment_router)
+app.include_router(strategy_router)
 
 
 @app.on_event("startup")
@@ -40,6 +42,30 @@ def on_startup():
     start_scheduler()
 
 
-@app.get("/")
-def root():
-    return {"service": "Election Engine v1", "status": "ok"}
+# ── Next.js 정적 빌드 서빙 (Render 배포용) ──
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+_FRONTEND_OUT = Path(__file__).resolve().parent.parent / "frontend" / "out"
+
+if _FRONTEND_OUT.exists():
+    # Next.js static export의 _next 에셋
+    _next_dir = _FRONTEND_OUT / "_next"
+    if _next_dir.exists():
+        app.mount("/_next", StaticFiles(directory=str(_next_dir)), name="next-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Next.js static export fallback."""
+        file_path = _FRONTEND_OUT / full_path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        # SPA fallback → index.html
+        index = _FRONTEND_OUT / "index.html"
+        if index.exists():
+            return FileResponse(str(index))
+        return {"error": "not found"}
+else:
+    @app.get("/")
+    def root():
+        return {"service": "Election Engine v1", "status": "ok"}

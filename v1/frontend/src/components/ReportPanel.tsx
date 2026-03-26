@@ -1,427 +1,549 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useStore } from "@/lib/store";
-import { fmtTs } from "@/lib/format";
+import { getDailyBriefing, getWeeklyBriefing } from "@/lib/api";
 import { ResearchPage } from "./ResearchTab";
 
 const TABS = ["데일리 리포트", "위클리 리포트", "리서치"] as const;
 type Tab = (typeof TABS)[number];
 
-function DailyReport() {
-  const indices = useStore((s) => s.indices);
-  const prediction = useStore((s) => s.prediction);
-  const polls = useStore((s) => s.polls);
-  const newsClusters = useStore((s) => s.newsClusters);
-  const issueRadar = useStore((s) => s.issueRadar);
-  const reactionRadar = useStore((s) => s.reactionRadar);
-  const [expandedCluster, setExpandedCluster] = useState<number | null>(null);
+/* ═══ PDF 출력 ═══ */
+function printReport(title: string) {
+  const el = document.getElementById("report-body");
+  if (!el) return;
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; color:#1a1a1a; padding:32px 40px; font-size:12px; line-height:1.7; max-width:800px; margin:0 auto; }
+  h1 { font-size:18px; font-weight:900; margin-bottom:2px; }
+  .subtitle { font-size:11px; color:#888; margin-bottom:16px; }
+  .summary-box { background:#f0f7ff; border-left:4px solid #2563eb; padding:12px 16px; margin:16px 0; border-radius:4px; font-size:13px; line-height:1.8; }
+  h2 { font-size:14px; font-weight:800; margin:20px 0 8px; padding:6px 0; border-bottom:2px solid #1a1a1a; }
+  h3 { font-size:12px; font-weight:700; margin:12px 0 6px; color:#374151; }
+  table { width:100%; border-collapse:collapse; margin:8px 0 16px; font-size:11px; }
+  th { background:#f8fafc; border:1px solid #e2e8f0; padding:6px 10px; text-align:left; font-weight:700; font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; }
+  td { border:1px solid #e2e8f0; padding:6px 10px; vertical-align:top; }
+  .our { color:#2563eb; font-weight:600; }
+  .opp { color:#dc2626; font-weight:600; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+  .tag-red { background:#fef2f2; color:#dc2626; }
+  .tag-amber { background:#fffbeb; color:#d97706; }
+  .tag-green { background:#f0fdf4; color:#16a34a; }
+  .tag-blue { background:#eff6ff; color:#2563eb; }
+  .tag-gray { background:#f9fafb; color:#6b7280; }
+  .action-box { background:#fafafa; border:1px solid #e5e7eb; border-radius:6px; padding:10px 14px; margin:6px 0; }
+  .action-box .title { font-weight:700; font-size:12px; margin-bottom:4px; }
+  .action-box .meta { font-size:10px; color:#6b7280; }
+  .msg-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 14px; margin:6px 0; }
+  .msg-text { font-size:13px; font-weight:700; color:#1e40af; }
+  .caution-box { background:#fffbeb; border-left:4px solid #f59e0b; padding:8px 12px; margin:10px 0; font-size:11px; }
+  .danger-box { background:#fef2f2; border-left:4px solid #dc2626; padding:8px 12px; margin:10px 0; font-size:11px; }
+  .diagnosis-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 14px; margin:6px 0; }
+  .diagnosis-box .label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+  .footer { margin-top:24px; padding-top:8px; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af; }
+  @page { size:A4; margin:20mm 15mm; }
+  @media print { body { padding:0; } }
+</style></head><body>`);
 
-  const { issue, reaction, pandse } = indices || {};
-  const poll = prediction?.poll || {};
-  const base = prediction?.base || {};
-  const dyn = prediction?.dynamic || {};
-  const dDay = pandse?.d_day || "?";
-  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
-  const pandseIdx = pandse?.index || 50;
-  const pandseDir = pandseIdx > 50 ? "김경수 유리" : pandseIdx < 50 ? "박완수 유리" : "초박빙";
+  // Generate clean print HTML from data
+  const clone = el.cloneNode(true) as HTMLElement;
+  w.document.write(clone.innerHTML);
+  w.document.write("</body></html>");
+  w.document.close();
+  setTimeout(() => w.print(), 600);
+}
 
-  // 뉴스 전장 통계
-  const ourCount = newsClusters.filter((c: any) => c.side?.includes("우리")).length;
-  const oppCount = newsClusters.filter((c: any) => c.side?.includes("상대")).length;
-  const totalArticles = newsClusters.reduce((sum: number, c: any) => sum + (c.count || 0), 0);
-
+/* ═══ 생성 버튼 ═══ */
+function GenerateBtn({ loading, onClick, label }: { loading: boolean; onClick: () => void; label: string }) {
   return (
-    <div className="space-y-3">
-      {/* 헤더 + 한줄 요약 */}
-      <div className="wr-card border-t-2 border-t-blue-600">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[13px] font-bold text-blue-300">전략대응 리포트</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] text-gray-600">{today}</span>
-              <span className="text-[9px] text-amber-400 font-bold">D-{dDay}</span>
-              <span className="text-[8px] text-gray-600">{fmtTs(indices?.issue?.updated_at)}</span>
-            </div>
-          </div>
-          <div className="bg-[#080d16] rounded-lg p-3 border border-[#1a2844]">
-            <div className="text-[11px] text-gray-200 leading-relaxed">
-              여론조사 <span className="text-blue-400 font-bold">{(poll.kim || 0).toFixed(1)}%</span> vs <span className="text-red-400 font-bold">{(poll.park || 0).toFixed(1)}%</span>
-              {poll.label ? ` (${poll.label})` : ""}.
-              판세지수 <span className={`font-bold ${pandseIdx >= 55 ? "text-emerald-400" : pandseIdx <= 45 ? "text-rose-400" : "text-cyan-400"}`}>{pandseIdx.toFixed(1)}pt</span> ({pandseDir}).
-              {" "}뉴스 {totalArticles}건 분석 — 우리 유리 {ourCount}건, 상대 유리 {oppCount}건.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 오늘의 판세 — 컴팩트 테이블 */}
-      <div className="wr-card">
-        <div className="wr-card-header">오늘의 판세</div>
-        <div className="px-4 py-3">
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="text-gray-600 border-b border-[#1a2844]">
-                <th className="text-left py-1.5 px-2">항목</th>
-                <th className="text-left py-1.5 px-2">현재</th>
-                <th className="text-left py-1.5 px-2">해석</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-[#0e1825]">
-                <td className="py-1.5 px-2 text-gray-300 font-bold">여론조사</td>
-                <td className="py-1.5 px-2"><span className="text-blue-400 font-mono">{(poll.kim||0).toFixed(1)}%</span> vs <span className="text-red-400 font-mono">{(poll.park||0).toFixed(1)}%</span></td>
-                <td className="py-1.5 px-2 text-gray-400">{(poll.kim||0) > (poll.park||0) ? "우세이나 교차검증 필요" : (poll.kim||0) < (poll.park||0) ? "열세 — 반등 전략 필요" : "초박빙"}</td>
-              </tr>
-              <tr className="border-b border-[#0e1825]">
-                <td className="py-1.5 px-2 text-gray-300 font-bold">실투표 예측</td>
-                <td className="py-1.5 px-2"><span className="text-blue-300 font-mono">{(base.kim||50).toFixed(1)}%</span> vs <span className="text-red-300 font-mono">{(base.park||50).toFixed(1)}%</span></td>
-                <td className="py-1.5 px-2 text-gray-400">7대 투표율 기반 — 60대 고투표율 반영</td>
-              </tr>
-              <tr className="border-b border-[#0e1825]">
-                <td className="py-1.5 px-2 text-gray-300 font-bold">동향 예측</td>
-                <td className="py-1.5 px-2"><span className="text-cyan-300 font-mono">{(dyn.kim||50).toFixed(1)}%</span> vs <span className="text-pink-300 font-mono">{(dyn.park||50).toFixed(1)}%</span></td>
-                <td className="py-1.5 px-2 text-gray-400">9 Factors + 선거일 잔여일수 반영</td>
-              </tr>
-              <tr className="border-b border-[#0e1825]">
-                <td className="py-1.5 px-2 text-gray-300 font-bold">판세지수</td>
-                <td className="py-1.5 px-2"><span className={`font-mono font-bold ${pandseIdx >= 55 ? "text-emerald-400" : pandseIdx <= 45 ? "text-rose-500" : "text-cyan-400"}`}>{pandseIdx.toFixed(1)}pt</span></td>
-                <td className="py-1.5 px-2 text-gray-400">{pandseDir} (50pt = 중립)</td>
-              </tr>
-              <tr className="border-b border-[#0e1825]">
-                <td className="py-1.5 px-2 text-gray-300 font-bold">이슈 노출</td>
-                <td className="py-1.5 px-2"><span className="text-blue-400 font-mono">{issue?.kim?.mentions||0}건</span> vs <span className="text-red-400 font-mono">{issue?.park?.mentions||0}건</span></td>
-                <td className="py-1.5 px-2 text-gray-400">{(issue?.gap||0) >= 0 ? "노출 우위" : "노출 열세 — 공약 발표로 만회 필요"}</td>
-              </tr>
-              <tr>
-                <td className="py-1.5 px-2 text-gray-300 font-bold">시민 감성</td>
-                <td className="py-1.5 px-2"><span className="text-blue-400 font-mono">{reaction?.kim?.pct||0}</span> vs <span className="text-red-400 font-mono">{reaction?.park?.pct||0}</span></td>
-                <td className="py-1.5 px-2 text-gray-400">{(reaction?.gap||0) > 0 ? "감성 우위" : (reaction?.gap||0) < 0 ? "감성 열세" : "접전"} ({issue?.kim?.keywords||0}+{issue?.park?.keywords||0}개 채널)</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="mt-2 text-[9px] text-gray-600">
-            여론조사상 우세이나, 경남은 보수 텃밭이라 실제 투표에서 60대 이상 높은 투표율로 뒤집힐 수 있음. 3040 세대 투표율 동원이 승패를 결정.
-          </div>
-        </div>
-      </div>
-
-      {/* 뉴스 전장 — TOP 10 클러스터 + 영향도 + 대응 */}
-      {newsClusters.length > 0 && (
-        <div className="wr-card">
-          <div className="wr-card-header">
-            <span>뉴스 전장</span>
-            <span className="text-[8px] text-gray-600 font-normal ml-2 normal-case tracking-normal">{totalArticles}건 수집·분석</span>
-          </div>
-          <div className="px-4 py-3">
-            <div className="text-[8px] text-gray-600 mb-2">점수 기준: +3 매우유리 / +2 유리 / +1 소폭유리 / -1 소폭불리 / -2 불리 / -3 매우불리</div>
-            <table className="w-full text-[10px]">
-              <thead>
-                <tr className="text-gray-600 border-b border-[#1a2844]">
-                  <th className="text-center py-1.5 w-6">#</th>
-                  <th className="text-left py-1.5 px-1">이슈</th>
-                  <th className="text-center py-1.5 px-1 w-12">누구측</th>
-                  <th className="text-center py-1.5 px-1 w-10">기사</th>
-                  <th className="text-center py-1.5 px-1 w-14">우리</th>
-                  <th className="text-center py-1.5 px-1 w-14">상대</th>
-                </tr>
-              </thead>
-              <tbody>
-                {newsClusters.slice(0, 10).map((c: any, i: number) => {
-                  const isOurs = c.side?.includes("우리");
-                  const isOpp = c.side?.includes("상대");
-                  const ourScore = isOurs ? Math.min(3, Math.max(1, Math.ceil(c.count / 10))) : isOpp ? -Math.min(2, Math.ceil(c.count / 15)) : 0;
-                  const oppScore = isOpp ? Math.min(3, Math.max(1, Math.ceil(c.count / 10))) : isOurs ? -Math.min(2, Math.ceil(c.count / 15)) : 0;
-                  const sideLabel = isOurs ? "우리 측" : isOpp ? "상대 측" : "중립";
-                  const sideColor = isOurs ? "text-blue-400" : isOpp ? "text-red-400" : "text-gray-500";
-
-                  return (
-                    <tr key={i}
-                      className="border-b border-[#0e1825] cursor-pointer hover:bg-white/[0.02] transition"
-                      onClick={() => setExpandedCluster(expandedCluster === i ? null : i)}>
-                      <td className="py-1.5 text-center text-gray-400 font-bold">{i + 1}</td>
-                      <td className="py-1.5 px-1 text-gray-200">{c.name}</td>
-                      <td className={`py-1.5 px-1 text-center text-[9px] ${sideColor}`}>{sideLabel}</td>
-                      <td className="py-1.5 px-1 text-center text-gray-400 font-mono">{c.count}</td>
-                      <td className={`py-1.5 px-1 text-center font-mono font-bold ${ourScore > 0 ? "text-emerald-400" : ourScore < 0 ? "text-rose-400" : "text-gray-500"}`}>
-                        {ourScore > 0 ? `+${ourScore}` : ourScore < 0 ? ourScore : "—"}
-                      </td>
-                      <td className={`py-1.5 px-1 text-center font-mono font-bold ${oppScore > 0 ? "text-emerald-400" : oppScore < 0 ? "text-rose-400" : "text-gray-500"}`}>
-                        {oppScore > 0 ? `+${oppScore}` : oppScore < 0 ? oppScore : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {/* 확장: 선택한 이슈의 대응 Tip */}
-            {expandedCluster !== null && newsClusters[expandedCluster] && (
-              <div className="mt-2 bg-cyan-950/10 border border-cyan-800/20 rounded-lg p-3 anim-in">
-                <div className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest mb-1">
-                  캠프 대응 Tip — {newsClusters[expandedCluster].name}
-                </div>
-                <div className="text-[10px] text-gray-300 leading-relaxed">
-                  {newsClusters[expandedCluster].tip || "AI 분석 대기 중..."}
-                </div>
-                {newsClusters[expandedCluster].articles?.length > 0 && (
-                  <div className="mt-1.5 space-y-0.5">
-                    {newsClusters[expandedCluster].articles.slice(0, 3).map((a: any, j: number) => (
-                      <div key={j} className="text-[8px] text-gray-500">▸ {a.title}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="mt-2 text-[9px] text-gray-600">
-              해석 원칙: 현직 도지사(박완수)의 정책 발표·성과는 기본적으로 상대에게 유리로 판정.
-              현직은 예산·행정력·미디어 접근성에서 구조적 우위.
-            </div>
-          </div>
-        </div>
+    <div className="py-12 text-center">
+      {loading ? (
+        <>
+          <div className="text-cyan-400 text-sm animate-pulse mb-2">AI 전략 분석 생성 중...</div>
+          <div className="text-xs text-gray-600">뉴스·판세·여론 데이터 기반 브리핑 작성 (30~60초)</div>
+        </>
+      ) : (
+        <>
+          <div className="text-xs text-gray-500 mb-4">AI가 현재 수집 데이터를 분석하여 전략 리포트를 생성합니다.</div>
+          <button onClick={onClick} className="text-sm font-bold text-cyan-300 bg-cyan-900/30 border border-cyan-700/40 px-6 py-3 rounded-lg hover:bg-cyan-800/40 transition">
+            {label}
+          </button>
+        </>
       )}
-
-      {/* 시민 반응 vs 뉴스 괴리 분석 */}
-      {issueRadar.length > 0 && (
-        <div className="wr-card">
-          <div className="wr-card-header">시민이 관심 있는 이슈 — 뉴스 vs 반응 비교</div>
-          <div className="px-4 py-3">
-            <div className="text-[9px] text-gray-500 mb-2">뉴스가 많이 나오는 이슈와 시민이 실제로 반응하는 이슈는 다릅니다.</div>
-            <div className="space-y-1">
-              {issueRadar.slice(0, 5).map((item: any, i: number) => {
-                const newsBar = Math.min(100, (item.news_count || item.count || 0) / 2);
-                const reactionBar = Math.min(100, (item.reaction_score || item.score || 0));
-                return (
-                  <div key={i} className="py-1.5 border-b border-[#0e1825] last:border-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-gray-200 font-bold">{item.keyword || item.name}</span>
-                      <span className={`text-[8px] ${item.side === "우리" ? "text-blue-400" : item.side === "상대" ? "text-red-400" : "text-gray-500"}`}>{item.side || ""}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[8px] text-gray-500 w-10 shrink-0">뉴스</span>
-                      <div className="flex-1 h-1.5 bg-[#0a1020] rounded overflow-hidden">
-                        <div className="h-full bg-blue-500/50 rounded" style={{ width: `${newsBar}%` }} />
-                      </div>
-                      <span className="text-[8px] text-gray-500 w-10 shrink-0">반응</span>
-                      <div className="flex-1 h-1.5 bg-[#0a1020] rounded overflow-hidden">
-                        <div className="h-full bg-amber-500/50 rounded" style={{ width: `${reactionBar}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-2 text-[9px] text-amber-400/80">
-              시민 반응이 높은 이슈 = 공약 투입 시 자연 확산 효과 최대. 뉴스만 있고 반응 없는 이슈는 아직 도민이 체감 전.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 판세 Alert */}
-      {indices?.pandse_alert && (
-        <div className="wr-card border-l-2 border-l-amber-500">
-          <div className="px-4 py-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] text-amber-400 font-bold">판세 변동 감지</span>
-              <span className={`text-[10px] font-mono font-bold ${indices.pandse_alert.direction === "up" ? "text-emerald-400" : "text-rose-400"}`}>
-                {indices.pandse_alert.delta > 0 ? "+" : ""}{indices.pandse_alert.delta?.toFixed(1)}pt
-              </span>
-            </div>
-            <div className="text-[10px] text-gray-300 leading-relaxed">{indices.pandse_alert.memo}</div>
-          </div>
-        </div>
-      )}
-
-      {/* 주의사항 */}
-      <div className="wr-card border-t-2 border-t-red-900/50">
-        <div className="px-4 py-3 space-y-2">
-          <div className="text-[10px] text-red-400 font-bold">주의사항</div>
-          <div className="space-y-1.5 text-[9px] text-gray-400">
-            <div className="flex gap-2">
-              <span className="text-red-400 shrink-0">&#x26D4;</span>
-              <span>상대 현직 성과(지원금·산단 등)에 대한 직접 부정·비하 금지. "더 잘할 수 있다"의 확장 프레임으로만 대응.</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-red-400 shrink-0">&#x26D4;</span>
-              <span>중앙당 내홍·이재명 이슈 과도 편승 금지. "경남만 보고 간다" 원칙 고수. 중앙 질문에 짧게 답하고 즉시 지역 의제로 전환.</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-amber-400 shrink-0">&#x26A0;</span>
-              <span>투표율 구조: 60대 이상 고투표율로 구조적 불리. 3040 사전투표 동원 캠페인 병행 필수.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 데이터 출처 */}
-      <div className="text-[8px] text-gray-700 space-y-0.5 px-1">
-        <div>뉴스 클러스터: 네이버 뉴스 API, 11개 검색어, 24시간 내 수집·분석</div>
-        <div>진영 영향도: AI 분석 (Claude) — 클러스터별 우리/상대 영향 점수 산출</div>
-        <div>시민 반응도: 블로그·카페·유튜브·커뮤니티 4개 채널 종합</div>
-        <div>감성분석: AI 6분류 (지지/스윙/중립/부정/정체성/정책)</div>
-      </div>
     </div>
   );
 }
 
-function WeeklyReport() {
+/* ═══════════════════════════════════════════
+   데일리 리포트
+═══════════════════════════════════════════ */
+function DailyReport() {
   const indices = useStore((s) => s.indices);
-  const history = useStore((s) => s.history);
-  const candidateTrend = useStore((s) => s.candidateTrend);
+  const prediction = useStore((s) => s.prediction);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
   const pandse = indices?.pandse;
+  const poll = prediction?.poll || {};
+  const dDay = pandse?.d_day || "?";
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekLabel = weekStart.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }) + " 주간";
+  const generate = useCallback(async (force = false) => {
+    setLoading(true);
+    try { setData(await getDailyBriefing(force)); } catch (e) { setData({ error: String(e) }); }
+    finally { setLoading(false); }
+  }, []);
 
-  // 주간 트렌드 요약 (최근 7개 데이터 포인트)
-  const recentTrend = candidateTrend.slice(-7);
-  const trendStart = recentTrend[0];
-  const trendEnd = recentTrend[recentTrend.length - 1];
+  if (!data && !loading) return <GenerateBtn loading={false} onClick={() => generate()} label="데일리 리포트 생성" />;
+  if (loading) return <GenerateBtn loading={true} onClick={() => {}} label="" />;
+  if (data?.error) return (
+    <div className="py-8 text-center">
+      <div className="text-sm text-red-400 mb-3">생성 실패: {data.error}</div>
+      <button onClick={() => generate(true)} className="text-xs text-cyan-300 underline">재시도</button>
+    </div>
+  );
+
+  const ir = data.issue_review || {};
+  const st = data.strategy || {};
 
   return (
-    <div className="space-y-3">
-      <div className="wr-card border-t-2 border-t-amber-600">
-        <div className="px-4 py-3">
-          <h3 className="text-[13px] font-bold text-amber-300">Weekly Report — {weekLabel}</h3>
-          <p className="text-[10px] text-gray-500 mt-1">주간 지표 변동 추이 및 판세 분석</p>
+    <div id="report-body" className="space-y-5 max-w-[820px] mx-auto">
+
+      {/* ── 헤더 ── */}
+      <div className="flex items-end justify-between border-b border-gray-700 pb-3">
+        <div>
+          <h1 className="text-lg font-black text-gray-100 tracking-tight">경남도지사 선거 전략대응 리포트</h1>
+          <div className="subtitle text-xs text-gray-500 mt-0.5">{today} | 선거 D-{dDay}일 | 캠프 내부 한정</div>
         </div>
+        <button onClick={() => generate(true)} className="text-[10px] text-gray-600 hover:text-gray-400 border border-gray-700 px-2.5 py-1 rounded transition">재생성</button>
       </div>
 
-      {/* 판세지수 주간 변동 */}
-      <div className="wr-card">
-        <div className="wr-card-header">판세지수 주간 추이</div>
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className={`text-[28px] font-black wr-metric ${(pandse?.index || 50) >= 55 ? "text-emerald-400" : (pandse?.index || 50) <= 45 ? "text-rose-500" : "text-cyan-400"}`}>
-                {(pandse?.index || 50).toFixed(1)}<span className="text-[9px] text-gray-500 ml-0.5">pt</span>
-              </div>
-              <div className="text-[9px] text-gray-500">현재 판세지수</div>
-            </div>
-            {trendStart && trendEnd && (
-              <div className="text-right">
-                <div className={`text-[14px] font-black wr-metric ${(trendEnd.pandse - trendStart.pandse) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                  {(trendEnd.pandse - trendStart.pandse) >= 0 ? "+" : ""}{(trendEnd.pandse - trendStart.pandse).toFixed(1)}pt
-                </div>
-                <div className="text-[9px] text-gray-500">주간 변동</div>
-              </div>
-            )}
-          </div>
-          {indices?.pandse_alert && (
-            <div className="bg-amber-950/20 border border-amber-700/40 rounded-lg px-3 py-2">
-              <div className="text-[9px] text-amber-400 font-bold mb-0.5">판세 변동 Alert</div>
-              <div className="text-[10px] text-amber-300/80">{indices.pandse_alert.memo}</div>
-            </div>
-          )}
+      {/* ── 종합요약 ── */}
+      {data.summary && (
+        <div className="summary-box bg-blue-950/20 border-l-4 border-l-blue-500 rounded-r-lg px-4 py-3">
+          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">한줄 요약</div>
+          <div className="text-[13px] text-gray-100 leading-[1.8] whitespace-pre-line">{data.summary}</div>
         </div>
-      </div>
+      )}
 
-      {/* 후보별 주간 변동 */}
-      {trendStart && trendEnd && (
-        <div className="wr-card">
-          <div className="wr-card-header">후보별 주간 지표 변동</div>
-          <div className="px-4 py-3">
-            <table className="w-full text-[10px]">
+      {/* ══ 1. 24시간 이슈 점검 ══ */}
+      <section>
+        <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">1. 지난 24시간 이슈 점검</h2>
+
+        {/* 이슈 TOP5 테이블 */}
+        {ir.issue_top5?.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">이슈 TOP 5</h3>
+            <table className="w-full text-xs">
               <thead>
-                <tr className="text-gray-600 border-b border-[#1a2844]">
-                  <th className="text-left py-1.5 px-2">지표</th>
-                  <th className="text-center py-1.5 px-2 text-blue-400">김경수 (시작)</th>
-                  <th className="text-center py-1.5 px-2 text-blue-400">김경수 (현재)</th>
-                  <th className="text-center py-1.5 px-2">변동</th>
-                  <th className="text-center py-1.5 px-2 text-red-400">박완수 (시작)</th>
-                  <th className="text-center py-1.5 px-2 text-red-400">박완수 (현재)</th>
-                  <th className="text-center py-1.5 px-2">변동</th>
+                <tr className="border-b-2 border-gray-700">
+                  <th className="py-2 px-2 text-gray-500 text-center w-8">#</th>
+                  <th className="py-2 px-2 text-gray-500 text-left">이슈</th>
+                  <th className="py-2 px-2 text-gray-500 text-center w-12">기사</th>
+                  <th className="py-2 px-2 text-gray-500 text-center w-16">진영</th>
+                  <th className="py-2 px-2 text-gray-500 text-left">지표 영향</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { label: "이슈 언급량", kS: trendStart.issue_kim, kE: trendEnd.issue_kim, pS: trendStart.issue_park, pE: trendEnd.issue_park },
-                  { label: "반응 감성", kS: trendStart.reaction_kim, kE: trendEnd.reaction_kim, pS: trendStart.reaction_park, pE: trendEnd.reaction_park },
-                ].map((row) => (
-                  <tr key={row.label} className="border-b border-[#0e1825]">
-                    <td className="py-1.5 px-2 text-gray-300 font-bold">{row.label}</td>
-                    <td className="py-1.5 px-2 text-center text-gray-400 font-mono">{row.kS}</td>
-                    <td className="py-1.5 px-2 text-center text-blue-400 font-mono font-bold">{row.kE}</td>
-                    <td className={`py-1.5 px-2 text-center font-mono font-bold ${(row.kE - row.kS) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {(row.kE - row.kS) >= 0 ? "+" : ""}{row.kE - row.kS}
+                {ir.issue_top5.map((iss: any) => (
+                  <tr key={iss.rank} className="border-b border-gray-800/50">
+                    <td className="py-2.5 px-2 text-center text-gray-500 font-bold">{iss.rank}</td>
+                    <td className="py-2.5 px-2 text-gray-100 font-bold">{iss.name}</td>
+                    <td className="py-2.5 px-2 text-center font-mono text-gray-400">{iss.count}건</td>
+                    <td className="py-2.5 px-2 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        iss.side?.includes("우리") ? "bg-blue-500/15 text-blue-400" :
+                        iss.side?.includes("상대") ? "bg-red-500/15 text-red-400" :
+                        "bg-gray-700/30 text-gray-500"
+                      }`}>{iss.side}</span>
                     </td>
-                    <td className="py-1.5 px-2 text-center text-gray-400 font-mono">{row.pS}</td>
-                    <td className="py-1.5 px-2 text-center text-red-400 font-mono font-bold">{row.pE}</td>
-                    <td className={`py-1.5 px-2 text-center font-mono font-bold ${(row.pE - row.pS) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {(row.pE - row.pS) >= 0 ? "+" : ""}{row.pE - row.pS}
+                    <td className="py-2.5 px-2 text-gray-400 text-[11px]">{iss.impact}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* 이슈별 세그먼트 진단 */}
+            <div className="space-y-1.5 mt-2">
+              {ir.issue_top5.filter((iss: any) => iss.diagnosis).map((iss: any) => (
+                <div key={`diag-${iss.rank}`} className="bg-gray-800/20 rounded-lg px-3 py-2 text-[11px] leading-relaxed">
+                  <span className="text-gray-300 font-bold mr-1">{iss.rank}. {iss.name}</span>
+                  <span className="text-gray-400">{iss.diagnosis}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 리액션 TOP5 */}
+        {ir.reaction_top5?.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">시민 리액션 TOP 5</h3>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b-2 border-gray-700">
+                  <th className="py-2 px-2 text-gray-500 text-center w-8">#</th>
+                  <th className="py-2 px-2 text-gray-500 text-left w-28">키워드</th>
+                  <th className="py-2 px-2 text-gray-500 text-center w-14">감성</th>
+                  <th className="py-2 px-2 text-gray-500 text-center w-14">볼륨</th>
+                  <th className="py-2 px-2 text-gray-500 text-left">인사이트</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ir.reaction_top5.map((r: any) => (
+                  <tr key={r.rank} className="border-b border-gray-800/50">
+                    <td className="py-2 px-2 text-center text-gray-500">{r.rank}</td>
+                    <td className="py-2 px-2 text-gray-100 font-bold">{r.keyword}</td>
+                    <td className="py-2 px-2 text-center">
+                      <span className={`text-[10px] font-bold ${r.sentiment === "긍정" ? "text-emerald-400" : r.sentiment === "부정" ? "text-red-400" : "text-amber-400"}`}>{r.sentiment}</span>
                     </td>
+                    <td className="py-2 px-2 text-center text-gray-400">{r.volume}</td>
+                    <td className="py-2 px-2 text-gray-400 text-[11px]">{r.insight}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 일별 데이터 포인트 */}
-      {recentTrend.length > 0 && (
-        <div className="wr-card">
-          <div className="wr-card-header">주간 데이터 타임라인</div>
-          <div className="px-4 py-3 space-y-1">
-            {recentTrend.map((d: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 py-1 border-b border-[#0e1825] last:border-0 text-[9px]">
-                <span className="text-gray-500 w-20 font-mono">{d.date}</span>
-                <span className="text-blue-400 w-16">이슈 {d.issue_kim}</span>
-                <span className="text-red-400 w-16">이슈 {d.issue_park}</span>
-                <span className="text-blue-400 w-16">반응 {d.reaction_kim}</span>
-                <span className="text-red-400 w-16">반응 {d.reaction_park}</span>
-                <span className="text-cyan-400 font-bold">판세 {d.pandse?.toFixed(1)}</span>
+        {/* 후보별 진단 — 2컬럼 */}
+        {(ir.our_diagnosis || ir.opp_diagnosis) && (
+          <div className="grid grid-cols-2 gap-3">
+            {ir.our_diagnosis && (
+              <div className="rounded-lg border border-blue-800/30 bg-blue-950/10 p-3">
+                <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-1.5">우리 후보 진단</div>
+                <div className="text-[11px] text-gray-300 leading-[1.7]">{ir.our_diagnosis}</div>
+              </div>
+            )}
+            {ir.opp_diagnosis && (
+              <div className="rounded-lg border border-red-800/30 bg-red-950/10 p-3">
+                <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider mb-1.5">상대 후보 진단</div>
+                <div className="text-[11px] text-gray-300 leading-[1.7]">{ir.opp_diagnosis}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ══ 2. 대응전략 ══ */}
+      <section>
+        <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">2. 대응전략</h2>
+
+        {/* 단기 */}
+        {st.short_term?.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xs text-amber-400 font-bold mb-2">단기 전략 — 이슈 대응</h3>
+            <div className="space-y-2">
+              {st.short_term.map((s: any, i: number) => (
+                <div key={i} className="rounded-lg border border-gray-700/50 bg-gray-800/15 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-[12px] text-gray-100 font-bold">{s.title}</div>
+                    <span className="text-[10px] text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">{s.timeline}</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 mb-1">{s.issue_context}</div>
+                  <div className="text-[11px] text-gray-300 leading-[1.7] mb-2">{s.action}</div>
+                  <div className="text-[11px] text-emerald-400/90 mb-1">
+                    <span className="font-bold">예상 효과:</span> {s.expected_impact}
+                  </div>
+                  {s.risk && (
+                    <div className="bg-amber-500/5 border-l-2 border-l-amber-500/50 pl-2.5 py-1 text-[10px] text-amber-300/80">
+                      <span className="font-bold">리스크:</span> {s.risk}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 중장기 */}
+        {st.mid_long_term?.length > 0 && (
+          <div>
+            <h3 className="text-xs text-cyan-400 font-bold mb-2">중장기 전략 — 판세·후보 커리어</h3>
+            <div className="space-y-2">
+              {st.mid_long_term.map((s: any, i: number) => (
+                <div key={i} className="rounded-lg border border-cyan-800/20 bg-cyan-950/10 p-3">
+                  <div className="text-[12px] text-gray-100 font-bold mb-1">{s.title}</div>
+                  <div className="text-[10px] text-gray-500 mb-1">{s.rationale}</div>
+                  <div className="text-[11px] text-gray-300 leading-[1.7] mb-1.5">{s.action}</div>
+                  <div className="flex gap-4 text-[10px]">
+                    <span className="text-purple-400">대상: {s.target_segment}</span>
+                    <span className="text-gray-500">단기 연계: {s.synergy}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ══ 3. 메시지 ══ */}
+      {data.messages?.length > 0 && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">3. 메시지 및 우선순위</h2>
+          <div className="space-y-2.5">
+            {data.messages.map((m: any) => (
+              <div key={m.priority} className="rounded-lg border border-gray-700/50 bg-gray-800/10 p-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="bg-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded">우선순위 {m.priority}</span>
+                  <span className="text-[10px] text-gray-500">{m.target}</span>
+                  <span className="text-[10px] text-gray-600 ml-auto">{m.channel}</span>
+                </div>
+                <div className="bg-blue-950/15 border border-blue-800/20 rounded px-3 py-2 mb-1.5">
+                  <div className="text-[13px] font-bold text-blue-300">&ldquo;{m.message}&rdquo;</div>
+                  {m.sub_message && <div className="text-[10px] text-gray-400 mt-0.5">{m.sub_message}</div>}
+                </div>
+                {m.caution && (
+                  <div className="text-[10px] text-amber-400/80 pl-1">
+                    &#x26A0; {m.caution}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
+
+      {/* ══ 4. 일정 및 실행 ══ */}
+      {data.execution?.length > 0 && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">4. 일정 및 실행 제안</h2>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b-2 border-gray-700">
+                <th className="py-2 px-2 text-gray-500 text-left w-24">언제</th>
+                <th className="py-2 px-2 text-gray-500 text-left">무엇을</th>
+                <th className="py-2 px-2 text-gray-500 text-left w-16">담당</th>
+                <th className="py-2 px-2 text-gray-500 text-left w-36">측정 기준 (KPI)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.execution.map((e: any, i: number) => (
+                <tr key={i} className={`border-b border-gray-800/50 ${e.when?.includes("즉시") ? "bg-red-950/10" : ""}`}>
+                  <td className={`py-2.5 px-2 font-mono text-[11px] ${
+                    e.when?.includes("즉시") ? "text-red-400 font-bold" :
+                    e.when?.includes("오늘") ? "text-amber-400 font-bold" :
+                    "text-gray-400"
+                  }`}>{e.when}</td>
+                  <td className="py-2.5 px-2 text-gray-200 text-[11px]">{e.what}</td>
+                  <td className="py-2.5 px-2 text-gray-500 text-[11px]">{e.who}</td>
+                  <td className="py-2.5 px-2 text-gray-400 text-[10px]">{e.kpi}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* ══ 주의사항 ══ */}
+      <div className="rounded-lg border border-red-900/30 bg-red-950/5 px-4 py-3 space-y-1.5 text-[11px]">
+        <div className="text-red-400 font-bold text-xs mb-1">주의사항</div>
+        <div className="flex gap-2 text-gray-400"><span className="text-red-400 shrink-0">&#x26D4;</span>상대 현직 성과 직접 부정 금지. &ldquo;더 잘할 수 있다&rdquo; 확장 프레임으로만 대응.</div>
+        <div className="flex gap-2 text-gray-400"><span className="text-red-400 shrink-0">&#x26D4;</span>중앙당 이슈 편승 금지. &ldquo;경남만 보고 간다&rdquo; 원칙. 즉시 지역 의제로 전환.</div>
+        <div className="flex gap-2 text-gray-400"><span className="text-amber-400 shrink-0">&#x26A0;</span>60대 고투표율 구조적 불리. 3040 사전투표 동원 캠페인 병행 필수.</div>
+      </div>
+
+      {/* ── 출처 ── */}
+      <div className="footer text-[9px] text-gray-700 border-t border-gray-800 pt-2">
+        네이버뉴스 11쿼리 24h + 커뮤니티 19+곳 + 블로그·카페·유튜브 + AI 감성분석 | 생성: {data.generated_at?.slice(0,16)} | AI 분석 기반, 참고용
+      </div>
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════
+   위클리 리포트
+═══════════════════════════════════════════ */
+function WeeklyReport() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const generate = useCallback(async (force = false) => {
+    setLoading(true);
+    try { setData(await getWeeklyBriefing(force)); } catch (e) { setData({ error: String(e) }); }
+    finally { setLoading(false); }
+  }, []);
+
+  if (!data && !loading) return <GenerateBtn loading={false} onClick={() => generate()} label="위클리 리포트 생성" />;
+  if (loading) return <GenerateBtn loading={true} onClick={() => {}} label="" />;
+  if (data?.error) return (
+    <div className="py-8 text-center">
+      <div className="text-sm text-red-400 mb-3">생성 실패: {data.error}</div>
+      <button onClick={() => generate(true)} className="text-xs text-cyan-300 underline">재시도</button>
+    </div>
+  );
+
+  return (
+    <div id="report-body" className="space-y-5 max-w-[820px] mx-auto">
+
+      {/* 헤더 */}
+      <div className="flex items-end justify-between border-b border-gray-700 pb-3">
+        <div>
+          <h1 className="text-lg font-black text-gray-100">주간 성과 리포트</h1>
+          <div className="text-xs text-gray-500 mt-0.5">{data.week} | 캠프 내부 한정</div>
+        </div>
+        <button onClick={() => generate(true)} className="text-[10px] text-gray-600 hover:text-gray-400 border border-gray-700 px-2.5 py-1 rounded transition">재생성</button>
+      </div>
+
+      {/* 주간 종합 */}
+      {data.week_summary && (
+        <div className="bg-amber-950/15 border-l-4 border-l-amber-500 rounded-r-lg px-4 py-3">
+          <div className="text-[10px] text-amber-400 font-bold uppercase tracking-widest mb-1">주간 종합</div>
+          <div className="text-[13px] text-gray-100 leading-[1.8] whitespace-pre-line">{data.week_summary}</div>
+        </div>
+      )}
+
+      {/* KPI */}
+      {data.kpi_review?.length > 0 && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">KPI 달성 현황</h2>
+          <table className="w-full text-xs">
+            <thead><tr className="border-b-2 border-gray-700">
+              <th className="py-2 px-2 text-gray-500 text-left">지표</th>
+              <th className="py-2 px-2 text-gray-500 text-center w-14">주초</th>
+              <th className="py-2 px-2 text-gray-500 text-center w-14">주말</th>
+              <th className="py-2 px-2 text-gray-500 text-center w-14">변동</th>
+              <th className="py-2 px-2 text-gray-500 text-center w-14">평가</th>
+              <th className="py-2 px-2 text-gray-500 text-left">해석</th>
+            </tr></thead>
+            <tbody>
+              {data.kpi_review.map((k: any, i: number) => (
+                <tr key={i} className="border-b border-gray-800/50">
+                  <td className="py-2.5 px-2 text-gray-200 font-bold">{k.metric}</td>
+                  <td className="py-2.5 px-2 text-center font-mono text-gray-500">{k.start}</td>
+                  <td className="py-2.5 px-2 text-center font-mono text-gray-200">{k.end}</td>
+                  <td className="py-2.5 px-2 text-center font-mono font-bold text-cyan-400">{k.change}</td>
+                  <td className="py-2.5 px-2 text-center">
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                      k.grade === "달성" ? "bg-emerald-500/15 text-emerald-400" :
+                      k.grade === "미달" ? "bg-red-500/15 text-red-400" :
+                      "bg-gray-700/30 text-gray-400"
+                    }`}>{k.grade}</span>
+                  </td>
+                  <td className="py-2.5 px-2 text-gray-400 text-[11px]">{k.analysis}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* 전략 실행 리뷰 */}
+      {data.strategy_review?.length > 0 && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">전략 실행 리뷰</h2>
+          <div className="space-y-2">
+            {data.strategy_review.map((s: any, i: number) => (
+              <div key={i} className="rounded-lg border border-gray-700/50 bg-gray-800/10 p-3">
+                <div className="text-[12px] text-gray-100 font-bold mb-1">{s.strategy}</div>
+                <div className="text-[11px] text-gray-400 mb-1">{s.executed}</div>
+                <div className="text-[11px] text-emerald-400/90">결과: {s.result}</div>
+                <div className="text-[11px] text-amber-400/80">교훈: {s.lesson}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 세그먼트 분석 */}
+      {data.segment_analysis?.length > 0 && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">세그먼트별 분석</h2>
+          <table className="w-full text-xs">
+            <thead><tr className="border-b-2 border-gray-700">
+              <th className="py-2 px-2 text-gray-500 text-left w-24">세그먼트</th>
+              <th className="py-2 px-2 text-gray-500 text-left">이번 주 변화</th>
+              <th className="py-2 px-2 text-gray-500 text-left">다음 주 조치</th>
+            </tr></thead>
+            <tbody>
+              {data.segment_analysis.map((s: any, i: number) => (
+                <tr key={i} className="border-b border-gray-800/50">
+                  <td className="py-2.5 px-2 text-gray-200 font-bold">{s.segment}</td>
+                  <td className="py-2.5 px-2 text-gray-400 text-[11px]">{s.trend}</td>
+                  <td className="py-2.5 px-2 text-cyan-400/80 text-[11px]">{s.action_needed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* 다음 주 과제 */}
+      {data.next_week && (
+        <section>
+          <h2 className="text-[14px] font-black text-gray-100 border-b-2 border-gray-600 pb-1 mb-3">다음 주 과제</h2>
+          <div className="space-y-2">
+            <div className="flex gap-3 items-start bg-amber-950/10 rounded-lg p-3">
+              <span className="text-amber-400 font-black text-sm shrink-0">1</span>
+              <div className="text-[12px] text-gray-200 leading-relaxed">{data.next_week.priority_1}</div>
+            </div>
+            <div className="flex gap-3 items-start bg-gray-800/20 rounded-lg p-3">
+              <span className="text-gray-400 font-black text-sm shrink-0">2</span>
+              <div className="text-[12px] text-gray-300 leading-relaxed">{data.next_week.priority_2}</div>
+            </div>
+            <div className="flex gap-3 items-start bg-gray-800/10 rounded-lg p-3">
+              <span className="text-gray-500 font-black text-sm shrink-0">3</span>
+              <div className="text-[12px] text-gray-400 leading-relaxed">{data.next_week.priority_3}</div>
+            </div>
+            {data.next_week.risk_watch && (
+              <div className="bg-red-950/10 border-l-4 border-l-red-500/50 rounded-r-lg px-4 py-2.5 text-[11px] text-red-300/80">
+                &#x26A0; 주의 감시: {data.next_week.risk_watch}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <div className="text-[9px] text-gray-700 border-t border-gray-800 pt-2">
+        생성: {data.generated_at?.slice(0,16)} | AI 분석 기반, 참고용
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   메인 패널
+═══════════════════════════════════════════ */
 export default function ReportPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("데일리 리포트");
-
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-6" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div
-        className="relative w-[900px] max-h-[90vh] bg-[#080e18] border border-[#1a2844] rounded-xl shadow-2xl overflow-hidden anim-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#1a2844]">
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-black text-blue-300 uppercase tracking-wider">Report</span>
-            <span className="text-[9px] text-gray-500">전략 리포트 · 리서치</span>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-[12px] transition-colors">✕</button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-[920px] max-h-[92vh] bg-[#0a0f1a] border border-gray-800 rounded-xl shadow-2xl overflow-hidden anim-in"
+        onClick={(e) => e.stopPropagation()}>
 
-        {/* 탭 */}
-        <div className="flex border-b border-[#1a2844]">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-[11px] font-bold transition-colors ${
-                tab === t
-                  ? "text-cyan-300 border-b-2 border-cyan-400 bg-cyan-500/5"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        {/* 상단 바 */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800 bg-[#080d16]">
+          <div className="flex items-center gap-3">
+            {TABS.map((t) => (
+              <button key={t} onClick={() => setTab(t)}
+                className={`text-xs font-bold px-3 py-1.5 rounded transition-all ${
+                  tab === t
+                    ? "text-white bg-gray-700/50"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            {tab !== "리서치" && (
+              <button
+                onClick={() => printReport(tab === "데일리 리포트" ? "전략대응 리포트" : "주간 성과 리포트")}
+                className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded transition-all">
+                PDF 출력
+              </button>
+            )}
+            <button onClick={onClose} className="text-gray-500 hover:text-white text-sm px-2 transition-colors">&#x2715;</button>
+          </div>
         </div>
 
         {/* 본문 */}
-        <div className="px-5 py-4 overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="px-6 py-5 overflow-y-auto max-h-[calc(92vh-56px)]">
           {tab === "데일리 리포트" && <DailyReport />}
           {tab === "위클리 리포트" && <WeeklyReport />}
           {tab === "리서치" && <ResearchPage />}

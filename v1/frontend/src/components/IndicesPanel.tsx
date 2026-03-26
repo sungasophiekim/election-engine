@@ -23,7 +23,7 @@ export default function IndicesPanel() {
         {/* 이슈지수 */}
         <div className="px-4 py-3 border-r border-[#0e1825]">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-gray-300 font-bold">이슈지수 <span className="timestamp font-normal ml-1">{fmtTs(issue?.updated_at)}</span></span>
+            <span className="text-[10px] text-gray-300 font-bold">이슈지수 <span className="text-[7px] text-amber-500/60 font-normal">beta</span> <span className="timestamp font-normal ml-1">{fmtTs(issue?.updated_at)}</span></span>
             <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border ${gradeColor(issue?.grade)}`}>{issue?.grade}</span>
           </div>
           <div className="flex items-center justify-between mb-2">
@@ -52,7 +52,7 @@ export default function IndicesPanel() {
         {/* 반응지수 */}
         <div className="px-4 py-3 border-r border-[#0e1825]">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-gray-300 font-bold">반응지수 <span className="timestamp font-normal ml-1">{fmtTs(reaction?.updated_at)}</span></span>
+            <span className="text-[10px] text-gray-300 font-bold">반응지수 <span className="text-[7px] text-amber-500/60 font-normal">beta</span> <span className="timestamp font-normal ml-1">{fmtTs(reaction?.updated_at)}</span></span>
             <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border ${gradeColor(reaction?.grade)}`}>{reaction?.grade}</span>
           </div>
           {(() => {
@@ -93,7 +93,7 @@ export default function IndicesPanel() {
         {/* 판세지수 — 게이지 바 */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-gray-300 font-bold">판세지수 <span className="timestamp font-normal ml-1">{fmtTs(pandse?.updated_at)}</span></span>
+            <span className="text-[10px] text-gray-300 font-bold">판세지수 <span className="text-[7px] text-amber-500/60 font-normal">beta</span> <span className="timestamp font-normal ml-1">{fmtTs(pandse?.updated_at)}</span></span>
             <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border ${gradeColor(pandse?.grade)}`}>{pandse?.grade}</span>
           </div>
           {(() => {

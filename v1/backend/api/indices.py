@@ -34,17 +34,39 @@ def current_indices():
     snap = _load_enrichment()
     buzz = snap.get("candidate_buzz", {})
 
-    # 이슈지수: 후보별 언급량 비교
+    # 이슈지수: 클러스터 기반 (AI가 사건별 진영 판단 → 우리/상대 건수) 우선
+    cluster_issue = snap.get("cluster_issue", {})
     kim_buzz = {k: v for k, v in buzz.items() if CANDIDATE in k}
     park_buzz = {k: v for k, v in buzz.items() if OPPONENT in k}
-    kim_mentions = sum(v.get("mention_count", 0) for v in kim_buzz.values())
-    park_mentions = sum(v.get("mention_count", 0) for v in park_buzz.values())
+    if cluster_issue.get("total", 0) > 0:
+        kim_mentions = cluster_issue["kim_count"]
+        park_mentions = cluster_issue["park_count"]
+    else:
+        # 폴백: candidate_buzz 중복할인
+        kim_sorted = sorted(kim_buzz.values(), key=lambda v: v.get("mention_count", 0), reverse=True)
+        park_sorted = sorted(park_buzz.values(), key=lambda v: v.get("mention_count", 0), reverse=True)
+        kim_mentions = sum(v.get("mention_count", 0) if i == 0 else int(v.get("mention_count", 0) * 0.5) for i, v in enumerate(kim_sorted))
+        park_mentions = sum(v.get("mention_count", 0) if i == 0 else int(v.get("mention_count", 0) * 0.5) for i, v in enumerate(park_sorted))
 
-    # 반응지수: 후보별 감성 비교
-    kim_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for v in kim_buzz.values()]
-    park_sents = [v.get("ai_sentiment", {}).get("net_sentiment", 0) for v in park_buzz.values()]
-    kim_sent_avg = sum(kim_sents) / len(kim_sents) if kim_sents else 0
-    park_sent_avg = sum(park_sents) / len(park_sents) if park_sents else 0
+    # 반응지수: 후보별 감성 비교 (0건 제외 + 언급량 가중 평균)
+    kim_weighted_sum, kim_weight_total = 0, 0
+    for v in kim_buzz.values():
+        mc = v.get("mention_count", 0)
+        if mc == 0:
+            continue  # 뉴스 없는 키워드 제외
+        sent = v.get("ai_sentiment", {}).get("net_sentiment", 0)
+        kim_weighted_sum += sent * mc
+        kim_weight_total += mc
+    park_weighted_sum, park_weight_total = 0, 0
+    for v in park_buzz.values():
+        mc = v.get("mention_count", 0)
+        if mc == 0:
+            continue
+        sent = v.get("ai_sentiment", {}).get("net_sentiment", 0)
+        park_weighted_sum += sent * mc
+        park_weight_total += mc
+    kim_sent_avg = kim_weighted_sum / kim_weight_total if kim_weight_total > 0 else 0
+    park_sent_avg = park_weighted_sum / park_weight_total if park_weight_total > 0 else 0
 
     # 판세지수: correction에서
     corr = snap.get("turnout", {}).get("correction", {})
