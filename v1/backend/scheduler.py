@@ -741,18 +741,19 @@ def _collect_cluster_reactions(clusters: list) -> dict:
 
         source_details.append(rx)
 
-    # 50pt 스케일 지수화: 우리 감성합 vs 상대 감성합(뒤집기)
-    our_score = sum(our_sentiments) / len(our_sentiments) if our_sentiments else 0  # -1~+1
-    opp_score = sum(opp_sentiments) / len(opp_sentiments) if opp_sentiments else 0  # -1~+1 (김경수 관점, 보통 마이너스)
+    # 50pt 스케일 지수화
+    # side 방향을 반영: 우리유리 이슈의 시민 반응 강도 vs 상대유리 이슈의 시민 반응 강도
+    # 핵심: 반응의 "방향"이 아닌 "강도"를 비교 — 어느 쪽 이슈에 시민이 더 반응하는가
+    our_intensity = sum(abs(s) for s in our_sentiments) / len(our_sentiments) if our_sentiments else 0
+    opp_intensity = sum(abs(s) for s in opp_sentiments) / len(opp_sentiments) if opp_sentiments else 0
 
-    # 우리 긍정 → +, 상대 부정(=우리에게 유리) → + 로 통합
-    our_total = max(0, our_score)        # 우리유리 이슈에 대한 시민 긍정도
-    opp_total = max(0, -opp_score)       # 상대유리 이슈에 대한 시민 부정도(=우리에게 유리)
-    combined = our_total + opp_total
-    against = max(0, -our_score) + max(0, opp_score)  # 우리 불리 방향
+    # 우리유리 이슈 건수 가중
+    our_weight = our_intensity * len(our_sentiments)
+    opp_weight = opp_intensity * len(opp_sentiments)
+    total_weight = our_weight + opp_weight
 
-    total_weight = combined + against
-    reaction_index = round(combined / total_weight * 100, 1) if total_weight > 0 else 50.0
+    # 50pt 기준: 우리유리 이슈에 반응이 더 크면 >50
+    reaction_index = round(our_weight / total_weight * 100, 1) if total_weight > 0 else 50.0
 
     collected_sources = set()
     for rx in all_reactions:
@@ -762,8 +763,8 @@ def _collect_cluster_reactions(clusters: list) -> dict:
 
     return {
         "reaction_index": reaction_index,  # 50pt 기준
-        "kim_sentiment": round(our_score * 100),
-        "park_sentiment": round(-opp_score * 100),
+        "kim_sentiment": round(our_intensity * 100),
+        "park_sentiment": round(opp_intensity * 100),
         "total_mentions": total_mentions,
         "sources_collected": list(collected_sources),
         "keywords_analyzed": len(all_reactions),
