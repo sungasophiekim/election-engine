@@ -16,7 +16,7 @@ function exportPDF(data: any) {
   const issues = sd.issue_state || sd.issue_top5 || [];
   const reactions = sd.reaction_state || sd.reaction_top5 || [];
   const strategies = daily.strategies || [];
-  const messages = daily.messages || [];
+  const fieldSchedule = daily.field_schedule || daily.messages || [];
   const execution = daily.execution || [];
   const risks = daily.risk_management || [];
   const kpis = daily.kpi_monitoring || [];
@@ -249,14 +249,22 @@ tbody tr:last-child td { border-bottom: none; }
 
 <!-- 4. 메시지 & 실행 일정 -->
 <div class="section">
-  <div class="s-title">4. 메시지 우선순위</div>
-  ${messages.map((m: any) => `
+  <div class="s-title">4. 현장 방문 일정 & 메시지</div>
+  ${fieldSchedule.map((m: any) => `
   <div style="border:1px solid #E5E7EB;border-radius:6px;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid">
-    <div style="font-size:9px;font-weight:700;color:#2457A4;margin-bottom:4px">PRIORITY ${m.priority} · ${m.target}</div>
-    <div style="font-size:12px;font-weight:700;color:#0D1B2A;margin-bottom:6px">&ldquo;${m.message}&rdquo;</div>
-    <div style="font-size:10px;color:#374151;line-height:1.8;margin-bottom:6px">${m.sub_message || ""}</div>
-    <div style="font-size:9px;color:#6B7280">채널: ${m.channel}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="font-size:9px;font-weight:700;color:#2457A4">PRIORITY ${m.priority}</span>
+      ${m.when ? `<span style="font-size:9px;font-weight:600;color:#991B1B">${m.when}</span>` : ""}
+      ${m.region ? `<span style="font-size:9px;font-weight:600;background:#DBEAFE;color:#1E40AF;padding:1px 7px;border-radius:10px">${m.region}</span>` : ""}
+    </div>
+    ${m.location ? `<div style="font-size:10px;color:#6B7280;margin-bottom:4px">📍 ${m.location}</div>` : ""}
+    ${m.concept ? `<div style="font-size:10px;color:#374151;margin-bottom:4px">🎯 컨셉: ${m.concept}</div>` : ""}
+    <div style="font-size:12px;font-weight:700;color:#0D1B2A;margin-bottom:4px">&ldquo;${m.message}&rdquo;</div>
+    <div style="font-size:10px;color:#374151;line-height:1.8;margin-bottom:4px">${m.sub_message || ""}</div>
+    ${m.target_segment ? `<div style="font-size:9px;color:#6B7280">타겟: ${m.target_segment}</div>` : m.target ? `<div style="font-size:9px;color:#6B7280">타겟: ${m.target}</div>` : ""}
+    ${m.media_plan ? `<div style="font-size:9px;color:#6B7280">미디어: ${m.media_plan}</div>` : m.channel ? `<div style="font-size:9px;color:#6B7280">채널: ${m.channel}</div>` : ""}
     ${m.caution ? `<div style="background:#FFFBEB;border-radius:4px;padding:4px 8px;margin-top:6px;font-size:9px;color:#92400E">⚠ ${m.caution}</div>` : ""}
+    ${m.kpi ? `<div style="font-size:9px;color:#065F46;margin-top:3px">KPI: ${m.kpi}</div>` : ""}
   </div>`).join("")}
 </div>
 
@@ -413,7 +421,7 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
                 {(["summary", "issue", "strategy", "message"] as SubTab[]).map((t) => (
                   <button key={t} onClick={() => setSubTab(t)}
                     className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${subTab === t ? "bg-white text-[#0D1B2A] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-                    {{ summary: "종합 브리핑", issue: "이슈 분석", strategy: "대응 전략", message: "메시지 & 일정" }[t]}
+                    {{ summary: "종합 브리핑", issue: "이슈 분석", strategy: "대응 전략", message: "현장 일정" }[t]}
                   </button>
                 ))}
               </div>
@@ -689,31 +697,39 @@ function StrategyTab({ daily }: { daily: any }) {
 
 /* ── Message Tab ── */
 function MessageTab({ daily }: { daily: any }) {
-  const messages = daily.messages || [];
+  const fieldSchedule = daily.field_schedule || daily.messages || [];
   const execution = daily.execution || [];
   const risks = daily.risk_management || [];
 
   return (
     <div className="grid grid-cols-2 gap-5">
-      {/* Left: Messages */}
+      {/* Left: Field Schedule */}
       <div className="space-y-3">
-        <div className="text-xs font-bold text-[#0D1B2A] mb-2">메시지 우선순위</div>
-        {messages.map((m: any, i: number) => (
+        <div className="text-xs font-bold text-[#0D1B2A] mb-2">현장 방문 일정</div>
+        {fieldSchedule.map((m: any, i: number) => (
           <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
-            <div className="text-[10px] font-bold text-[#2457A4] mb-1">PRIORITY {m.priority} · {m.target}</div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold text-[#2457A4]">PRIORITY {m.priority}</span>
+              {m.when && <span className="text-[9px] font-bold text-[#C0392B]">{m.when}</span>}
+              {m.region && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">{m.region}</span>}
+            </div>
+            {m.location && <div className="text-[10px] text-gray-500 mb-1">📍 {m.location}</div>}
+            {m.concept && <div className="text-[10px] text-gray-600 mb-2">🎯 {m.concept}</div>}
             <div className="text-[14px] font-bold text-[#0D1B2A] mb-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
               &ldquo;{m.message}&rdquo;
             </div>
             <div className="text-[11px] text-gray-600 leading-relaxed mb-2">{m.sub_message}</div>
-            <div className="text-[10px] text-gray-500">채널: {m.channel}</div>
+            {(m.target_segment || m.target) && <div className="text-[10px] text-gray-500">타겟: {m.target_segment || m.target}</div>}
+            {(m.media_plan || m.channel) && <div className="text-[10px] text-gray-500">미디어: {m.media_plan || m.channel}</div>}
             {m.caution && (
               <div className="mt-2 text-[10px] px-3 py-1.5 rounded-md" style={{ background: "#FFFBEB", color: "#92400E" }}>
                 ⚠ {m.caution}
               </div>
             )}
+            {m.kpi && <div className="mt-1 text-[9px] text-emerald-700">KPI: {m.kpi}</div>}
           </div>
         ))}
-        {messages.length === 0 && <div className="text-xs text-gray-400 text-center py-4">메시지 데이터 없음</div>}
+        {fieldSchedule.length === 0 && <div className="text-xs text-gray-400 text-center py-4">일정 데이터 없음</div>}
       </div>
 
       {/* Right: Execution + Risks */}
