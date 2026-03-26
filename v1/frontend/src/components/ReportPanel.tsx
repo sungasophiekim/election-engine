@@ -1,11 +1,13 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { getDailyBriefing, getWeeklyBriefing, getTrainingData } from "@/lib/api";
 import { ResearchPage } from "./ResearchTab";
+import StrategyMode from "./strategy/StrategyMode";
 
-const TABS = ["데일리 리포트", "위클리 리포트", "학습데이터", "리서치"] as const;
-type Tab = (typeof TABS)[number];
+const BASE_TABS = ["데일리 리포트", "위클리 리포트"] as const;
+type Tab = (typeof BASE_TABS)[number] | "전략모드";
 
 /* ═══ PDF 출력 — 인라인 스타일 변환 ═══ */
 function printReport(title: string) {
@@ -668,8 +670,16 @@ function TrainingDataView() {
    메인 패널
 ═══════════════════════════════════════════ */
 export default function ReportPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>("데일리 리포트");
+  const tier = useAuth((s) => s.tier);
+  const [tab, setTab] = useState<Tab>(tier === 1 ? "전략모드" : "데일리 리포트");
   if (!open) return null;
+
+  // 전략모드: 전체 화면 대체
+  if (tab === "전략모드") {
+    return <StrategyMode onExit={() => setTab("데일리 리포트")} />;
+  }
+
+  const TABS: Tab[] = [...BASE_TABS, ...(tier === 1 ? ["전략모드" as const] : [])];
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-4" onClick={onClose}>
@@ -685,6 +695,8 @@ export default function ReportPanel({ open, onClose }: { open: boolean; onClose:
                 className={`text-xs font-bold px-3 py-1.5 rounded transition-all ${
                   tab === t
                     ? "text-white bg-gray-700/50"
+                    : t === "전략모드"
+                    ? "text-[#E8B84B] hover:text-[#FFD700] border border-[#C8922A]/40"
                     : "text-gray-500 hover:text-gray-300"
                 }`}>
                 {t}
@@ -692,7 +704,7 @@ export default function ReportPanel({ open, onClose }: { open: boolean; onClose:
             ))}
           </div>
           <div className="flex items-center gap-2">
-            {tab !== "리서치" && (
+            {tab !== "리서치" && tab !== "전략모드" && (
               <button
                 onClick={() => printReport(tab === "데일리 리포트" ? "전략대응 리포트" : "주간 성과 리포트")}
                 className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded transition-all">

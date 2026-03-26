@@ -82,7 +82,7 @@ export default function WarRoom() {
                 onClick={() => setReportOpen(true)}
                 className="text-[10px] font-bold text-gray-400 hover:text-cyan-300 border border-[#1a2844] hover:border-cyan-800/50 px-2.5 py-1 rounded transition-colors"
               >
-                리포트
+                전략모드
               </button>
               <button
                 onClick={() => setSystemOpen(true)}
