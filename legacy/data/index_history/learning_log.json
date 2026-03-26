@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-03-21",
+    "index_name": "support_forecast",
+    "predicted_value": 42.2,
+    "actual_value": 38.0,
+    "error": -4.2,
+    "abs_error": 4.2,
+    "context": "여론조사 38:38 vs 모델 42:58. 투표율 미반영 차이.",
+    "correction_applied": false
+  }
+]

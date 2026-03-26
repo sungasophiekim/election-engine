@@ -1,0 +1,41 @@
+[
+  {
+    "date": "2026-03-21",
+    "action_description": "경남 AI 대전환 공약 발표",
+    "action_type": "policy",
+    "leading_before": 51.0,
+    "leading_after": 53.2,
+    "leading_delta": 2.2,
+    "issue_before": 35.0,
+    "issue_after": 42.5,
+    "issue_delta": 7.5,
+    "reaction_before": 30.0,
+    "reaction_after": 38.1,
+    "reaction_delta": 8.1,
+    "attribution_confidence": 0.62,
+    "attributed_keywords": [
+      "AI 대전환",
+      "경남 투자"
+    ],
+    "impact_grade": "HIGH",
+    "recommendation": "강한 효과(+2.2). 이 방향의 후속 전략 강화."
+  },
+  {
+    "date": "2026-03-21",
+    "action_description": "진주 농산물시장 방문",
+    "action_type": "visit",
+    "leading_before": 53.2,
+    "leading_after": 53.3,
+    "leading_delta": 0.1,
+    "issue_before": 0.0,
+    "issue_after": 0.0,
+    "issue_delta": 0.0,
+    "reaction_before": 0.0,
+    "reaction_after": 0.0,
+    "reaction_delta": 0.0,
+    "attribution_confidence": 0.15,
+    "attributed_keywords": [],
+    "impact_grade": "NONE",
+    "recommendation": "'진주 농산물시장 방문' 현장 방문이 지표에 영향 없음. 가능한 원인: ① 지역 한정 ② 미디어 미보도. 제안: 방문 콘텐츠 SNS 확산, 주민 증언 영상 제작."
+  }
+]

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>Election Engine — 로그인</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background: #0a0e17;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-card {
+            background: #141b2d;
+            border: 1px solid #1e3a5f;
+            border-radius: 12px;
+            padding: 40px;
+            width: 360px;
+            max-width: 90vw;
+        }
+        .login-card h1 {
+            font-size: 1.4em;
+            color: #64b5f6;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .login-card .sub {
+            text-align: center;
+            color: #78909c;
+            font-size: 0.85em;
+            margin-bottom: 28px;
+        }
+        .login-card label {
+            display: block;
+            font-size: 0.85em;
+            color: #90caf9;
+            margin-bottom: 6px;
+        }
+        .login-card input[type="password"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #1e3a5f;
+            border-radius: 6px;
+            background: #0d1117;
+            color: #e0e0e0;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .login-card input[type="password"]:focus {
+            border-color: #1976d2;
+        }
+        .login-card button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 11px;
+            border: none;
+            border-radius: 6px;
+            background: #1976d2;
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-card button:hover { background: #1565c0; }
+        .error {
+            margin-top: 14px;
+            text-align: center;
+            color: #ef5350;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <form class="login-card" method="POST" action="/login">
+        <h1>Election Engine</h1>
+        <div class="sub">선거 전략 대시보드</div>
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" autofocus required>
+        <button type="submit">로그인</button>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+    </form>
+</body>
+</html>

@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══ WAR ROOM — ELECTION CAMPAIGN HQ ═══ */
+body {
+  background: #04070d;
+  color: #e8ecf2;
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1a2d4a; border-radius: 2px; }
+
+/* Card */
+.wr-card {
+  @apply bg-[#0a1019] border border-[#121e33] rounded-lg;
+  transition: transform 0.2s, box-shadow 0.3s, border-color 0.3s;
+}
+.wr-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.06);
+  border-color: #1e3a5f;
+}
+.wr-card-header {
+  @apply text-[12px] font-bold uppercase tracking-[0.08em] text-blue-300 px-4 py-2.5 border-b border-[#1a2844];
+}
+
+/* Metric font */
+.wr-metric {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══ ENTRANCE ANIMATIONS ═══ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-in { animation: fadeInUp 0.5s ease-out both; }
+
+@keyframes barGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.anim-bar { transform-origin: left; animation: barGrow 0.8s ease-out both; }
+
+@keyframes numberPop {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.anim-num { animation: numberPop 0.5s ease-out both; }
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-15px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.anim-slide { animation: slideLeft 0.4s ease-out both; }
+
+/* SVG 라인 드로잉 */
+@keyframes drawLine {
+  from { stroke-dashoffset: var(--len); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes dotFade { to { opacity: 1; } }
+
+/* ═══ PERSISTENT ANIMATIONS — WAR ROOM 긴장감 ═══ */
+
+/* 숫자 맥박 */
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.82; } }
+.pulse { animation: pulse 3s ease-in-out infinite; }
+
+/* 격차 숫자 깜빡 (핵심 지표) */
+@keyframes gapBlink {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.05); }
+}
+.gap-blink { animation: gapBlink 2s ease-in-out infinite; }
+
+/* 우세 글로우 */
+@keyframes winGlow {
+  0%,100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 12px rgba(52, 211, 153, 0.5); }
+}
+.win-glow { animation: winGlow 2.5s ease-in-out infinite; }
+
+/* 열세 글로우 */
+@keyframes loseGlow {
+  0%,100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 12px rgba(239, 68, 68, 0.5); }
+}
+.lose-glow { animation: loseGlow 2.5s ease-in-out infinite; }
+
+/* 바 호흡 */
+@keyframes barBreath {
+  0%,100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); }
+}
+.bar-breath { animation: barBreath 4s ease-in-out infinite; }
+
+/* 카드 보더 글로우 (핵심 카드) */
+@keyframes borderPulse {
+  0%,100% { border-color: rgba(37, 99, 235, 0.2); box-shadow: 0 0 0 0 rgba(6,182,212,0); }
+  50% { border-color: rgba(37, 99, 235, 0.5); box-shadow: 0 0 10px 2px rgba(6,182,212,0.08); }
+}
+.border-pulse { animation: borderPulse 3s ease-in-out infinite; }
+
+/* 스캔라인 (CRT) */
+.scanline::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(6,182,212,0.012) 2px, rgba(6,182,212,0.012) 4px);
+  pointer-events: none;
+  animation: scanMove 10s linear infinite;
+}
+@keyframes scanMove { 0% { background-position: 0 0; } 100% { background-position: 0 100%; } }
+
+/* 라이브 도트 */
+@keyframes liveDot {
+  0%,100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 6px 2px rgba(16,185,129,0.2); }
+}
+.live-dot { animation: liveDot 2s ease-in-out infinite; }
+
+/* 카드 순위 이동 */
+.card-move { transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+/* 업데이트 플래시 */
+@keyframes flash {
+  0% { background-color: rgba(6,182,212,0.15); }
+  100% { background-color: transparent; }
+}
+.flash { animation: flash 1.5s ease-out; }
+
+/* 타임스탬프 */
+.timestamp {
+  @apply text-[8px] text-gray-600 font-mono;
+}
+
+/* 이슈 카드 자동 스크롤 */
+@keyframes tickerScroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.ticker-scroll {
+  animation: tickerScroll 60s linear infinite;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* 1위 카드 강조 */
+@keyframes topGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); border-color: rgba(6,182,212,0.3); }
+  50% { box-shadow: 0 0 12px 2px rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.6); }
+}
+.top-card { animation: topGlow 3s ease-in-out infinite; border: 1px solid rgba(6,182,212,0.3); }
+
+/* 트렌딩 뱃지 반짝 */
+@keyframes trendPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.trend-pulse { animation: trendPulse 1.5s ease-in-out infinite; }
+
+/* 이슈 카드 글로우 호버 */
+.issue-card {
+  transition: all 0.3s ease;
+  border-left: 2px solid transparent;
+}
+.issue-card:hover {
+  transform: translateX(4px);
+  background: rgba(6, 182, 212, 0.03);
+}
+.issue-card.side-우리 { border-left-color: #3b82f6; }
+.issue-card.side-상대 { border-left-color: #ef4444; }
+.issue-card.side-중립 { border-left-color: #374151; }
+
+/* Alert 반짝임 */
+@keyframes alertFlash {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+  25% { opacity: 0.9; box-shadow: 0 0 12px 3px rgba(251, 191, 36, 0.3); }
+  50% { opacity: 1; box-shadow: 0 0 6px 1px rgba(251, 191, 36, 0.15); }
+  75% { opacity: 0.95; box-shadow: 0 0 10px 2px rgba(251, 191, 36, 0.2); }
+}
+.alert-flash { animation: alertFlash 2s ease-in-out infinite; }
