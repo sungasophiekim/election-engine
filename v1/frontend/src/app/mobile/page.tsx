@@ -888,7 +888,6 @@ function MobileStrategyView({ onBack }: { onBack: () => void }) {
 
 /* ── Mobile System View ── */
 function MobileSystemView() {
-  const indices = useState<any>(null);
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
