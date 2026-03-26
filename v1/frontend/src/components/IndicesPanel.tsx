@@ -297,7 +297,7 @@ function MiniChart({ data, field, color, label }: { data: any[]; field: string; 
         {vals.map((v, i) => (
           <g key={i}>
             <circle cx={pl + i * xs} cy={Y(v)} r={i === n - 1 ? 2.5 : 1} fill={i === n - 1 ? color : "#0e4158"} />
-            <text x={pl + i * xs} y={h - 2} fill="#4b5563" fontSize="6" textAnchor="middle" fontFamily="monospace">{(data[i].date || "").slice(5)}</text>
+            <text x={pl + i * xs} y={h - 2} fill="#4b5563" fontSize="6" textAnchor="middle" fontFamily="monospace">{(() => { const raw = data[i].date || ""; const d = new Date(raw.includes("T") && !raw.endsWith("Z") ? raw + "Z" : raw); return isNaN(d.getTime()) ? raw.slice(5) : `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })()}</text>
           </g>
         ))}
       </svg>
