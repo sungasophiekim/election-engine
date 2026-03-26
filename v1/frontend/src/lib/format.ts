@@ -2,7 +2,9 @@
 export function fmtTs(ts: string | undefined): string {
   if (!ts) return "—";
   try {
-    const d = new Date(ts);
+    // 서버가 UTC로 보내므로 타임존 없으면 Z 추가
+    const raw = ts.includes("+") || ts.endsWith("Z") ? ts : ts + "Z";
+    const d = new Date(raw);
     if (isNaN(d.getTime())) return ts.slice(0, 16).replace("T", " ");
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
@@ -23,7 +25,8 @@ export function fmtTs(ts: string | undefined): string {
 export function fmtDate(ts: string | undefined): string {
   if (!ts) return "—";
   try {
-    const d = new Date(ts);
+    const raw = ts.includes("+") || ts.endsWith("Z") ? ts : ts + "Z";
+    const d = new Date(raw);
     if (isNaN(d.getTime())) return ts.slice(0, 10);
     const yy = String(d.getFullYear()).slice(2);
     const mm = String(d.getMonth() + 1).padStart(2, "0");
