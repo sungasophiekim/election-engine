@@ -362,9 +362,9 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
           <NavItem label="학습데이터" icon="🧠" active={page === "training"} badge={String(data.training?.total || 0)} badgeColor="bg-[#2457A4]" onClick={() => setPage("training")} />
           <NavItem label="리서치" icon="🔍" active={page === "research"} onClick={() => setPage("research")} />
         </nav>
-        <div className="px-5 py-4 border-t border-white/10">
-          <button onClick={onExit} className="w-full text-left text-[11px] text-white/60 hover:text-white transition-colors">
-            ← War Room 복귀
+        <div className="px-4 py-4 border-t border-white/10">
+          <button onClick={onExit} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-bold text-white bg-[#2457A4] hover:bg-[#1B3A6B] transition-colors">
+            <span>◀</span> War Room 복귀
           </button>
         </div>
         <div className="px-5 py-3 text-[10px] text-white/30 leading-relaxed">

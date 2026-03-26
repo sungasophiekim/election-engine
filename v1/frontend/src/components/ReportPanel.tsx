@@ -676,7 +676,7 @@ export default function ReportPanel({ open, onClose }: { open: boolean; onClose:
 
   // 전략모드: 전체 화면 대체
   if (tab === "전략모드") {
-    return <StrategyMode onExit={() => setTab("데일리 리포트")} />;
+    return <StrategyMode onExit={onClose} />;
   }
 
   const TABS: Tab[] = [...BASE_TABS, ...(tier === 1 ? ["전략모드" as const] : [])];
