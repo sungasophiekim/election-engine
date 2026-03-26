@@ -23,3 +23,4 @@ export const getReactionRadar = () => f<any>("/api/enrichment/reaction-radar");
 export const getDailyBriefing = (force = false) => f<any>(`/api/strategy/daily-briefing${force ? "?force=true" : ""}`);
 export const getWeeklyBriefing = (force = false) => f<any>(`/api/strategy/weekly-briefing${force ? "?force=true" : ""}`);
 export const getTrainingData = () => f<any>("/api/strategy/training-data");
+export const getDailyReports = () => f<any>("/api/strategy/daily-reports");

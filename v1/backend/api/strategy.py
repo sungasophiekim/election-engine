@@ -196,12 +196,43 @@ def _build_daily_context(snap: dict) -> str:
 - 현직(박완수)은 예산·행정력·미디어 접근성에서 구조적 우위"""
 
 
+def _load_daily_cache(today: str):
+    """파일에서 오늘자 데일리 리포트 로드"""
+    fp = LEGACY_DATA / "daily_reports" / f"{today}.json"
+    if fp.exists():
+        try:
+            with open(fp) as f:
+                data = json.load(f)
+            if not data.get("error"):
+                return data
+        except Exception:
+            pass
+    return None
+
+
+def _save_daily_cache(today: str, data: dict):
+    """데일리 리포트를 파일로 영구 저장"""
+    report_dir = LEGACY_DATA / "daily_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    fp = report_dir / f"{today}.json"
+    with open(fp, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 @router.get("/daily-briefing")
 def daily_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
-    # 1일 1회 제한 — 같은 날 이미 생성했으면 캐시 반환 (force 무시)
+
+    # 1. 메모리 캐시 확인
     if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
         return _cache["daily"]["data"]
+
+    # 2. 파일 캐시 확인 (서버 재시작 후에도 유지)
+    file_cache = _load_daily_cache(today)
+    if file_cache:
+        _cache["daily"]["date"] = today
+        _cache["daily"]["data"] = file_cache
+        return file_cache
 
     snap = _load_snap()
     context = _build_daily_context(snap)
@@ -378,16 +409,39 @@ OUTPUT: Valid JSON only. No markdown, no code blocks. Start with { end with }. W
         data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
         data["date"] = today
 
-        # 에러가 아닐 때만 캐시
+        # 에러가 아닐 때만 캐시 + 파일 저장
         if not data.get("error"):
             _cache["daily"]["date"] = today
             _cache["daily"]["data"] = data
+            _save_daily_cache(today, data)
         return data
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"error": str(e), "generated_at": datetime.now().isoformat()}
+
+
+@router.get("/daily-reports")
+def daily_reports_list():
+    """저장된 데일리 리포트 목록"""
+    report_dir = LEGACY_DATA / "daily_reports"
+    if not report_dir.exists():
+        return {"reports": [], "total": 0}
+    reports = []
+    for fp in sorted(report_dir.glob("*.json"), reverse=True):
+        try:
+            with open(fp) as f:
+                d = json.load(f)
+            reports.append({
+                "date": d.get("date", fp.stem),
+                "d_day": d.get("d_day", "?"),
+                "generated_at": d.get("generated_at", ""),
+                "summary": d.get("executive_summary", "")[:100],
+            })
+        except Exception:
+            pass
+    return {"reports": reports[:30], "total": len(reports)}
 
 
 @router.get("/weekly-briefing")

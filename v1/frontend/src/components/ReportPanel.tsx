@@ -187,7 +187,7 @@ function DailyReport() {
                 </tr>
               </thead>
               <tbody>
-                {sd.issue_top5.map((iss: any) => (
+                {(sd.issue_state || sd.issue_top5 || []).map((iss: any) => (
                   <tr key={iss.rank} className="border-b border-gray-800/50">
                     <td className="py-2.5 px-2 text-center text-gray-500 font-bold">{iss.rank}</td>
                     <td className="py-2.5 px-2 text-gray-100 font-bold">{iss.name}</td>
@@ -207,7 +207,7 @@ function DailyReport() {
 
             {/* 이슈별 세그먼트 진단 */}
             <div className="space-y-1.5 mt-2">
-              {sd.issue_top5.filter((iss: any) => iss.diagnosis).map((iss: any) => (
+              {(sd.issue_state || sd.issue_top5 || []).filter((iss: any) => iss.diagnosis).map((iss: any) => (
                 <div key={`diag-${iss.rank}`} className="bg-gray-800/20 rounded-lg px-3 py-2 text-[11px] leading-relaxed">
                   <span className="text-gray-300 font-bold mr-1">{iss.rank}. {iss.name}</span>
                   <span className="text-gray-400">{iss.diagnosis}</span>
@@ -218,7 +218,7 @@ function DailyReport() {
         )}
 
         {/* 리액션 TOP5 */}
-        {sd.reaction_top5?.length > 0 && (
+        {(sd.reaction_state || sd.reaction_top5 || [])?.length > 0 && (
           <div className="mb-4">
             <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">시민 리액션 TOP 5</h3>
             <table className="w-full text-xs">
@@ -232,7 +232,7 @@ function DailyReport() {
                 </tr>
               </thead>
               <tbody>
-                {sd.reaction_top5.map((r: any) => (
+                {(sd.reaction_state || sd.reaction_top5 || []).map((r: any) => (
                   <tr key={r.rank} className="border-b border-gray-800/50">
                     <td className="py-2 px-2 text-center text-gray-500">{r.rank}</td>
                     <td className="py-2 px-2 text-gray-100 font-bold">{r.keyword}</td>
