@@ -51,6 +51,17 @@ def trigger_collect():
     return {"status": "수집 시작됨"}
 
 
+@app.post("/api/admin/reset-history")
+def reset_history():
+    """히스토리 초기화 — 잘못된 데이터 리셋"""
+    import json
+    from v1config.settings import LEGACY_DATA
+    hist_path = LEGACY_DATA / "indices_history.json"
+    with open(hist_path, "w") as f:
+        json.dump([], f)
+    return {"status": "히스토리 초기화 완료"}
+
+
 # ── Next.js 정적 빌드 서빙 (Render 배포용) ──
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
