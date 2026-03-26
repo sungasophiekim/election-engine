@@ -42,6 +42,15 @@ def on_startup():
     start_scheduler()
 
 
+@app.post("/api/admin/collect-now")
+def trigger_collect():
+    """수동 데이터 수집 트리거"""
+    import threading
+    from scheduler import _update_all
+    threading.Thread(target=_update_all, daemon=True).start()
+    return {"status": "수집 시작됨"}
+
+
 # ── Next.js 정적 빌드 서빙 (Render 배포용) ──
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
