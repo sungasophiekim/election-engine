@@ -18,7 +18,7 @@ from typing import Optional
 from fastapi import Cookie, FastAPI, Form, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+# Jinja2Templates 제거 — Python 3.14 호환성 문제로 직접 HTML 로드
 
 # Allow imports from project root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -124,9 +124,13 @@ def _auto_snapshot_loop():
 
 # 백그라운드 스레드 — startup 이벤트에서 시작 (모든 전역변수 정의 후)
 _auto_thread = None
-templates = Jinja2Templates(
-    directory=os.path.join(os.path.dirname(__file__), "templates")
-)
+
+# ── 템플릿 직접 로드 (Python 3.14 + Jinja2 캐시 호환성 문제 우회) ──
+_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
+
+def _read_template(name: str) -> str:
+    with open(os.path.join(_TEMPLATES_DIR, name), "r", encoding="utf-8") as f:
+        return f.read()
 
 # ---------------------------------------------------------------------------
 # V3 Strategy OS Integration
@@ -209,16 +213,19 @@ def get_db():
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "error": ""})
+    html = _read_template("login.html")
+    return HTMLResponse(html)
 
 
 @app.post("/login")
 async def login_submit(request: Request, password: str = Form(...)):
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
     if pw_hash != DASHBOARD_PW_HASH:
-        return templates.TemplateResponse(
-            "login.html", {"request": request, "error": "비밀번호가 올바르지 않습니다."}
+        html = _read_template("login.html").replace(
+            "{% if error %}\n        <div class=\"error\">{{ error }}</div>\n        {% endif %}",
+            "<div class=\"error\">비밀번호가 올바르지 않습니다.</div>"
         )
+        return HTMLResponse(html)
     token = secrets.token_hex(32)
     SESSIONS[token] = time.time() + SESSION_TTL
     resp = RedirectResponse("/", status_code=302)
@@ -250,9 +257,8 @@ async def dashboard(request: Request, session_token: str = Cookie(default=None))
     redir = require_auth(session_token)
     if redir:
         return redir
-    response = templates.TemplateResponse("index.html", {"request": request})
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    return response
+    html = _read_template("index.html")
+    return HTMLResponse(html, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
 # ---------------------------------------------------------------------------
