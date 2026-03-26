@@ -1,0 +1,81 @@
+{
+  "date": "2026-03-26",
+  "timestamp": "2026-03-26T15:22:47.509493",
+  "d_day": 69,
+  "indices": {
+    "issue_index": 76.5,
+    "reaction_index": 0.0,
+    "pandse_index": 53.8
+  },
+  "top_issues": [
+    {
+      "name": "국민의힘 부산·대구 선거 내분 심화",
+      "side": "우리 유리",
+      "count": 8,
+      "sentiment": 65
+    },
+    {
+      "name": "전재수 비리·도덕성 문제 집중 공격",
+      "side": "우리 유리",
+      "count": 7,
+      "sentiment": 70
+    },
+    {
+      "name": "광역단체장 재산공개 국민의힘 상위권",
+      "side": "우리 유리",
+      "count": 6,
+      "sentiment": 55
+    },
+    {
+      "name": "2026 경남 지방선거 지역별 출마 전개",
+      "side": "중립",
+      "count": 6,
+      "sentiment": 0
+    },
+    {
+      "name": "KF-21 양산 1호기 출고 (경남 산업 성과)",
+      "side": "상대 유리",
+      "count": 5,
+      "sentiment": -40
+    },
+    {
+      "name": "4월 전국 분양 4.7만가구 공급 (정부 정책)",
+      "side": "상대 유리",
+      "count": 8,
+      "sentiment": -35
+    },
+    {
+      "name": "민생지원금·선심성 선거자금 논란",
+      "side": "우리 유리",
+      "count": 3,
+      "sentiment": 60
+    },
+    {
+      "name": "여당의 민주당 공격·범죄 공천 프레임",
+      "side": "우리 유리",
+      "count": 8,
+      "sentiment": 50
+    },
+    {
+      "name": "함양 폐기물처리장 화재 (도정 관리 부실)",
+      "side": "우리 유리",
+      "count": 2,
+      "sentiment": 65
+    },
+    {
+      "name": "경남 도정 정책 홍보 (안전·환경·복지)",
+      "side": "상대 유리",
+      "count": 6,
+      "sentiment": -25
+    }
+  ],
+  "ai_summary": {
+    "issue": "국힘 부산·대구 내분(전재수 비리, 공천 혼란)과 광역단체장 재산 상위권이 우리에게 유리. 정부 선심성 정책과 도정 관리 부실이 비판점으로 작용 중.",
+    "reaction": "보수진영 분열에 시민 실망 커지는 중. 국힘 비리 반복 보도로 여론 부정적. 민주당 투명성 강조로 신뢰 회복 기회 활용."
+  },
+  "poll": {
+    "president_approval": 67.0,
+    "dem_support": 46.0,
+    "ppp_support": 20.0
+  }
+}
