@@ -473,9 +473,25 @@ def daily_reports_list():
 def weekly_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
     week_key = datetime.now().strftime("%Y-W%W")
-    # 1주 1회 제한 — 같은 주에 이미 생성했으면 캐시 반환 (force 무시)
+
+    # 1. 메모리 캐시
     if _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
         return _cache["weekly"]["data"]
+
+    # 2. 파일 캐시
+    weekly_dir = LEGACY_DATA / "weekly_reports"
+    weekly_dir.mkdir(parents=True, exist_ok=True)
+    weekly_fp = weekly_dir / f"{week_key}.json"
+    if weekly_fp.exists():
+        try:
+            with open(weekly_fp) as f:
+                cached = json.load(f)
+            if not cached.get("error"):
+                _cache["weekly"]["date"] = week_key
+                _cache["weekly"]["data"] = cached
+                return cached
+        except Exception:
+            pass
 
     snap = _load_snap()
     history = _load_history()
@@ -562,7 +578,8 @@ def weekly_briefing(force: bool = False):
 
         resp = client.messages.create(
             model="claude-opus-4-6",
-            max_tokens=3000,
+            max_tokens=8000,
+            system="You are a Korean election campaign strategist. Respond with valid JSON only. No markdown, no code blocks. Start with { end with }.",
             messages=[{"role": "user", "content": prompt}],
         )
         text = resp.content[0].text.strip()
@@ -570,8 +587,11 @@ def weekly_briefing(force: bool = False):
         data["generated_at"] = datetime.now().isoformat()
         data["week"] = week_key
 
-        _cache["weekly"]["date"] = week_key
-        _cache["weekly"]["data"] = data
+        if not data.get("error"):
+            _cache["weekly"]["date"] = week_key
+            _cache["weekly"]["data"] = data
+            with open(weekly_fp, "w") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
         return data
 
     except Exception as e:

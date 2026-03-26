@@ -335,10 +335,7 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
       getTrainingData().catch(() => null),
     ]);
     setData((prev: any) => ({ ...prev, daily, indices, history, clusters, reports, training }));
-    // 위클리는 백그라운드 로드
-    getWeeklyBriefing().catch(() => null).then((weekly) => {
-      setData((prev: any) => ({ ...prev, weekly }));
-    });
+    // 위클리는 탭 클릭 시 로드 (비용 절약)
     setLoading(false);
   }, []);
 
@@ -809,9 +806,22 @@ function MessageTab({ daily }: { daily: any }) {
 }
 
 /* ── Weekly Page ── */
-function WeeklyPage({ weekly }: { weekly: any }) {
+function WeeklyPage({ weekly: initialWeekly }: { weekly: any }) {
+  const [weekly, setWeekly] = useState<any>(initialWeekly);
+  const [wLoading, setWLoading] = useState(false);
+
+  const loadWeekly = useCallback(async () => {
+    setWLoading(true);
+    try { setWeekly(await getWeeklyBriefing()); } catch {}
+    setWLoading(false);
+  }, []);
+
+  if (wLoading) return <div className="text-center py-20 text-gray-400 animate-pulse">위클리 리포트 생성 중...</div>;
   if (!weekly || weekly.error) return (
-    <div className="text-center py-20 text-gray-400">위클리 리포트를 먼저 생성하세요</div>
+    <div className="text-center py-20">
+      <div className="text-gray-400 mb-4">위클리 리포트가 없습니다</div>
+      <button onClick={loadWeekly} className="px-4 py-2 text-sm font-bold text-white bg-[#2457A4] rounded-lg hover:bg-[#1B3A6B]">위클리 리포트 생성</button>
+    </div>
   );
   const ks = weekly.kpi_review || [];
   const segments = weekly.segment_analysis || [];
