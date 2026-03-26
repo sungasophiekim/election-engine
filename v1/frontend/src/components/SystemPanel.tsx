@@ -81,7 +81,7 @@ function ReactionTab({ indices }: { indices: any }) {
       <div>
         <div className="text-[11px] text-cyan-300 font-bold mb-1">지표 설명</div>
         <p className="text-[10px] text-gray-400 leading-relaxed">
-          뉴스 이슈에 대해 시민들이 실제로 어떻게 반응하는지를 측정하는 실데이터 감성 지표입니다.
+          뉴스 이슈에 대한 민심 반응을 측정하는 실데이터 감성 지표입니다.
           이슈지수에서 추출한 TOP 10 이슈 키워드로 5개 채널을 검색하여 실제 여론 감성을 수집합니다.
         </p>
       </div>

@@ -222,7 +222,7 @@ function DailyReport() {
         {/* 리액션 TOP5 */}
         {(sd.reaction_state || sd.reaction_top5 || [])?.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">시민 리액션 TOP 5</h3>
+            <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">민심 리액션 TOP 5</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-gray-700">

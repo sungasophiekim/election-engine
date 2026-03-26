@@ -14,15 +14,19 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [daily, weekly, indices, clusters, reports, training] = await Promise.all([
+    // 핵심 데이터만 먼저 로드 (위클리는 lazy)
+    const [daily, indices, clusters, reports, training] = await Promise.all([
       getDailyBriefing().catch(() => null),
-      getWeeklyBriefing().catch(() => null),
       getIndicesCurrent().catch(() => null),
       getNewsClusters().catch(() => null),
       getDailyReports().catch(() => null),
       getTrainingData().catch(() => null),
     ]);
-    setData({ daily, weekly, indices, clusters, reports, training });
+    setData((prev: any) => ({ ...prev, daily, indices, clusters, reports, training }));
+    // 위클리는 백그라운드 로드
+    getWeeklyBriefing().catch(() => null).then((weekly) => {
+      setData((prev: any) => ({ ...prev, weekly }));
+    });
     setLoading(false);
   }, []);
 
@@ -168,12 +172,28 @@ function SummaryTab({ daily, indices }: { daily: any; indices: any }) {
       {/* Executive Summary Box */}
       <div className="rounded-xl p-5" style={{ background: "linear-gradient(135deg, #0D1B2A 0%, #1B3A6B 100%)", color: "white" }}>
         <div className="text-[10px] tracking-[1px] text-[#E8B84B] font-medium mb-2">DAILY BRIEF · {daily.date || new Date().toISOString().slice(0, 10)}</div>
-        <div className="text-[15px] font-bold leading-relaxed mb-3" style={{ fontFamily: "'Noto Serif KR', serif" }}>
-          {daily.executive_summary?.split(".")?.[0] || "리포트 생성 대기 중"}
-        </div>
-        <div className="text-[12px] leading-[1.8] text-white/85">
-          {daily.executive_summary || "데일리 리포트를 먼저 생성하세요."}
-        </div>
+        {(() => {
+          const text = daily.executive_summary || "";
+          if (!text) return <div className="text-[13px] text-white/60">데일리 리포트를 먼저 생성하세요.</div>;
+          // 문장 분리: ". " 또는 "다." "음." 등 한국어 문장 끝 패턴
+          const sentences = text.split(/(?<=다\.|음\.|중\.|요\.|임\.|됨\.|함\.|성\.|다\)|.\))\s*/g).filter(Boolean);
+          const headline = sentences[0] || text;
+          const body = sentences.slice(1);
+          return (
+            <>
+              <div className="text-[15px] font-bold leading-[1.7] mb-3" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                {headline}
+              </div>
+              {body.length > 0 && (
+                <div className="text-[12px] leading-[2.0] text-white/85 space-y-2">
+                  {body.map((s: string, i: number) => (
+                    <p key={i}>{s.trim()}</p>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* KPI Cards */}
@@ -191,16 +211,16 @@ function SummaryTab({ daily, indices }: { daily: any; indices: any }) {
             <div className="px-5 py-3 border-b" style={{ background: "#EFF6FF" }}>
               <div className="text-[13px] font-bold text-[#2457A4]">🔵 우리 후보 AI 진단</div>
             </div>
-            <div className="px-5 py-4 text-[11px] text-gray-700 leading-[1.9]">
-              {daily.situation_diagnosis?.our_candidate || "—"}
+            <div className="px-5 py-4 text-[11px] text-gray-700 leading-[2.0] space-y-1.5">
+              <SplitText text={daily.situation_diagnosis?.our_candidate} />
             </div>
           </div>
           <div className="rounded-xl border border-gray-300 overflow-hidden">
             <div className="px-5 py-3 border-b" style={{ background: "#FEF2F2" }}>
               <div className="text-[13px] font-bold text-[#C0392B]">🔴 상대 후보 AI 진단</div>
             </div>
-            <div className="px-5 py-4 text-[11px] text-gray-700 leading-[1.9]">
-              {daily.situation_diagnosis?.opp_candidate || "—"}
+            <div className="px-5 py-4 text-[11px] text-gray-700 leading-[2.0] space-y-1.5">
+              <SplitText text={daily.situation_diagnosis?.opp_candidate} />
             </div>
           </div>
         </div>
@@ -237,7 +257,7 @@ function IssueTab({ daily, clusters }: { daily: any; clusters: any }) {
         </Card>
 
         {/* Reaction TOP */}
-        <Card title="시민 리액션 TOP" sub="감성 분석 기반">
+        <Card title="민심 리액션 TOP" sub="감성 분석 기반">
           {reactions.map((r: any, i: number) => (
             <div key={i} className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
               <div className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-white text-[9px] font-bold"
@@ -313,13 +333,13 @@ function StrategyTab({ daily }: { daily: any }) {
               </Badge>
               <span className="text-[13px] font-bold text-[#0D1B2A]">{s.title}</span>
             </div>
-            <div className="px-5 pb-4 text-[11px] text-gray-700 leading-[1.9]">
-              {s.condition && <div className="mb-2 text-[10px] text-gray-500">조건: {s.condition}</div>}
-              <div>{s.action}</div>
-              {s.target && <div className="mt-2 text-[10px]">🎯 타겟: {s.target}</div>}
+            <div className="px-5 pb-4 text-[11px] text-gray-700 leading-[2.0] space-y-2">
+              {s.condition && <div className="text-[10px] text-gray-500 italic">조건: {s.condition}</div>}
+              <SplitText text={s.action} />
+              {s.target && <div className="text-[10px]">🎯 타겟: {s.target}</div>}
               {s.intended_effect && <div className="text-[10px]">📈 기대: {s.intended_effect}</div>}
               {s.risk && (
-                <div className="mt-2 px-3 py-2 rounded-md text-[10px]" style={{ background: "#FEF2F2", color: "#991B1B" }}>
+                <div className="px-3 py-2 rounded-md text-[10px] leading-[1.8]" style={{ background: "#FEF2F2", color: "#991B1B" }}>
                   ⚠ {s.risk}
                 </div>
               )}
@@ -597,6 +617,15 @@ function ArchivePage({ reports }: { reports: any }) {
       </div>
     </div>
   );
+}
+
+/* ── Text Formatter ── */
+function SplitText({ text }: { text?: string }) {
+  if (!text) return <span className="text-gray-400">—</span>;
+  // 한국어 문장 끝 패턴으로 분리
+  const sentences = text.split(/(?<=다\.|음\.|중\.|요\.|임\.|됨\.|함\.|성\.|니다\.|세요\.|있다\.|없다\.|하다\.|된다\.|이다\.)\s*/g).filter(Boolean);
+  if (sentences.length <= 1) return <p>{text}</p>;
+  return <>{sentences.map((s: string, i: number) => <p key={i}>{s.trim()}</p>)}</>;
 }
 
 /* ── Shared Components ── */
