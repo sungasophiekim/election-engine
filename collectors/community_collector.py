@@ -435,6 +435,115 @@ def _analyze_reaction_depth(titles: list[str]) -> dict:
     }
 
 
+# ── 공개 커뮤니티 본문 크롤링 (5곳) ───────────────────────────
+# DC인사이드, 에펨코리아, 클리앙, 더쿠, 네이트판
+# 맘카페(네이버 카페)는 폐쇄형이므로 기존 API 방식 유지
+
+_SCRAPE_CONFIGS = {
+    "dcinside": {
+        "search_url": "https://search.dcinside.com/post/p/1/sort/accuracy/search_type/search_all/keyword/{query}",
+        "title_sel": ".sch_res_title a",
+        "body_sel": ".sch_res_txt",
+        "link_sel": ".sch_res_title a",
+    },
+    "fmkorea": {
+        "search_url": "https://www.fmkorea.com/index.php?mid=best&search_keyword={query}&search_target=title_content",
+        "title_sel": ".title a",
+        "body_sel": ".xe_content",
+        "link_sel": ".title a",
+    },
+    "clien": {
+        "search_url": "https://www.clien.net/service/search?q={query}&sort=recency&boardCd=&is498=false",
+        "title_sel": ".subject_fixed",
+        "body_sel": ".list_content",
+        "link_sel": ".subject_fixed",
+    },
+    "theqoo": {
+        "search_url": "https://theqoo.net/index.php?mid=hot&search_keyword={query}&search_target=title_content",
+        "title_sel": ".title a",
+        "body_sel": ".xe_content",
+        "link_sel": ".title a",
+    },
+    "natepann": {
+        "search_url": "https://pann.nate.com/search?q={query}&t=0",
+        "title_sel": ".tit a",
+        "body_sel": ".txt_sub",
+        "link_sel": ".tit a",
+    },
+}
+
+# 크롤링 가능 커뮤니티 ID
+SCRAPE_COMMUNITIES = set(_SCRAPE_CONFIGS.keys())
+
+
+def scrape_community_posts(keyword: str, community_id: str, max_posts: int = 5) -> list[dict]:
+    """공개 커뮤니티에서 검색 결과 본문 크롤링 (제목 + 본문 미리보기)"""
+    config = _SCRAPE_CONFIGS.get(community_id)
+    if not config:
+        return []
+
+    comm = COMMUNITIES.get(community_id, {})
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+    }
+
+    try:
+        from urllib.parse import quote
+        url = config["search_url"].format(query=quote(keyword))
+        resp = httpx.get(url, headers=headers, timeout=10, follow_redirects=True)
+        if resp.status_code != 200:
+            return []
+
+        text = resp.text
+        posts = []
+
+        # 제목 + 본문 미리보기 추출 (HTML 파싱 — 간단한 regex 기반)
+        # 검색 결과 페이지에서 제목과 본문 미리보기를 추출
+        title_pattern = re.compile(r'(?:class=["\'][^"\']*(?:title|subject|tit|sch_res_title)[^"\']*["\'][^>]*>)\s*(?:<a[^>]*>)?\s*([^<]{5,100})', re.I)
+        body_pattern = re.compile(r'(?:class=["\'][^"\']*(?:content|txt|body|desc|sch_res_txt|list_content|xe_content)[^"\']*["\'][^>]*>)\s*([^<]{10,300})', re.I)
+
+        titles = title_pattern.findall(text)
+        bodies = body_pattern.findall(text)
+
+        for i in range(min(max_posts, len(titles))):
+            title = re.sub(r'<[^>]+>', '', titles[i]).strip()
+            body = re.sub(r'<[^>]+>', '', bodies[i]).strip() if i < len(bodies) else ""
+            if title and len(title) > 3:
+                posts.append({
+                    "title": title[:100],
+                    "body": body[:300],
+                    "community_id": community_id,
+                    "community_name": comm.get("name", community_id),
+                    "demographic": comm.get("demographic", "전체"),
+                })
+
+        return posts
+
+    except Exception as e:
+        return []
+
+
+def scrape_communities_for_keyword(keyword: str, max_posts_per_comm: int = 5) -> list[dict]:
+    """크롤링 가능한 모든 공개 커뮤니티에서 본문 수집"""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    all_posts = []
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = {
+            pool.submit(scrape_community_posts, keyword, cid, max_posts_per_comm): cid
+            for cid in SCRAPE_COMMUNITIES
+        }
+        for f in as_completed(futures):
+            try:
+                posts = f.result(timeout=15)
+                all_posts.extend(posts)
+            except Exception:
+                pass
+
+    return all_posts
+
+
 def search_community(
     keyword: str,
     community_id: str,
