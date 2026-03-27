@@ -37,11 +37,122 @@ def issue_radar():
 
 @router.get("/reaction-radar")
 def reaction_radar():
+    """클러스터 기반 민심 반응 레이더 — 이슈별 댓글·감성·세그먼트(커뮤니티 실데이터)"""
     snap = _load()
-    ri = snap.get("reaction_indices", {})
-    items = sorted(
-        [{"keyword": k, **v} for k, v in ri.items()],
-        key=lambda x: x.get("final_score", x.get("index", 0)),
-        reverse=True,
-    )
-    return {"items": items[:15], "total": len(ri)}
+    clusters = snap.get("news_clusters", [])
+    cr_details = {d["keyword"]: d for d in snap.get("cluster_reaction", {}).get("details", [])}
+
+    # demographic → 세그먼트 매핑
+    DEMO_TO_SEG = {
+        "2030 남성": "2030", "2030 여성": "2030", "2030": "2030",
+        "3040 남성": "3040", "3040 남성, 진보 성향": "3040", "3040 중도": "3040", "3040 여성": "3040",
+        "3040 여성 (창원/함안)": "3040", "3040 여성 (김해)": "3040",
+        "3040 여성 (진주/서부경남)": "3040", "3040 여성 (양산 물금/사송)": "3040",
+        "3040 여성 (사천/삼천포)": "3040",
+        "3050 (클리앙 이주민, 진보 결집지)": "3050",
+        "2040 여성": "2040",
+        "전 연령 남성 중심": "전체", "전 연령": "전체",
+    }
+    # 커뮤니티 ID → 지역 매핑 (맘카페 기반)
+    COMM_TO_REGION = {
+        "momcafe_changwon": "창원", "momcafe_gimhae": "김해",
+        "momcafe_jinju": "서부권(진주)", "momcafe_yangsan": "양산",
+        "momcafe_sacheon": "서부권(사천)",
+    }
+
+    items = []
+    for c in clusters[:10]:
+        count = c.get("count", 0)
+        comments = c.get("comments", 0)
+        sentiment = c.get("sentiment", 0)
+        reaction_score = count + (comments * 3)
+
+        # 실데이터 기반 세그먼트: cluster_reaction에서 커뮤니티 breakdown 추출
+        name = c.get("name", "")
+        cr = cr_details.get(name, {})
+        comm_breakdown = cr.get("sources", {}).get("community", {}).get("breakdown", [])
+
+        segments = []
+        seg_merged = {}  # 연령 세그먼트별 합산
+        region_merged = {}  # 지역 세그먼트별 합산
+
+        for cb in comm_breakdown:
+            demo = cb.get("demographic", "전체")
+            seg_label = DEMO_TO_SEG.get(demo, demo)
+            mentions = cb.get("mentions", 0)
+            sent = cb.get("sentiment", 0)
+            cid = cb.get("id", "")
+            cname = cb.get("name", "")
+
+            # 연령 세그먼트
+            if seg_label not in seg_merged:
+                seg_merged[seg_label] = {"mentions": 0, "sent_sum": 0.0, "count": 0, "communities": []}
+            seg_merged[seg_label]["mentions"] += mentions
+            seg_merged[seg_label]["sent_sum"] += sent
+            seg_merged[seg_label]["count"] += 1
+            seg_merged[seg_label]["communities"].append(cname)
+
+            # 지역 세그먼트 (맘카페 기반)
+            region = COMM_TO_REGION.get(cid)
+            if region and mentions > 0:
+                if region not in region_merged:
+                    region_merged[region] = {"mentions": 0, "sent_sum": 0.0, "count": 0, "communities": []}
+                region_merged[region]["mentions"] += mentions
+                region_merged[region]["sent_sum"] += sent
+                region_merged[region]["count"] += 1
+                region_merged[region]["communities"].append(cname)
+
+        # 연령 세그먼트 추가
+        for seg_label, v in sorted(seg_merged.items(), key=lambda x: -x[1]["mentions"]):
+            avg_sent = v["sent_sum"] / v["count"] if v["count"] > 0 else 0
+            tone = "긍정" if avg_sent > 0.1 else "부정" if avg_sent < -0.1 else "혼합"
+            reaction = "높음" if v["mentions"] >= 10 else "보통" if v["mentions"] >= 3 else "낮음"
+            segments.append({
+                "label": seg_label, "type": "연령",
+                "reaction": reaction, "tone": tone,
+                "mentions": v["mentions"], "communities": v["communities"][:3],
+            })
+
+        # 지역 세그먼트 추가 (맘카페 실데이터)
+        for region, v in sorted(region_merged.items(), key=lambda x: -x[1]["mentions"]):
+            avg_sent = v["sent_sum"] / v["count"] if v["count"] > 0 else 0
+            tone = "긍정" if avg_sent > 0.1 else "부정" if avg_sent < -0.1 else "혼합"
+            reaction = "높음" if v["mentions"] >= 5 else "보통" if v["mentions"] >= 2 else "낮음"
+            segments.append({
+                "label": region, "type": "지역",
+                "reaction": reaction, "tone": tone,
+                "mentions": v["mentions"], "communities": v["communities"][:2],
+            })
+
+        # 커뮤니티 데이터가 없으면 이슈명 키워드 기반 폴백
+        if not segments:
+            name_lower = name.lower()
+            if any(kw in name_lower for kw in ["청년", "취업", "대학"]):
+                segments.append({"label": "2030", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+            if any(kw in name_lower for kw in ["경제", "산업", "민생", "공약"]):
+                segments.append({"label": "4050", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+            if any(kw in name_lower for kw in ["방산", "kf-21", "조선"]):
+                segments.append({"label": "방산종사자", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+            if not segments:
+                segments.append({"label": "전체", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+
+        items.append({
+            "name": name,
+            "count": count,
+            "comments": comments,
+            "reaction_score": reaction_score,
+            "side": c.get("side", "중립"),
+            "sentiment": sentiment,
+            "community_expected": c.get("community_expected", "중립"),
+            "tip": c.get("tip", ""),
+            "segments": segments,
+        })
+
+    items.sort(key=lambda x: x["reaction_score"], reverse=True)
+
+    return {
+        "items": items,
+        "total": len(items),
+        "total_comments": sum(i["comments"] for i in items),
+        "total_articles": sum(i["count"] for i in items),
+    }
