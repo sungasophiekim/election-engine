@@ -317,6 +317,21 @@ def _update_all():
         else:
             issue_index = 50.0
 
+        # 이슈지수 변동 감지 (5pt 이상)
+        prev_issue = snap.get("cluster_issue", {}).get("issue_index", 50)
+        issue_delta = round(issue_index - prev_issue, 1)
+        if abs(issue_delta) >= 5.0:
+            direction = "상승 (우리 유리)" if issue_delta > 0 else "하락 (상대 유리)"
+            snap["issue_alert"] = {
+                "prev": prev_issue, "now": issue_index, "delta": issue_delta,
+                "direction": "up" if issue_delta > 0 else "down",
+                "memo": f"이슈지수 {prev_issue:.1f}→{issue_index:.1f}pt ({issue_delta:+.1f}) {direction}. 우리유리 {our_count}건 vs 상대유리 {opp_count}건 (중립 {neutral_count}건)",
+                "timestamp": datetime.now().isoformat(),
+            }
+            print(f"[{_now()}] 이슈 ALERT: {issue_delta:+.1f}pt", flush=True)
+        else:
+            snap.pop("issue_alert", None)
+
         snap["cluster_issue"] = {
             "kim_count": our_count,
             "park_count": opp_count,
@@ -324,25 +339,40 @@ def _update_all():
             "total": our_count + opp_count + neutral_count,
             "kim_score": round(our_score),
             "park_score": round(opp_score),
-            "issue_index": issue_index,  # 50=중립, >50 우리유리, <50 상대유리
+            "issue_index": issue_index,
             "updated_at": datetime.now().isoformat(),
         }
 
         # 반응지수: 클러스터 키워드 → 실데이터 수집 (블로그/카페/유튜브/커뮤니티/뉴스댓글)
         print(f"[{_now()}] 클러스터: {len(scored_clusters)}개 (TOP: {scored_clusters[0]['name'] if scored_clusters else '없음'}) | 우리{our_count} 상대{opp_count} 중립{neutral_count}", flush=True)
 
+        prev_reaction = snap.get("cluster_reaction", {}).get("reaction_index", 50)
         try:
             reaction_data = _collect_cluster_reactions(scored_clusters)
             if reaction_data and reaction_data.get("total_mentions", 0) > 0:
                 snap["cluster_reaction"] = reaction_data
                 print(f"[{_now()}] 반응지수(실데이터): {reaction_data['reaction_index']:.1f}pt | {reaction_data['total_mentions']}건 수집", flush=True)
             else:
-                # 폴백: AI 예측 기반 50pt 스케일
                 snap["cluster_reaction"] = _ai_fallback_reaction(scored_clusters)
                 print(f"[{_now()}] 반응지수(AI폴백): {snap['cluster_reaction'].get('reaction_index', 50):.1f}pt", flush=True)
         except Exception as e:
             print(f"[{_now()}] 반응수집 오류, AI폴백 사용: {e}", flush=True)
             snap["cluster_reaction"] = _ai_fallback_reaction(scored_clusters)
+
+        # 반응지수 변동 감지 (5pt 이상)
+        new_reaction = snap.get("cluster_reaction", {}).get("reaction_index", 50)
+        reaction_delta = round(new_reaction - prev_reaction, 1)
+        if abs(reaction_delta) >= 5.0:
+            direction = "상승 (우리 유리)" if reaction_delta > 0 else "하락 (상대 유리)"
+            snap["reaction_alert"] = {
+                "prev": prev_reaction, "now": new_reaction, "delta": reaction_delta,
+                "direction": "up" if reaction_delta > 0 else "down",
+                "memo": f"반응지수 {prev_reaction:.1f}→{new_reaction:.1f}pt ({reaction_delta:+.1f}) {direction}. 총 {snap['cluster_reaction'].get('total_mentions',0)}건 수집",
+                "timestamp": datetime.now().isoformat(),
+            }
+            print(f"[{_now()}] 반응 ALERT: {reaction_delta:+.1f}pt", flush=True)
+        else:
+            snap.pop("reaction_alert", None)
 
         # ── 4. 후보 버즈 수집 ──
         kw_path = LEGACY_DATA / "monitor_keywords.json"

@@ -102,6 +102,8 @@ def current_indices():
             },
         },
         "cluster_updated_at": cluster_ts,
+        "issue_alert": snap.get("issue_alert"),
+        "reaction_alert": snap.get("reaction_alert"),
         "pandse_alert": snap.get("pandse_alert"),
         "ai_issue_summary": snap.get("ai_issue_summary", ""),
         "ai_reaction_summary": snap.get("ai_reaction_summary", ""),
