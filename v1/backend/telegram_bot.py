@@ -262,21 +262,31 @@ def _cmd_list_keywords() -> str:
 
 
 def _cmd_recent_issues() -> str:
-    """/최근이슈 — 현재 TOP 10 클러스터"""
+    """/최근이슈 — 현재 TOP 10 클러스터 + 뉴스 링크"""
     snap = _load_enrichment()
     clusters = snap.get("news_clusters", [])
     if not clusters:
         return "❌ 클러스터 데이터 없음"
 
-    lines = ["📊 <b>현재 TOP 이슈</b>"]
+    lines = ["📊 <b>현재 TOP 이슈</b>\n"]
     for i, c in enumerate(clusters[:10], 1):
         side = c.get("side", "?")
         emoji = "🔵" if "우리" in side else "🔴" if "상대" in side else "⚪"
-        lines.append(f"{emoji} {i}. {c.get('name','')} | {c.get('count',0)}건 | {side}")
+        lines.append(f"{emoji} <b>{i}. {c.get('name','')}</b> | {c.get('count',0)}건 | {side}")
+        # 기사 링크 표시 (최대 2개)
+        articles = c.get("articles", [])
+        for art in articles[:2]:
+            title = art.get("title", "")
+            url = art.get("url", "")
+            if url and title:
+                lines.append(f"   📎 <a href=\"{url}\">{title[:40]}{'…' if len(title) > 40 else ''}</a>")
+            elif title:
+                lines.append(f"   • {title[:50]}")
+        lines.append("")  # 빈 줄 구분
 
     ts = snap.get("timestamp", "")[:16].replace("T", " ")
-    lines.append(f"\n갱신: {ts}")
-    lines.append("\n수정: /수정 이슈명 → 우리유리 | 이유")
+    lines.append(f"갱신: {ts}")
+    lines.append("수정: /수정 이슈명 → 우리유리 | 이유")
 
     return "\n".join(lines)
 
