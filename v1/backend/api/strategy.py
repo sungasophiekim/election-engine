@@ -662,3 +662,39 @@ def training_data():
             pass
 
     return {"days": days[:30], "total": len(days)}
+
+
+@router.get("/side-corrections")
+def get_side_corrections():
+    """등록된 side 수정/규칙 목록"""
+    corr_path = LEGACY_DATA / "side_corrections.json"
+    if not corr_path.exists():
+        return {"corrections": [], "rules": []}
+    try:
+        with open(corr_path) as f:
+            return json.load(f)
+    except Exception:
+        return {"corrections": [], "rules": []}
+
+
+@router.post("/side-corrections")
+def add_side_correction(issue: str = "", side: str = "", reason: str = ""):
+    """side 수정 추가 (프론트엔드용)"""
+    if not issue or not side:
+        return {"error": "issue와 side 필수"}
+    corr_path = LEGACY_DATA / "side_corrections.json"
+    data = {"corrections": [], "rules": []}
+    if corr_path.exists():
+        try:
+            with open(corr_path) as f:
+                data = json.load(f)
+        except Exception:
+            pass
+    data["corrections"].append({
+        "issue": issue, "side": side, "reason": reason,
+        "timestamp": datetime.now().isoformat(),
+    })
+    data["corrections"] = data["corrections"][-50:]
+    with open(corr_path, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"ok": True, "total_corrections": len(data["corrections"])}

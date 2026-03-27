@@ -506,9 +506,28 @@ def _ai_cluster_events(articles: list) -> list:
         titles_text = "\n".join(lines)
         total_comments = sum(a.get("comment_count", 0) for a in articles[:100])
 
-        prompt = f"""다음은 경남 지역 뉴스 제목 {len(lines)}건입니다 (댓글 수가 표시된 기사는 시민 관심도가 높은 기사). 같은 사건/이슈를 묶어서 TOP 10을 만들어주세요.
+        # 사용자 수정/규칙 로드 → 프롬프트 주입
+        corrections_text = ""
+        try:
+            corr_path = Path(__file__).resolve().parent.parent.parent / "data" / "side_corrections.json"
+            if corr_path.exists():
+                with open(corr_path) as f:
+                    corr_data = json.load(f)
+                rules = corr_data.get("rules", [])
+                recent_corrections = corr_data.get("corrections", [])[-10:]
+                if rules:
+                    corrections_text += "\n\n===== 캠프 전략팀이 등록한 영구 규칙 (반드시 준수) =====\n"
+                    corrections_text += "\n".join(f"- {r['rule']}" for r in rules)
+                if recent_corrections:
+                    corrections_text += "\n\n===== 과거 수정 사례 (유사 패턴 참고) =====\n"
+                    corrections_text += "\n".join(f"- '{c['issue']}' → {c['side']} (이유: {c.get('reason','없음')})" for c in recent_corrections)
+        except Exception:
+            pass
+
+        prompt = f"""다음은 경남 지역 뉴스 제목 {len(lines)}건입니다 (댓글 수가 표시된 기사는 민심 관심도가 높은 기사). 같은 사건/이슈를 묶어서 TOP 10을 만들어주세요.
 
 {titles_text}
+{corrections_text}
 
 다음 JSON 형식으로 답변 (코드블록 없이 순수 JSON만):
 {{

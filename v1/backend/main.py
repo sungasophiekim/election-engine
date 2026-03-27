@@ -40,6 +40,11 @@ app.include_router(strategy_router)
 def on_startup():
     from scheduler import start_scheduler
     start_scheduler()
+    try:
+        from telegram_bot import start_telegram_bot
+        start_telegram_bot()
+    except Exception as e:
+        print(f"[텔레그램] 봇 시작 실패: {e}", flush=True)
 
 
 @app.post("/api/admin/collect-now")
