@@ -477,7 +477,7 @@ def _build_daily_prompt(context: str, today_str: str, weekday_kr: str) -> str:
 16. 판단이 애매한 경우 "중립"이 아닌, 양면 분석을 하라 — "우리에게는 ~한 측면이 유리하나, ~한 측면에서 상대에게도 활용 여지 있음" 식으로 서술.
 17. 이재명 정부/여당 정책(분양·공급·예산 등)이 성과로 보도되면 → 우리유리. 동일 정책이 "선거 전 쏟아내기", "선심성", "포퓰리즘" 비판 프레임으로 보도되면 → 상대유리 (우리 정부 공격). 기사 톤을 반드시 확인하고 판단."""
 
-        system_msg = """You are generating a Korean election campaign strategy report for internal campaign use.
+    system_msg = """You are generating a Korean election campaign strategy report for internal campaign use.
 
 This is NOT a forecasting report. This is a diagnosis-first strategy report.
 Purpose: understand current political condition → interpret signals → recommend strategic actions.
