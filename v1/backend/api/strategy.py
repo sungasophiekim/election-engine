@@ -258,9 +258,62 @@ def _save_daily_cache(today: str, data: dict):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+import threading
+
+_generating = {"daily": False, "weekly": False}
+
+
+def _generate_daily_sync():
+    """백그라운드에서 데일리 리포트 생성"""
+    global _generating
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        snap = _load_snap()
+        context = _build_daily_context(snap)
+        _ensure_env()
+
+        import anthropic
+        client = anthropic.Anthropic()
+
+        today_str = datetime.now().strftime("%m/%d")
+        weekday_kr = ["월","화","수","목","금","토","일"][datetime.now().weekday()]
+
+        prompt, system_msg = _build_daily_prompt(context, today_str, weekday_kr)
+
+        resp = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=16000,
+            system=system_msg,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        data = _parse_json(text)
+        data["generated_at"] = datetime.now().isoformat()
+        data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
+        data["date"] = today
+
+        if not data.get("error"):
+            _cache["daily"]["date"] = today
+            _cache["daily"]["data"] = data
+            _save_daily_cache(today, data)
+            print(f"[Strategy] 데일리 리포트 생성 완료", flush=True)
+        else:
+            _cache["daily"]["data"] = data
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        _cache["daily"]["data"] = {"error": str(e), "generated_at": datetime.now().isoformat()}
+    finally:
+        _generating["daily"] = False
+
+
 @router.get("/daily-briefing")
 def daily_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
+
+    # 생성 중이면 상태 반환
+    if _generating["daily"]:
+        return {"status": "generating", "message": "리포트 생성 중... (30~60초)"}
 
     # 1. 메모리 캐시 확인
     if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
@@ -273,18 +326,15 @@ def daily_briefing(force: bool = False):
         _cache["daily"]["data"] = file_cache
         return file_cache
 
-    snap = _load_snap()
-    context = _build_daily_context(snap)
-    _ensure_env()
+    # 3. 캐시 없음 → 백그라운드 생성 시작
+    if not _generating["daily"]:
+        _generating["daily"] = True
+        threading.Thread(target=_generate_daily_sync, daemon=True).start()
+    return {"status": "generating", "message": "리포트 생성 중... (30~60초)"}
 
-    try:
-        import anthropic
-        client = anthropic.Anthropic()
 
-        today_str = datetime.now().strftime("%m/%d")
-        weekday_kr = ["월","화","수","목","금","토","일"][datetime.now().weekday()]
-
-        prompt = f"""{context}
+def _build_daily_prompt(context: str, today_str: str, weekday_kr: str) -> str:
+    return f"""{context}
 
 당신은 김경수 경남도지사 캠프의 전략 총 책임자입니다.
 이것은 예측 리포트가 아닙니다. 진단 중심 전략 리포트입니다.
@@ -466,30 +516,7 @@ REACTION DATA: 반응지수는 실제 블로그/카페/유튜브댓글/커뮤니
 - executive_summary에 24시간 흐름 요약 포함
 
 OUTPUT: Valid JSON only. No markdown, no code blocks. Start with { end with }. Write in Korean. Calm, sharp, execution-oriented tone."""
-
-        resp = client.messages.create(
-            model="claude-opus-4-6",
-            max_tokens=16000,
-            system=system_msg,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = resp.content[0].text.strip()
-        data = _parse_json(text)
-        data["generated_at"] = datetime.now().isoformat()
-        data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
-        data["date"] = today
-
-        # 에러가 아닐 때만 캐시 + 파일 저장
-        if not data.get("error"):
-            _cache["daily"]["date"] = today
-            _cache["daily"]["data"] = data
-            _save_daily_cache(today, data)
-        return data
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"error": str(e), "generated_at": datetime.now().isoformat()}
+    return prompt, system_msg
 
 
 @router.get("/daily-reports")

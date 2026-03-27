@@ -59,17 +59,36 @@ def _get_token() -> str:
     return token
 
 
+_bot_started = False
+
 def start_telegram_bot():
-    """텔레그램 봇 폴링 시작 (백그라운드 스레드)"""
+    """텔레그램 봇 폴링 시작 (백그라운드 스레드) — 중복 실행 방지"""
+    global _bot_started
+    if _bot_started:
+        print("[텔레그램] 봇 이미 실행 중 — 중복 시작 방지", flush=True)
+        return
+    _bot_started = True
+
     token = _get_token()
     if not token:
         print("[텔레그램] 봇 토큰 없음 — 봇 비활성", flush=True)
+        _bot_started = False
         return
 
     def _poll():
         base = f"https://api.telegram.org/bot{token}"
         offset = 0
-        print(f"[텔레그램] 봇 시작", flush=True)
+        # 시작 시 pending updates 건너뛰기 (중복 응답 방지)
+        try:
+            resp = httpx.get(f"{base}/getUpdates", params={"offset": -1, "timeout": 0}, timeout=5)
+            data = resp.json()
+            updates = data.get("result", [])
+            if updates:
+                offset = updates[-1]["update_id"] + 1
+                print(f"[텔레그램] {len(updates)}건 pending 건너뜀 (offset={offset})", flush=True)
+        except Exception:
+            pass
+        print(f"[텔레그램] 봇 시작 (offset={offset})", flush=True)
 
         while True:
             try:
