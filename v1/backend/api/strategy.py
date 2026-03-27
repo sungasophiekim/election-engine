@@ -104,6 +104,43 @@ def _build_daily_context(snap: dict) -> str:
     polls = _load_polls()
     latest_poll = polls[-1] if polls else {}
     history = _load_history()[-7:]
+    history_24h = _load_history()[-24:]  # 최근 24시간
+
+    # 24시간 지수 흐름 분석
+    h24_analysis = ""
+    if len(history_24h) >= 2:
+        issue_vals = [h.get("issue_index", 50) for h in history_24h]
+        reaction_vals = [h.get("reaction_index", 50) for h in history_24h]
+        pandse_vals = [h.get("pandse", 50) for h in history_24h]
+
+        issue_min, issue_max = min(issue_vals), max(issue_vals)
+        reaction_min, reaction_max = min(reaction_vals), max(reaction_vals)
+        pandse_min, pandse_max = min(pandse_vals), max(pandse_vals)
+
+        # 최고/최저 시점의 이슈 클러스터
+        issue_max_idx = issue_vals.index(issue_max)
+        issue_min_idx = issue_vals.index(issue_min)
+        max_entry = history_24h[issue_max_idx]
+        min_entry = history_24h[issue_min_idx]
+
+        max_clusters = max_entry.get("top_clusters", [])
+        min_clusters = min_entry.get("top_clusters", [])
+        max_cluster_text = ", ".join(f"{c['name']}({c['side']})" for c in max_clusters[:3]) if max_clusters else "없음"
+        min_cluster_text = ", ".join(f"{c['name']}({c['side']})" for c in min_clusters[:3]) if min_clusters else "없음"
+
+        h24_analysis = f"""### 24시간 지수 흐름 ({history_24h[0].get('date','')} ~ {history_24h[-1].get('date','')}, {len(history_24h)}건)
+- 이슈지수: {issue_min:.1f}pt ~ {issue_max:.1f}pt (현재 {issue_vals[-1]:.1f}pt)
+  - 최고 시점({max_entry.get('date','')}, {issue_max:.1f}pt): {max_cluster_text}
+  - 최저 시점({min_entry.get('date','')}, {issue_min:.1f}pt): {min_cluster_text}
+- 반응지수: {reaction_min:.1f}pt ~ {reaction_max:.1f}pt (현재 {reaction_vals[-1]:.1f}pt)
+- 판세지수: {pandse_min:.1f}pt ~ {pandse_max:.1f}pt (현재 {pandse_vals[-1]:.1f}pt)
+
+시간별 상세:
+""" + "\n".join(
+            f"  {h.get('date','')}: 이슈{h.get('issue_index',50):.1f} 반응{h.get('reaction_index',50):.1f} 판세{h.get('pandse',50):.1f}" +
+            (f" | TOP: {', '.join(c['name'] for c in h.get('top_clusters',[])[:2])}" if h.get('top_clusters') else "")
+            for h in history_24h
+        )
 
     kim_m = sum(v.get("mention_count", 0) for k, v in buzz.items() if "김경수" in k)
     park_m = sum(v.get("mention_count", 0) for k, v in buzz.items() if "박완수" in k)
@@ -184,7 +221,9 @@ def _build_daily_context(snap: dict) -> str:
 - 이슈: {snap.get('ai_issue_summary', '없음')}
 - 반응: {snap.get('ai_reaction_summary', '없음')}
 
-### 최근 7회 지표 추이
+{h24_analysis}
+
+### 최근 7회 지표 추이 (일별)
 {trend_text}
 
 ### 구조적 배경
@@ -419,6 +458,12 @@ STRATEGY LOGIC — condition-based:
 - Do NOT recommend broad campaign actions when signal is narrow.
 
 REACTION DATA: 반응지수는 실제 블로그/카페/유튜브댓글/커뮤니티(디시/에펨/클리앙/더쿠/네이트판/82쿡/경남맘카페)/뉴스댓글에서 수집한 실데이터입니다. 반응 상세 데이터의 소스별 감성을 진단에 적극 활용하세요.
+
+24시간 지수 흐름: 이슈지수·반응지수·판세지수의 24시간 변동 추이가 제공됩니다. 반드시 활용하세요:
+- 각 지수의 최소~최대 범위를 언급
+- 지수가 가장 높았던/낮았던 시점에 어떤 이슈가 있었는지 분석
+- 지수 변동이 크면 원인 이슈를 특정하고, 안정적이면 "변동 없음"으로 진단
+- executive_summary에 24시간 흐름 요약 포함
 
 OUTPUT: Valid JSON only. No markdown, no code blocks. Start with { end with }. Write in Korean. Calm, sharp, execution-oriented tone."""
 

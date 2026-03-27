@@ -925,13 +925,22 @@ def _save_indices_history(snap: dict):
     cr = snap.get("cluster_reaction", {})
     pandse = snap.get("turnout", {}).get("correction", {}).get("pandse_index", 50)
 
+    # TOP 5 클러스터 요약 (이슈 흐름 추적용)
+    clusters = snap.get("news_clusters", [])
+    top_clusters = [
+        {"name": c.get("name", ""), "side": c.get("side", ""), "count": c.get("count", 0), "sentiment": c.get("sentiment", 0)}
+        for c in clusters[:5]
+    ]
+
     entry = {
         "timestamp": datetime.now().isoformat(),
         "date": datetime.now().strftime("%m.%d %H:%M"),
         "issue_index": ci.get("issue_index", 50),
         "reaction_index": cr.get("reaction_index", 50),
         "pandse": pandse,
-        # 하위 호환: 차트에서 사용
+        "top_clusters": top_clusters,
+        "ai_issue_summary": snap.get("ai_issue_summary", ""),
+        # 하위 호환
         "issue_kim": ci.get("kim_count", 0),
         "issue_park": ci.get("park_count", 0),
         "reaction_kim": cr.get("kim_sentiment", 0),
@@ -1087,13 +1096,8 @@ def _scheduler_loop():
     """메인 루프"""
     print(f"[{_now()}] === 스케줄러 v2 시작 (광역수집 + AI분류) ===", flush=True)
 
-    # 시작 시 즉시 전체 갱신 실행
-    try:
-        _update_all()
-    except Exception as e:
-        print(f"[{_now()}] _scheduler_loop 내 _update_all 크래시: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
+    # 시작 시 즉시 실행 생략 — 지수 안정성을 위해 정시 갱신만 실행
+    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 정시(60분 주기)에서 갱신", flush=True)
 
     tick = 0
     while True:
@@ -1102,12 +1106,21 @@ def _scheduler_loop():
 
         # 60분마다 전체 갱신 (이슈수집 → 반응수집 포함)
         if tick % 60 == 0:
-            _update_all()
+            try:
+                print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
+                _update_all()
+            except Exception as e:
+                print(f"[{_now()}] 정기 갱신 에러 (스레드 유지): {e}", flush=True)
+                import traceback
+                traceback.print_exc()
 
         # 매일 08:00 스냅샷
-        now = datetime.now()
-        if now.hour == 8 and now.minute == 0:
-            _daily_snapshot()
+        try:
+            now = datetime.now()
+            if now.hour == 8 and now.minute == 0:
+                _daily_snapshot()
+        except Exception:
+            pass
 
 
 def start_scheduler():
