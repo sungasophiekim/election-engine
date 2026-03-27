@@ -9,6 +9,21 @@ from datetime import datetime
 
 CORRECTIONS_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "side_corrections.json"
 ENRICHMENT_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "enrichment_snapshot.json"
+CUSTOM_KEYWORDS_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "custom_keywords.json"
+
+
+def _load_custom_keywords() -> list:
+    try:
+        with open(CUSTOM_KEYWORDS_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _save_custom_keywords(keywords: list):
+    CUSTOM_KEYWORDS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CUSTOM_KEYWORDS_PATH, "w") as f:
+        json.dump(keywords, f, ensure_ascii=False, indent=2)
 
 
 def _load_corrections() -> dict:
@@ -96,6 +111,12 @@ def _handle_command(text: str) -> str:
         return _cmd_add_rule(text)
     elif text.startswith("/규칙목록") or text.startswith("/rules"):
         return _cmd_list_rules()
+    elif text.startswith("/키워드추가") or text.startswith("/addkw"):
+        return _cmd_add_keyword(text)
+    elif text.startswith("/키워드삭제") or text.startswith("/delkw"):
+        return _cmd_del_keyword(text)
+    elif text.startswith("/키워드목록") or text.startswith("/keywords"):
+        return _cmd_list_keywords()
     elif text.startswith("/최근이슈") or text.startswith("/issues"):
         return _cmd_recent_issues()
     elif text.startswith("/지수") or text.startswith("/index"):
@@ -187,6 +208,59 @@ def _cmd_list_rules() -> str:
     return "\n".join(lines)
 
 
+def _cmd_add_keyword(text: str) -> str:
+    """/키워드추가 키워드"""
+    kw = text.replace("/키워드추가", "").replace("/addkw", "").strip()
+    if not kw or len(kw) < 2:
+        return "❌ 형식: /키워드추가 김경수 메가시티"
+
+    keywords = _load_custom_keywords()
+    # 중복 체크
+    existing = [k["keyword"] for k in keywords]
+    if kw in existing:
+        return f"⚠️ 이미 등록된 키워드: {kw}"
+
+    keywords.append({
+        "keyword": kw,
+        "added_at": datetime.now().isoformat(),
+        "source": "telegram",
+    })
+    keywords = keywords[-20:]  # 최대 20개
+    _save_custom_keywords(keywords)
+
+    return f"✅ 키워드 추가됨\n🔍 {kw}\n\n다음 반응수집 시 트래킹 시작됩니다.\n현재 등록: {len(keywords)}개"
+
+
+def _cmd_del_keyword(text: str) -> str:
+    """/키워드삭제 키워드"""
+    kw = text.replace("/키워드삭제", "").replace("/delkw", "").strip()
+    if not kw:
+        return "❌ 형식: /키워드삭제 김경수 메가시티"
+
+    keywords = _load_custom_keywords()
+    before = len(keywords)
+    keywords = [k for k in keywords if k["keyword"] != kw]
+    _save_custom_keywords(keywords)
+
+    if len(keywords) < before:
+        return f"✅ 키워드 삭제됨: {kw}\n현재 등록: {len(keywords)}개"
+    return f"⚠️ 해당 키워드 없음: {kw}"
+
+
+def _cmd_list_keywords() -> str:
+    """/키워드목록"""
+    keywords = _load_custom_keywords()
+    if not keywords:
+        return "📋 등록된 커스텀 키워드 없음\n\n/키워드추가 키워드명 으로 추가"
+
+    lines = ["📋 <b>커스텀 트래킹 키워드</b>"]
+    for i, k in enumerate(keywords, 1):
+        added = k.get("added_at", "")[:10]
+        lines.append(f"{i}. 🔍 {k['keyword']} ({added})")
+    lines.append(f"\n총 {len(keywords)}개 · 반응수집 시 자동 트래킹")
+    return "\n".join(lines)
+
+
 def _cmd_recent_issues() -> str:
     """/최근이슈 — 현재 TOP 10 클러스터"""
     snap = _load_enrichment()
@@ -233,15 +307,21 @@ D-{corr.get('d_day', '?')}
 def _cmd_help() -> str:
     return """🤖 <b>김경수 캠프 AI 어시스턴트</b>
 
-<b>이슈 관리</b>
+<b>모니터링</b>
 /최근이슈 — TOP 10 이슈 확인
-/수정 이슈명 → 우리유리 | 이유
 /지수 — 3개 지수 현황
 
-<b>규칙 관리</b>
+<b>이슈 판정 수정</b>
+/수정 이슈명 → 우리유리 | 이유
 /규칙 규칙내용 — 영구 규칙 추가
 /규칙목록 — 등록된 규칙 확인
 
+<b>키워드 트래킹</b>
+/키워드추가 키워드명 — 반응 추적 시작
+/키워드삭제 키워드명
+/키워드목록 — 등록된 키워드 확인
+
 <b>예시</b>
-/수정 경남 수출 신기록 → 상대유리 | 현직 도정 성과
+/수정 경남 수출 → 상대유리 | 현직 성과
+/키워드추가 김경수 메가시티
 /규칙 경남 SOC 준공은 항상 상대유리"""

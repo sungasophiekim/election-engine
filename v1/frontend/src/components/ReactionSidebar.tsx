@@ -113,8 +113,23 @@ export default function ReactionSidebar() {
                     </div>
                   )}
 
-                  {/* 대응 Tip (상위 3개만) */}
-                  {isTop3 && r.tip && (
+                  {/* 시민 의견 (AI 본문 분석) */}
+                  {r.opinions?.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      {r.opinions.slice(0, isTop3 ? 3 : 1).map((op: any, oi: number) => (
+                        <div key={oi} className="text-[7px] text-gray-400 flex gap-1">
+                          <span className={`shrink-0 ${op.sentiment > 0 ? "text-emerald-500" : op.sentiment < 0 ? "text-red-400" : "text-gray-500"}`}>
+                            {op.sentiment > 0 ? "👍" : op.sentiment < 0 ? "👎" : "•"}
+                          </span>
+                          <span className="text-gray-500">{op.community}</span>
+                          <span className="text-gray-300">{op.opinion}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 대응 Tip (상위 3개만, 시민 의견 없을 때) */}
+                  {isTop3 && r.tip && !r.opinions?.length && (
                     <div className="mt-1.5 text-[7px] text-cyan-400/70 leading-relaxed">
                       💡 {r.tip}
                     </div>

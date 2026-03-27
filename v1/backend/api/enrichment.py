@@ -136,6 +136,9 @@ def reaction_radar():
             if not segments:
                 segments.append({"label": "전체", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
 
+        # AI 시민 의견 (본문 분석 결과)
+        ai_opinions = cr.get("sources", {}).get("community", {}).get("ai_opinions", [])
+
         items.append({
             "name": name,
             "count": count,
@@ -146,7 +149,48 @@ def reaction_radar():
             "community_expected": c.get("community_expected", "중립"),
             "tip": c.get("tip", ""),
             "segments": segments,
+            "opinions": ai_opinions[:3],
         })
+
+    # 커스텀 키워드 반응 추가 (cluster_reaction.details에서)
+    cluster_names = {c.get("name", "") for c in clusters[:10]}
+    for det in snap.get("cluster_reaction", {}).get("details", []):
+        kw = det.get("keyword", "")
+        if kw in cluster_names:
+            continue  # 이미 클러스터로 포함됨
+        if det.get("side") == "커스텀":
+            sources = det.get("sources", {})
+            comm = sources.get("community", {})
+            total_mentions = (sources.get("blog", {}).get("count", 0) +
+                            sources.get("cafe", {}).get("count", 0) +
+                            comm.get("mentions", 0))
+            avg_sent = sum(s.get("net_sentiment", 0) for s in sources.values() if isinstance(s, dict)) / max(len(sources), 1)
+
+            segments = []
+            for cb in comm.get("breakdown", []):
+                demo = cb.get("demographic", "전체")
+                segments.append({
+                    "label": demo, "type": "연령",
+                    "reaction": "높음" if cb.get("mentions", 0) >= 10 else "보통" if cb.get("mentions", 0) >= 3 else "낮음",
+                    "tone": "긍정" if cb.get("sentiment", 0) > 0.1 else "부정" if cb.get("sentiment", 0) < -0.1 else "혼합",
+                    "mentions": cb.get("mentions", 0),
+                    "communities": [cb.get("name", "")],
+                })
+            if not segments:
+                segments.append({"label": "전체", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+
+            items.append({
+                "name": kw,
+                "count": 0,
+                "comments": 0,
+                "reaction_score": total_mentions,
+                "side": "커스텀",
+                "sentiment": round(avg_sent * 100),
+                "community_expected": "혼합",
+                "tip": "",
+                "segments": segments,
+                "is_custom": True,
+            })
 
     items.sort(key=lambda x: x["reaction_score"], reverse=True)
 

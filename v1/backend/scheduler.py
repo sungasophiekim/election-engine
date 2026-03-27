@@ -82,6 +82,62 @@ def _classify_article(title: str) -> str:
     return ""
 
 
+def _ai_community_sentiment(posts: list, keyword: str) -> list:
+    """커뮤니티 본문에 대한 AI 감성 분석 (Haiku 배치)"""
+    if not posts:
+        return []
+    try:
+        import anthropic, json as _json
+        client = anthropic.Anthropic()
+
+        posts_text = "\n".join(
+            f"{i+1}. [{p['community_name']}({p['demographic']})] {p['title']}\n   {p['body'][:150]}"
+            for i, p in enumerate(posts[:15])
+        )
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": f"""다음은 한국 온라인 커뮤니티 게시글 {len(posts[:15])}건입니다. 키워드: "{keyword}"
+
+{posts_text}
+
+각 게시글의 감성을 분석하세요. JSON 배열로만 답변 (코드블록 없이):
+[{{"idx": 1, "sentiment": -0.5~+0.5 (김경수 관점, 긍정이면+), "summary": "시민 의견 핵심 1줄 (10자 이내)"}}]
+
+규칙:
+- sentiment: -0.5(매우 부정) ~ +0.5(매우 긍정). 중립이면 0.
+- summary: 해당 글의 시민 의견을 한마디로. "찬성", "분노", "기대", "걱정" 등
+- 정치와 무관한 글은 sentiment: 0, summary: "무관"
+"""}],
+        )
+        text = resp.content[0].text.strip()
+        if text.startswith("["):
+            items = _json.loads(text)
+        else:
+            start = text.find("[")
+            end = text.rfind("]") + 1
+            items = _json.loads(text[start:end]) if start >= 0 else []
+
+        # 원본 게시글 정보와 병합
+        results = []
+        for item in items:
+            idx = item.get("idx", 0) - 1
+            if 0 <= idx < len(posts):
+                results.append({
+                    "community_id": posts[idx]["community_id"],
+                    "community_name": posts[idx]["community_name"],
+                    "demographic": posts[idx]["demographic"],
+                    "title": posts[idx]["title"],
+                    "sentiment": item.get("sentiment", 0),
+                    "summary": item.get("summary", ""),
+                })
+        return results
+    except Exception as e:
+        print(f"[{_now()}] AI 커뮤니티 감성 분석 실패: {e}", flush=True)
+        return []
+
+
 def _fetch_comment_counts(articles: list):
     """네이버 뉴스 기사별 댓글 수 수집 (API 기반, 본문/댓글 내용 미수집)"""
     import requests as _req
@@ -704,13 +760,26 @@ def _collect_cluster_reactions(clusters: list) -> dict:
     for c in clusters[:10]:
         name = c.get("name", "")
         if name:
-            # 짧은 핵심 키워드로 변환 (20자 이내 → 그대로 사용)
-            keywords.append({"keyword": name, "side": c.get("side", "중립")})
+            keywords.append({"keyword": name, "side": c.get("side", "중립"), "source": "cluster"})
+
+    # 커스텀 키워드 추가 (텔레그램에서 등록)
+    try:
+        custom_kw_path = Path(__file__).resolve().parent.parent.parent / "data" / "custom_keywords.json"
+        if custom_kw_path.exists():
+            with open(custom_kw_path) as f:
+                custom_kws = json.load(f)
+            existing = {k["keyword"] for k in keywords}
+            for ck in custom_kws:
+                kw = ck.get("keyword", "")
+                if kw and kw not in existing:
+                    keywords.append({"keyword": kw, "side": "커스텀", "source": "custom"})
+    except Exception:
+        pass
 
     if not keywords:
         return {}
 
-    print(f"[{_now()}] 반응수집 시작: {len(keywords)}개 키워드", flush=True)
+    print(f"[{_now()}] 반응수집 시작: {len(keywords)}개 키워드 (클러스터 {sum(1 for k in keywords if k.get('source')=='cluster')} + 커스텀 {sum(1 for k in keywords if k.get('source')=='custom')})", flush=True)
 
     # 소스별 수집 결과
     all_reactions = []
@@ -797,6 +866,30 @@ def _collect_cluster_reactions(clusters: list) -> dict:
             }
         except Exception as e:
             print(f"[{_now()}] 커뮤니티 수집 실패({kw[:10]}): {e}", flush=True)
+
+        # 3.5 공개 커뮤니티 본문 크롤링 + AI 감성 분석 (DC/에펨/클리앙/더쿠/네이트판)
+        try:
+            from collectors.community_collector import scrape_communities_for_keyword
+            scraped = scrape_communities_for_keyword(kw, max_posts_per_comm=3)
+            if scraped:
+                ai_sentiments = _ai_community_sentiment(scraped, kw)
+                # breakdown에 AI 감성 반영
+                for bd in comm_breakdown:
+                    cid = bd["id"]
+                    ai_items = [s for s in ai_sentiments if s.get("community_id") == cid]
+                    if ai_items:
+                        avg = sum(s["sentiment"] for s in ai_items) / len(ai_items)
+                        bd["sentiment"] = round(avg, 3)  # AI 감성으로 덮어쓰기
+                        bd["ai_analyzed"] = True
+                        bd["sample_opinions"] = [s.get("summary", "") for s in ai_items[:2]]
+                # community sources에도 AI 분석 결과 추가
+                result["sources"]["community"]["ai_posts"] = len(ai_sentiments)
+                result["sources"]["community"]["ai_opinions"] = [
+                    {"community": s["community_name"], "opinion": s.get("summary", ""), "sentiment": s["sentiment"]}
+                    for s in ai_sentiments[:5]
+                ]
+        except Exception as e:
+            print(f"[{_now()}] 커뮤니티 본문 분석 실패({kw[:10]}): {e}", flush=True)
 
         # 4. 뉴스 댓글
         try:
