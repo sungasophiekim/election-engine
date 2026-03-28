@@ -477,70 +477,43 @@ SCRAPE_COMMUNITIES = set(_SCRAPE_CONFIGS.keys())
 
 
 def scrape_community_posts(keyword: str, community_id: str, max_posts: int = 5) -> list[dict]:
-    """공개 커뮤니티에서 검색 결과 본문 크롤링 (제목 + 본문 미리보기)"""
-    config = _SCRAPE_CONFIGS.get(community_id)
-    if not config:
+    """네이버 검색 API로 커뮤니티 게시글 제목 + 본문 미리보기 수집"""
+    comm = COMMUNITIES.get(community_id)
+    if not comm:
         return []
 
-    comm = COMMUNITIES.get(community_id, {})
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "ko-KR,ko;q=0.9",
-    }
+    domain = comm["domain"]
+    search_extra = comm.get("search_suffix", "")
+    if search_extra:
+        items, _ = _naver_search_site(f"{keyword} {search_extra}", domain, display=max_posts * 2)
+    else:
+        items, _ = _naver_search_site(keyword, domain, display=max_posts * 2)
 
-    try:
-        from urllib.parse import quote
-        url = config["search_url"].format(query=quote(keyword))
-        resp = httpx.get(url, headers=headers, timeout=10, follow_redirects=True)
-        if resp.status_code != 200:
-            return []
+    posts = []
+    for it in items[:max_posts]:
+        title = it.get("title", "").strip()
+        desc = it.get("description", "").strip()
+        if title and len(title) > 5 and desc and len(desc) > 10:
+            posts.append({
+                "title": title[:100],
+                "body": desc[:300],
+                "community_id": community_id,
+                "community_name": comm.get("name", community_id),
+                "demographic": comm.get("demographic", "전체"),
+            })
 
-        text = resp.text
-        posts = []
-
-        # 제목 + 본문 미리보기 추출 (HTML 파싱 — 간단한 regex 기반)
-        # 검색 결과 페이지에서 제목과 본문 미리보기를 추출
-        title_pattern = re.compile(r'(?:class=["\'][^"\']*(?:title|subject|tit|sch_res_title)[^"\']*["\'][^>]*>)\s*(?:<a[^>]*>)?\s*([^<]{5,100})', re.I)
-        body_pattern = re.compile(r'(?:class=["\'][^"\']*(?:content|txt|body|desc|sch_res_txt|list_content|xe_content)[^"\']*["\'][^>]*>)\s*([^<]{10,300})', re.I)
-
-        titles = title_pattern.findall(text)
-        bodies = body_pattern.findall(text)
-
-        for i in range(min(max_posts, len(titles))):
-            title = re.sub(r'<[^>]+>', '', titles[i]).strip()
-            body = re.sub(r'<[^>]+>', '', bodies[i]).strip() if i < len(bodies) else ""
-            if title and len(title) > 3:
-                posts.append({
-                    "title": title[:100],
-                    "body": body[:300],
-                    "community_id": community_id,
-                    "community_name": comm.get("name", community_id),
-                    "demographic": comm.get("demographic", "전체"),
-                })
-
-        return posts
-
-    except Exception as e:
-        return []
+    return posts
 
 
 def scrape_communities_for_keyword(keyword: str, max_posts_per_comm: int = 5) -> list[dict]:
-    """크롤링 가능한 모든 공개 커뮤니티에서 본문 수집"""
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    """주요 공개 커뮤니티에서 본문 미리보기 수집 (네이버 검색 API 기반)"""
     all_posts = []
-
-    with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {
-            pool.submit(scrape_community_posts, keyword, cid, max_posts_per_comm): cid
-            for cid in SCRAPE_COMMUNITIES
-        }
-        for f in as_completed(futures):
-            try:
-                posts = f.result(timeout=15)
-                all_posts.extend(posts)
-            except Exception:
-                pass
-
+    for cid in SCRAPE_COMMUNITIES:
+        try:
+            posts = scrape_community_posts(keyword, cid, max_posts_per_comm)
+            all_posts.extend(posts)
+        except Exception:
+            pass
     return all_posts
 
 
