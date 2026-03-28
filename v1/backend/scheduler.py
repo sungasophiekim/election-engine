@@ -1261,13 +1261,18 @@ def _ai_reaction_alert(prev: float, now: float, delta: float, reaction_data: dic
 
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=150,
+            max_tokens=200,
             messages=[{"role": "user", "content": f"""반응지수가 {prev:.1f}pt → {now:.1f}pt로 {delta:+.1f}pt {direction}했습니다.
 
-이슈별 민심 반응 (블로그/카페/커뮤니티/유튜브/뉴스댓글):
+이슈별 민심 반응 (소스별 감성: +긍정 -부정 0중립):
 {detail_text}
 
-변동 원인을 2줄 이내, 짧은 단어 위주로 설명. 어떤 이슈의 어떤 채널에서 민심이 변했는지 구체적으로."""}],
+아래 3가지를 2~3줄로 설명:
+1. 어떤 이슈에서 반응이 급증/감소했는지
+2. 그 반응이 긍정적인지, 부정적인지, 중립인지 (감성 수치 기반)
+3. 어떤 채널(블로그/커뮤니티/유튜브/댓글)에서 감성 변화가 두드러지는지
+
+짧은 단어 위주, 전략적 함의 포함."""}],
         )
         memo = resp.content[0].text.strip()
     except Exception:
