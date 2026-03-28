@@ -185,13 +185,16 @@ function DailyReport() {
           <h1 className="text-lg font-black text-gray-100 tracking-tight">경남도지사 선거 전략대응 리포트</h1>
           <div className="text-xs text-gray-500 mt-0.5">{today} | 선거 D-{dDay}일 | 캠프 내부 한정</div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-gray-600">{data.date || ""}</span>
-          <button onClick={generate} disabled={generating}
-            className="text-[9px] text-gray-500 hover:text-cyan-300 border border-gray-700 hover:border-cyan-800/50 px-2 py-0.5 rounded transition disabled:opacity-50">
-            {generating ? "생성 중..." : "새 리포트 생성"}
-          </button>
-        </div>
+        <span className="text-[9px] text-gray-600">{data.date || ""}</span>
+      </div>
+
+      {/* 생성 버튼 — 눈에 띄게 */}
+      <div className="flex items-center justify-between bg-gray-800/30 rounded-lg px-4 py-2.5">
+        <span className="text-[10px] text-gray-500">최신 데이터로 새 전략 리포트를 생성합니다 (Opus AI, 1~2분)</span>
+        <button onClick={generate} disabled={generating}
+          className="text-[11px] font-bold text-cyan-300 bg-cyan-900/40 border border-cyan-700/40 px-4 py-1.5 rounded-lg hover:bg-cyan-800/40 transition disabled:opacity-50 shrink-0">
+          {generating ? "AI 생성 중..." : "데일리 리포트 생성"}
+        </button>
       </div>
 
       {/* ── 0. Executive Summary ── */}
