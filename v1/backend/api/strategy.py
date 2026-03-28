@@ -308,29 +308,64 @@ def _generate_daily_sync():
 
 
 @router.get("/daily-briefing")
-def daily_briefing(force: bool = False):
-    today = datetime.now().strftime("%Y-%m-%d")
-
+def daily_briefing():
+    """최신 데일리 리포트 조회 (아카이브에서 로드, AI 호출 없음)"""
     # 생성 중이면 상태 반환
-    if _generating["daily"]:
-        return {"status": "generating", "message": "리포트 생성 중... (30~60초)"}
+    if _generating.get("daily"):
+        return {"status": "generating", "message": "리포트 생성 중... (1~2분)"}
 
-    # 1. 메모리 캐시 확인
-    if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
+    # 1. 메모리 캐시
+    if _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
         return _cache["daily"]["data"]
 
-    # 2. 파일 캐시 확인 (서버 재시작 후에도 유지)
-    file_cache = _load_daily_cache(today)
-    if file_cache:
-        _cache["daily"]["date"] = today
-        _cache["daily"]["data"] = file_cache
-        return file_cache
+    # 2. 아카이브에서 최신 리포트 로드
+    report_dir = LEGACY_DATA / "daily_reports"
+    if report_dir.exists():
+        files = sorted(report_dir.glob("*.json"), reverse=True)
+        for fp in files[:5]:
+            try:
+                with open(fp) as f:
+                    data = json.load(f)
+                if not data.get("error"):
+                    _cache["daily"]["date"] = fp.stem
+                    _cache["daily"]["data"] = data
+                    return data
+            except Exception:
+                continue
 
-    # 3. 캐시 없음 → 백그라운드 생성 시작
-    if not _generating["daily"]:
-        _generating["daily"] = True
-        threading.Thread(target=_generate_daily_sync, daemon=True).start()
-    return {"status": "generating", "message": "리포트 생성 중... (30~60초)"}
+    return {"status": "empty", "message": "생성된 리포트가 없습니다. '리포트 생성' 버튼을 눌러주세요."}
+
+
+@router.post("/daily-briefing/generate")
+def generate_daily_briefing():
+    """데일리 리포트 AI 생성 (수동 트리거) — 생성 후 아카이브 저장"""
+    if _generating.get("daily"):
+        return {"status": "generating", "message": "이미 생성 중입니다."}
+
+    _generating["daily"] = True
+    threading.Thread(target=_generate_daily_sync, daemon=True).start()
+    return {"status": "generating", "message": "리포트 생성 시작 (1~2분 소요)"}
+
+
+@router.get("/daily-reports")
+def list_daily_reports():
+    """아카이브된 데일리 리포트 목록"""
+    report_dir = LEGACY_DATA / "daily_reports"
+    if not report_dir.exists():
+        return {"reports": []}
+    reports = []
+    for fp in sorted(report_dir.glob("*.json"), reverse=True)[:30]:
+        try:
+            with open(fp) as f:
+                data = json.load(f)
+            reports.append({
+                "date": fp.stem,
+                "generated_at": data.get("generated_at", ""),
+                "summary": data.get("executive_summary", data.get("summary", ""))[:100],
+            })
+        except Exception:
+            continue
+    return {"reports": reports}
 
 
 def _build_daily_prompt(context: str, today_str: str, weekday_kr: str) -> str:

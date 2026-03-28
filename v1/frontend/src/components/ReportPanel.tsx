@@ -1,8 +1,8 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { getDailyBriefing, getWeeklyBriefing, getTrainingData } from "@/lib/api";
+import { getDailyBriefing, generateDailyBriefing, getWeeklyBriefing, getTrainingData } from "@/lib/api";
 import { ResearchPage } from "./ResearchTab";
 import StrategyMode from "./strategy/StrategyMode";
 
@@ -121,18 +121,44 @@ function GenerateBtn({ loading, onClick, label }: { loading: boolean; onClick: (
 function DailyReport() {
   const indices = useStore((s) => s.indices);
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const dDay = indices?.pandse?.d_day || "?";
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const dDay = indices?.pandse?.d_day || data?.d_day || "?";
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 
-  const generate = useCallback(async (force = false) => {
-    setLoading(true);
-    try { setData(await getDailyBriefing(force)); } catch (e) { setData({ error: String(e) }); }
-    finally { setLoading(false); }
+  // 열면 아카이브에서 최신 로드 (AI 호출 없음)
+  useEffect(() => {
+    getDailyBriefing()
+      .then((d) => { if (d.status !== "empty") setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!data && !loading) return <GenerateBtn loading={false} onClick={() => generate()} label="데일리 리포트 생성" />;
-  if (loading) return <GenerateBtn loading={true} onClick={() => {}} label="" />;
+  // 수동 생성 (AI 호출)
+  const generate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const result = await generateDailyBriefing();
+      if (result && !result.error) setData(result);
+      else setData(result);
+    } catch (e) { setData({ error: String(e) }); }
+    finally { setGenerating(false); }
+  }, []);
+
+  if (loading) return <div className="py-12 text-center text-gray-500 text-sm animate-pulse">아카이브 로딩 중...</div>;
+
+  // 아카이브 없음 → 생성 안내
+  if (!data || data.status === "empty") return (
+    <div className="py-12 text-center">
+      <div className="text-xs text-gray-500 mb-4">{data?.message || "생성된 리포트가 없습니다."}</div>
+      <button onClick={generate} disabled={generating}
+        className="text-sm font-bold text-cyan-300 bg-cyan-900/30 border border-cyan-700/40 px-6 py-3 rounded-lg hover:bg-cyan-800/40 transition disabled:opacity-50">
+        {generating ? "AI 생성 중... (1~2분)" : "데일리 리포트 생성"}
+      </button>
+    </div>
+  );
+
+  if (generating) return <GenerateBtn loading={true} onClick={() => {}} label="" />;
   if (data?.error) return (
     <div className="py-8 text-center">
       <div className="text-sm text-red-400 mb-3">생성 실패: {data.error}</div>
@@ -159,7 +185,13 @@ function DailyReport() {
           <h1 className="text-lg font-black text-gray-100 tracking-tight">경남도지사 선거 전략대응 리포트</h1>
           <div className="text-xs text-gray-500 mt-0.5">{today} | 선거 D-{dDay}일 | 캠프 내부 한정</div>
         </div>
-        <span className="text-[9px] text-gray-600">1일 1회 | Opus 4.6</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-gray-600">{data.date || ""}</span>
+          <button onClick={generate} disabled={generating}
+            className="text-[9px] text-gray-500 hover:text-cyan-300 border border-gray-700 hover:border-cyan-800/50 px-2 py-0.5 rounded transition disabled:opacity-50">
+            {generating ? "생성 중..." : "새 리포트 생성"}
+          </button>
+        </div>
       </div>
 
       {/* ── 0. Executive Summary ── */}
