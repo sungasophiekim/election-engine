@@ -162,7 +162,7 @@ function DailyReport() {
   if (data?.error) return (
     <div className="py-8 text-center">
       <div className="text-sm text-red-400 mb-3">생성 실패: {data.error}</div>
-      <button onClick={() => generate(true)} className="text-xs text-cyan-300 underline">재시도</button>
+      <button onClick={() => generate()} className="text-xs text-cyan-300 underline">재시도</button>
     </div>
   );
 
@@ -445,7 +445,7 @@ function WeeklyReport() {
   if (data?.error) return (
     <div className="py-8 text-center">
       <div className="text-sm text-red-400 mb-3">생성 실패: {data.error}</div>
-      <button onClick={() => generate(true)} className="text-xs text-cyan-300 underline">재시도</button>
+      <button onClick={() => generate()} className="text-xs text-cyan-300 underline">재시도</button>
     </div>
   );
 
