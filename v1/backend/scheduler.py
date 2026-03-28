@@ -1101,9 +1101,8 @@ def _collect_cluster_reactions(clusters: list) -> dict:
     total_count = len(our_sentiments) + len(opp_sentiments)
     if total_count > 0:
         avg_score = our_score / total_count  # -1 ~ +1 범위
-        # 50pt 기준: avg_score를 ±15pt 범위로 매핑
-        reaction_index = round(50 + avg_score * 15, 1)
-        reaction_index = max(35, min(65, reaction_index))
+        # 50pt 기준: avg_score × 25 → 이론적 25~75pt, 극단적 상황에서만 넓은 범위
+        reaction_index = round(50 + avg_score * 25, 1)
     else:
         reaction_index = 50.0
 
