@@ -12,7 +12,31 @@ CORRECTIONS_PATH = _DATA / "side_corrections.json"
 ENRICHMENT_PATH = _DATA / "enrichment_snapshot.json"
 CUSTOM_KEYWORDS_PATH = _DATA / "custom_keywords.json"
 HISTORY_PATH = _DATA / "indices_history.json"
+WHITELIST_PATH = _DATA / "telegram_whitelist.json"
 DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "https://election-engine.onrender.com")
+
+
+def _load_whitelist() -> dict:
+    """화이트리스트 로드 — user_ids + chat_ids"""
+    try:
+        with open(WHITELIST_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {"user_ids": [], "chat_ids": [], "open": True}  # 초기엔 open=True
+
+
+def _save_whitelist(wl: dict):
+    _DATA.mkdir(parents=True, exist_ok=True)
+    with open(WHITELIST_PATH, "w") as f:
+        json.dump(wl, f, ensure_ascii=False, indent=2)
+
+
+def _is_allowed(user_id: int, chat_id: int) -> bool:
+    """화이트리스트 체크 — open=True면 모두 허용, False면 등록된 ID만"""
+    wl = _load_whitelist()
+    if wl.get("open", True):
+        return True
+    return user_id in wl.get("user_ids", []) or chat_id in wl.get("chat_ids", [])
 
 # ── 대화 상태 관리 (chat_id → state) ──
 _user_state: dict = {}
@@ -640,15 +664,21 @@ def start_telegram_bot():
                     cb = update.get("callback_query")
                     if cb:
                         chat_id = cb["message"]["chat"]["id"]
+                        user_id = cb.get("from", {}).get("id", 0)
                         msg_id = cb["message"]["message_id"]
                         cb_data = cb.get("data", "")
+
+                        # 화이트리스트 체크
+                        if not _is_allowed(user_id, chat_id):
+                            httpx.post(f"{base}/answerCallbackQuery", json={"callback_query_id": cb["id"]}, timeout=5)
+                            continue
+
                         _alert_chats.add(chat_id)
 
                         # 키워드 추가 버튼
                         if cb_data == "kw_add":
                             _user_state[chat_id] = {"action": "awaiting_keyword"}
                             _send(base, chat_id, "🔍 추가할 키워드를 입력해주세요:")
-                            # answer callback
                             httpx.post(f"{base}/answerCallbackQuery", json={"callback_query_id": cb["id"]}, timeout=5)
                             continue
 
@@ -660,8 +690,60 @@ def start_telegram_bot():
                     msg = update.get("message", {})
                     text = msg.get("text", "").strip()
                     chat_id = msg.get("chat", {}).get("id")
-                    if text and chat_id:
-                        _handle_text(text, chat_id, base)
+                    user_id = msg.get("from", {}).get("id", 0)
+                    if not text or not chat_id:
+                        continue
+
+                    # /myid — 자신의 ID 확인 (항상 허용)
+                    if text.startswith("/myid"):
+                        _send(base, chat_id, f"👤 user_id: <code>{user_id}</code>\n💬 chat_id: <code>{chat_id}</code>")
+                        continue
+
+                    # /허용 user_id — 화이트리스트 추가 (현재 허용된 사용자만)
+                    if text.startswith("/허용"):
+                        wl = _load_whitelist()
+                        if wl.get("open", True) or user_id in wl.get("user_ids", []):
+                            parts = text.replace("/허용", "").strip().split()
+                            for p in parts:
+                                try:
+                                    new_id = int(p)
+                                    if new_id not in wl.get("user_ids", []):
+                                        wl.setdefault("user_ids", []).append(new_id)
+                                except ValueError:
+                                    pass
+                            _save_whitelist(wl)
+                            _send(base, chat_id, f"✅ 화이트리스트 업데이트\n허용 user_ids: {wl.get('user_ids', [])}")
+                        continue
+
+                    # /허용그룹 — 현재 그룹을 화이트리스트에 추가
+                    if text.startswith("/허용그룹"):
+                        wl = _load_whitelist()
+                        if wl.get("open", True) or user_id in wl.get("user_ids", []):
+                            if chat_id not in wl.get("chat_ids", []):
+                                wl.setdefault("chat_ids", []).append(chat_id)
+                            _save_whitelist(wl)
+                            _send(base, chat_id, f"✅ 이 그룹이 화이트리스트에 추가됨\nchat_id: {chat_id}")
+                        continue
+
+                    # /잠금 — open 모드 종료, 화이트리스트 모드 활성화
+                    if text.startswith("/잠금"):
+                        wl = _load_whitelist()
+                        if wl.get("open", True) or user_id in wl.get("user_ids", []):
+                            # 현재 user를 자동 등록
+                            if user_id not in wl.get("user_ids", []):
+                                wl.setdefault("user_ids", []).append(user_id)
+                            if chat_id not in wl.get("chat_ids", []):
+                                wl.setdefault("chat_ids", []).append(chat_id)
+                            wl["open"] = False
+                            _save_whitelist(wl)
+                            _send(base, chat_id, f"🔒 화이트리스트 모드 활성화\n허용된 user만 봇 사용 가능\n\nuser_ids: {wl['user_ids']}\nchat_ids: {wl['chat_ids']}")
+                        continue
+
+                    # 화이트리스트 체크
+                    if not _is_allowed(user_id, chat_id):
+                        continue  # 무응답
+
+                    _handle_text(text, chat_id, base)
 
             except Exception as e:
                 print(f"[텔레그램] 폴링 에러: {e}", flush=True)
