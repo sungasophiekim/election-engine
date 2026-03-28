@@ -79,16 +79,27 @@ export default function ReactionSidebar() {
                           <span className="text-[8px] text-amber-400 font-bold">댓글 {r.comments}</span>
                         )}
                         {/* 댓글 0이면 표시 안 함 */}
-                        {/* 민심 톤: 세그먼트 실데이터 기반 */}
+                        {/* 민심 톤: 세그먼트 실데이터 기반 + 진영 명시 */}
                         {(() => {
                           const tones = (r.segments || []).map((s: any) => s.tone);
                           const pos = tones.filter((t: string) => t === "긍정").length;
                           const neg = tones.filter((t: string) => t === "부정").length;
-                          const label = pos > neg ? "긍정" : neg > pos ? "부정" : tones.length > 0 ? "혼합" : "";
-                          if (!label) return null;
+                          const isOurs = r.side?.includes("우리");
+                          const isOpp = r.side?.includes("상대");
+                          const tone = pos > neg ? "긍정" : neg > pos ? "부정" : tones.length > 0 ? "혼합" : "";
+                          if (!tone) return null;
+                          // 우리유리+긍정 → 우리민심↑ / 우리유리+부정 → 우리민심↓
+                          // 상대유리+긍정 → 상대민심↑ / 상대유리+부정 → 상대민심↓
+                          const prefix = isOurs ? "우리" : isOpp ? "상대" : "";
+                          const arrow = tone === "긍정" ? "↑" : tone === "부정" ? "↓" : "";
+                          const color = (isOurs && tone === "긍정") || (isOpp && tone === "부정")
+                            ? "text-emerald-500"
+                            : (isOurs && tone === "부정") || (isOpp && tone === "긍정")
+                            ? "text-red-400"
+                            : "text-gray-500";
                           return (
-                            <span className={`text-[7px] ${label === "긍정" ? "text-emerald-500" : label === "부정" ? "text-red-400" : "text-gray-500"}`}>
-                              민심 {label}
+                            <span className={`text-[7px] ${color}`}>
+                              {prefix}민심{arrow}
                             </span>
                           );
                         })()}
