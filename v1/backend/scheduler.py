@@ -1087,21 +1087,22 @@ def _collect_cluster_reactions(clusters: list) -> dict:
 
         source_details.append(rx)
 
-    # 50pt 스케일 지수화
-    # side 방향을 반영: 우리유리 이슈의 민심 반응 강도 vs 상대유리 이슈의 민심 반응 강도
-    # 핵심: 반응의 "방향"이 아닌 "강도"를 비교 — 어느 쪽 이슈에 민심이 더 반응하는가
-    our_intensity = sum(abs(s) for s in our_sentiments) / len(our_sentiments) if our_sentiments else 0
-    opp_intensity = sum(abs(s) for s in opp_sentiments) / len(opp_sentiments) if opp_sentiments else 0
+    # 50pt 스케일 지수화 — 감성 방향 + side 결합
+    # 우리유리 이슈 + 긍정 반응 = 우리에게 좋음 (+)
+    # 우리유리 이슈 + 부정 반응 = 우리에게 나쁨 (-) → 이슈는 우리유리지만 민심이 안 따라감
+    # 상대유리 이슈 + 긍정 반응 = 상대에게 좋음 (-) → 우리에게 나쁨
+    # 상대유리 이슈 + 부정 반응 = 상대에게 나쁨 (+) → 우리에게 좋음
+    our_score = 0.0  # 양수 = 우리에게 유리한 민심
+    for s in our_sentiments:
+        our_score += s  # 우리유리 이슈: 긍정이면 +, 부정이면 - (그대로)
+    for s in opp_sentiments:
+        our_score -= s  # 상대유리 이슈: 긍정이면 상대에 좋음(우리-), 부정이면 상대에 나쁨(우리+)
 
-    # 우리유리 이슈 건수 가중
-    our_weight = our_intensity * len(our_sentiments)
-    opp_weight = opp_intensity * len(opp_sentiments)
-    total_weight = our_weight + opp_weight
-
-    # 50pt 기준: 우리유리 이슈에 반응이 더 크면 >50, ±15pt 범위 cap
-    if total_weight > 0:
-        raw_ratio = our_weight / total_weight  # 0.0 ~ 1.0
-        reaction_index = round(50 + (raw_ratio - 0.5) * 30, 1)
+    total_count = len(our_sentiments) + len(opp_sentiments)
+    if total_count > 0:
+        avg_score = our_score / total_count  # -1 ~ +1 범위
+        # 50pt 기준: avg_score를 ±15pt 범위로 매핑
+        reaction_index = round(50 + avg_score * 15, 1)
         reaction_index = max(35, min(65, reaction_index))
     else:
         reaction_index = 50.0
@@ -1114,8 +1115,8 @@ def _collect_cluster_reactions(clusters: list) -> dict:
 
     return {
         "reaction_index": reaction_index,  # 50pt 기준
-        "kim_sentiment": round(our_intensity * 100),
-        "park_sentiment": round(opp_intensity * 100),
+        "kim_sentiment": round(sum(our_sentiments) / len(our_sentiments) * 100) if our_sentiments else 0,
+        "park_sentiment": round(sum(opp_sentiments) / len(opp_sentiments) * 100) if opp_sentiments else 0,
         "total_mentions": total_mentions,
         "sources_collected": list(collected_sources),
         "keywords_analyzed": len(all_reactions),
