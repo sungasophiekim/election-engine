@@ -32,8 +32,15 @@ export default function ReactionSidebar() {
         <span className="timestamp normal-case tracking-normal font-normal">{fmtTs(enrichTs)}</span>
       </div>
 
-      <div className="px-3 py-1 text-[7px] text-gray-600 leading-relaxed border-b border-[#0e1825]">
-        이슈별 시민 반응 · 기사수+댓글수 기반 관심도 정렬 · 세그먼트 추정
+      <div className="px-3 py-1.5 text-[7px] text-gray-600 leading-relaxed border-b border-[#0e1825] space-y-0.5">
+        <div>이슈별 시민 반응 · 기사수 기반 관심도 정렬 · 세그먼트 커뮤니티 기반</div>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-sm bg-emerald-500/40 border border-emerald-500/60 inline-block" /> 긍정</span>
+          <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-sm bg-red-500/40 border border-red-500/60 inline-block" /> 부정</span>
+          <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-sm bg-gray-600/40 border border-gray-500/60 inline-block" /> 혼합</span>
+          <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-sm bg-purple-500/40 border border-purple-500/60 inline-block" /> 📍지역</span>
+          <span className="text-gray-700">· 숫자=언급수</span>
+        </div>
       </div>
 
       <div className="overflow-hidden" style={{ maxHeight: "45vh" }}>
@@ -71,9 +78,7 @@ export default function ReactionSidebar() {
                         {hasComments && (
                           <span className="text-[8px] text-amber-400 font-bold">댓글 {r.comments}</span>
                         )}
-                        {!hasComments && (
-                          <span className="text-[7px] text-gray-700">댓글 없음</span>
-                        )}
+                        {/* 댓글 0이면 표시 안 함 */}
                         {r.community_expected && r.community_expected !== "중립" && (
                           <span className={`text-[7px] ${r.community_expected === "긍정" ? "text-emerald-500" : "text-red-400"}`}>
                             민심 {r.community_expected}
