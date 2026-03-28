@@ -552,6 +552,22 @@ def _update_all():
                 alert = _ai_pandse_alert(prev_pandse, new_pandse, delta, corr.get("factors", []))
                 snap["pandse_alert"] = alert
                 print(f"[{_now()}] 판세 ALERT: {delta:+.1f}pt — {alert.get('memo','')[:50]}", flush=True)
+                # 텔레그램 Alert 발송
+                try:
+                    from telegram_bot import send_alert
+                    direction = "↑ 김경수 유리" if delta > 0 else "↓ 박완수 유리"
+                    alert_text = f"""⚡ <b>판세 Alert</b>
+
+판세지수 {prev_pandse:.1f} → {new_pandse:.1f} (<b>{delta:+.1f}pt</b> {direction})
+
+🤖 {alert.get('memo', '')}"""
+                    alert_buttons = [[
+                        {"text": "📊 대시보드", "callback_data": "dashboard"},
+                        {"text": "📡 TOP 이슈", "callback_data": "issues"},
+                    ]]
+                    send_alert(alert_text, alert_buttons)
+                except Exception:
+                    pass
             else:
                 snap.pop("pandse_alert", None)
         except Exception as e:
