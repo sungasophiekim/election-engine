@@ -113,10 +113,10 @@ export default function ReactionSidebar() {
                     </div>
                   )}
 
-                  {/* 시민 의견 (AI 본문 분석) */}
-                  {r.opinions?.length > 0 && (
+                  {/* 시민 의견 (AI 본문 분석) — "무관" 필터링 */}
+                  {r.opinions?.filter((op: any) => op.opinion && op.opinion !== "무관" && op.sentiment !== 0).length > 0 && (
                     <div className="mt-1 space-y-0.5">
-                      {r.opinions.slice(0, isTop3 ? 3 : 1).map((op: any, oi: number) => (
+                      {r.opinions.filter((op: any) => op.opinion && op.opinion !== "무관" && op.sentiment !== 0).slice(0, isTop3 ? 3 : 1).map((op: any, oi: number) => (
                         <div key={oi} className="text-[7px] text-gray-400 flex gap-1">
                           <span className={`shrink-0 ${op.sentiment > 0 ? "text-emerald-500" : op.sentiment < 0 ? "text-red-400" : "text-gray-500"}`}>
                             {op.sentiment > 0 ? "👍" : op.sentiment < 0 ? "👎" : "•"}
