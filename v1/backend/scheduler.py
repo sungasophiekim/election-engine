@@ -1454,8 +1454,8 @@ def _scheduler_loop():
         time.sleep(60)
         tick += 1
 
-        # 60분마다 전체 갱신 (이슈수집 → 반응수집 포함)
-        if tick % 60 == 0:
+        # 10분마다 전체 갱신 (이슈수집 → 반응수집 포함)
+        if tick % 10 == 0:
             try:
                 print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
                 _update_all()
