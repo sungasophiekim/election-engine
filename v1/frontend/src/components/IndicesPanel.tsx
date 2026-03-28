@@ -76,6 +76,23 @@ export default function IndicesPanel() {
               🤖 {(indices as any).ai_issue_summary}
             </div>
           ) : null}
+          {(indices as any)?.issue_alert && (() => {
+            const alert = (indices as any).issue_alert;
+            const isUp = alert.direction === "up";
+            return (
+              <div className="mt-2 bg-amber-950/20 border border-amber-700/40 rounded-lg px-2 py-1.5 alert-flash">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[9px]">⚡</span>
+                  <span className={`text-[9px] font-black ${isUp ? "text-cyan-400" : "text-rose-400"}`}>
+                    {alert.delta > 0 ? "+" : ""}{alert.delta?.toFixed(1)}pt 변동 감지
+                  </span>
+                </div>
+                <div className="text-[8px] text-amber-300/90 leading-relaxed">
+                  🤖 {alert.memo}
+                </div>
+              </div>
+            );
+          })()}
           {candidateTrend.length >= 2 && <MiniChart data={candidateTrend} field="issue_index" color="#10b981" label="이슈" />}
         </div>
 
@@ -138,6 +155,23 @@ export default function IndicesPanel() {
               <>5개 채널 실데이터 감성 분석</>
             )}
           </div>
+          {(indices as any)?.reaction_alert && (() => {
+            const alert = (indices as any).reaction_alert;
+            const isUp = alert.direction === "up";
+            return (
+              <div className="mt-2 bg-amber-950/20 border border-amber-700/40 rounded-lg px-2 py-1.5 alert-flash">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[9px]">⚡</span>
+                  <span className={`text-[9px] font-black ${isUp ? "text-cyan-400" : "text-rose-400"}`}>
+                    {alert.delta > 0 ? "+" : ""}{alert.delta?.toFixed(1)}pt 변동 감지
+                  </span>
+                </div>
+                <div className="text-[8px] text-amber-300/90 leading-relaxed">
+                  🤖 {alert.memo}
+                </div>
+              </div>
+            );
+          })()}
           {candidateTrend.length >= 2 && <MiniChart data={candidateTrend} field="reaction_index" color="#f59e0b" label="반응" />}
         </div>
 

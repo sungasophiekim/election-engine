@@ -335,10 +335,10 @@ def _update_all():
         else:
             issue_index = 50.0
 
-        # 이슈지수 변동 감지 (5pt 이상)
+        # 이슈지수 변동 감지 (3pt 이상)
         prev_issue = snap.get("cluster_issue", {}).get("issue_index", 50)
         issue_delta = round(issue_index - prev_issue, 1)
-        if abs(issue_delta) >= 5.0:
+        if abs(issue_delta) >= 3.0:
             direction = "상승 (우리 유리)" if issue_delta > 0 else "하락 (상대 유리)"
             snap["issue_alert"] = {
                 "prev": prev_issue, "now": issue_index, "delta": issue_delta,
@@ -347,6 +347,13 @@ def _update_all():
                 "timestamp": datetime.now().isoformat(),
             }
             print(f"[{_now()}] 이슈 ALERT: {issue_delta:+.1f}pt", flush=True)
+            try:
+                from telegram_bot import send_alert
+                arrow = "↑ 우리 유리" if issue_delta > 0 else "↓ 상대 유리"
+                send_alert(f"⚡ <b>이슈지수 Alert</b>\n\n이슈지수 {prev_issue:.1f} → {issue_index:.1f} (<b>{issue_delta:+.1f}pt</b> {arrow})\n우리 {our_count}건 vs 상대 {opp_count}건",
+                    [[{"text": "📡 TOP 이슈", "callback_data": "issues"}, {"text": "📊 대시보드", "callback_data": "dashboard"}]])
+            except Exception:
+                pass
         else:
             snap.pop("issue_alert", None)
 
@@ -377,10 +384,10 @@ def _update_all():
             print(f"[{_now()}] 반응수집 오류, AI폴백 사용: {e}", flush=True)
             snap["cluster_reaction"] = _ai_fallback_reaction(scored_clusters)
 
-        # 반응지수 변동 감지 (5pt 이상)
+        # 반응지수 변동 감지 (3pt 이상)
         new_reaction = snap.get("cluster_reaction", {}).get("reaction_index", 50)
         reaction_delta = round(new_reaction - prev_reaction, 1)
-        if abs(reaction_delta) >= 5.0:
+        if abs(reaction_delta) >= 3.0:
             direction = "상승 (우리 유리)" if reaction_delta > 0 else "하락 (상대 유리)"
             snap["reaction_alert"] = {
                 "prev": prev_reaction, "now": new_reaction, "delta": reaction_delta,
@@ -389,6 +396,13 @@ def _update_all():
                 "timestamp": datetime.now().isoformat(),
             }
             print(f"[{_now()}] 반응 ALERT: {reaction_delta:+.1f}pt", flush=True)
+            try:
+                from telegram_bot import send_alert
+                arrow = "↑ 우리 유리" if reaction_delta > 0 else "↓ 상대 유리"
+                send_alert(f"⚡ <b>반응지수 Alert</b>\n\n반응지수 {prev_reaction:.1f} → {new_reaction:.1f} (<b>{reaction_delta:+.1f}pt</b> {arrow})\n수집 {snap['cluster_reaction'].get('total_mentions',0)}건",
+                    [[{"text": "🧠 민심 레이더", "callback_data": "radar"}, {"text": "📊 대시보드", "callback_data": "dashboard"}]])
+            except Exception:
+                pass
         else:
             snap.pop("reaction_alert", None)
 
