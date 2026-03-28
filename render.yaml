@@ -5,9 +5,10 @@ services:
     buildCommand: |
       pip install -r requirements.txt &&
       cd v1/frontend &&
-      rm -rf .next out &&
+      rm -rf .next out node_modules/.cache &&
       npm install &&
-      npx next build
+      npx next build &&
+      echo "BUILD HASH:" && ls out/_next/static/chunks/app/page-*.js 2>/dev/null
     startCommand: cd v1/backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
