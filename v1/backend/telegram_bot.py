@@ -227,8 +227,10 @@ def _cb_issues(snap, chat_id, msg_id, base, back):
         emoji = "🔵" if "우리" in side else "🔴" if "상대" in side else "⚪"
         lines.append(f"{emoji} <b>{i}. {c.get('name','')}</b>")
         lines.append(f"   {c.get('count',0)}건 | {side} | 감성{c.get('sentiment',0):+d}")
-        if c.get("tip"):
-            lines.append(f"   💡 {c['tip'][:50]}")
+        if c.get("summary"):
+            lines.append(f"   {c['summary'][:60]}")
+        if c.get("why"):
+            lines.append(f"   → {c['why'][:60]}")
         lines.append("")
 
     # AI 요약
