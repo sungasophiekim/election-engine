@@ -292,16 +292,20 @@ def _cmd_recent_issues() -> str:
         side = c.get("side", "?")
         emoji = "🔵" if "우리" in side else "🔴" if "상대" in side else "⚪"
         lines.append(f"{emoji} <b>{i}. {c.get('name','')}</b> | {c.get('count',0)}건 | {side}")
-        # 기사 링크 표시 (최대 2개)
+        # 한줄 설명 + 유불리 이유
+        if c.get("summary"):
+            lines.append(f"   {c['summary']}")
+        if c.get("why"):
+            lines.append(f"   → {c['why']}")
+        # 대표 기사 링크 1개
         articles = c.get("articles", [])
-        for art in articles[:2]:
+        if articles:
+            art = articles[0]
             title = art.get("title", "")
             url = art.get("url", "")
             if url and title:
-                lines.append(f"   📎 <a href=\"{url}\">{title[:40]}{'…' if len(title) > 40 else ''}</a>")
-            elif title:
-                lines.append(f"   • {title[:50]}")
-        lines.append("")  # 빈 줄 구분
+                lines.append(f"   📎 <a href=\"{url}\">{title[:45]}{'…' if len(title) > 45 else ''}</a>")
+        lines.append("")
 
     ts = snap.get("timestamp", "")[:16].replace("T", " ")
     lines.append(f"갱신: {ts}")
