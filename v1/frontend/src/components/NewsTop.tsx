@@ -65,9 +65,16 @@ export default function NewsTop() {
                     </div>
                   </div>
 
+                  {/* 한줄 설명 + 유리/불리 이유 — 전체 순위 */}
+                  {(c.summary || c.why) && (
+                    <div className="mt-1 px-1 space-y-0.5">
+                      {c.summary && <div className="text-[7px] text-gray-400 leading-relaxed">{c.summary}</div>}
+                      {c.why && <div className="text-[7px] text-cyan-400/70 leading-relaxed">→ {c.why}</div>}
+                    </div>
+                  )}
                   {/* AI Tip — 1~3위만 */}
                   {c.tip && rank <= 3 && (
-                    <div className="flex items-start gap-1 mt-1.5 bg-cyan-950/15 border border-cyan-900/20 rounded px-2 py-1">
+                    <div className="flex items-start gap-1 mt-1 bg-cyan-950/15 border border-cyan-900/20 rounded px-2 py-1">
                       <span className="text-[9px] shrink-0">🤖</span>
                       <span className="text-[7px] text-cyan-400/70 leading-relaxed line-clamp-2">{c.tip}</span>
                     </div>
