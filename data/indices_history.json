@@ -152,5 +152,401 @@
     "issue_park": 15,
     "reaction_kim": 27,
     "reaction_park": 41
+  },
+  {
+    "timestamp": "2026-03-27T15:53:54.481550",
+    "date": "03.27 15:53",
+    "issue_index": 51.3,
+    "reaction_index": 40.6,
+    "pandse": 52.8,
+    "top_clusters": [
+      {
+        "name": "6.3 지방선거 투표 참여 캠프",
+        "side": "중립",
+        "count": 13,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 농수산물 수출 성과",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -35
+      },
+      {
+        "name": "박완수 도정 간담회 논란",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 45
+      },
+      {
+        "name": "김경수 지사 후보 경남 행보",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 25
+      },
+      {
+        "name": "진해군항제 안전점검",
+        "side": "중립",
+        "count": 5,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "현직 도정 성과(수출·산업·재난대응) 뉴스가 야당에 유리하게 작동. 박완수 관권 논란으로 여당 공격 기회 확보.",
+    "issue_kim": 9,
+    "issue_park": 10,
+    "reaction_kim": 18,
+    "reaction_park": 52
+  },
+  {
+    "timestamp": "2026-03-27T17:23:58.111665",
+    "date": "03.27 17:23",
+    "issue_index": 53.7,
+    "reaction_index": 55.1,
+    "pandse": 53.4,
+    "top_clusters": [
+      {
+        "name": "6.3 지방선거 투표 독려 캠페인",
+        "side": "중립",
+        "count": 11,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 농수산물 수출 700만불 기록",
+        "side": "상대 유리",
+        "count": 5,
+        "sentiment": -25
+      },
+      {
+        "name": "간담회 논란과 선거 중립성 갈등",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 35
+      },
+      {
+        "name": "보수 텃밭 경남, 여당 분열과 야당 반전",
+        "side": "우리 유리",
+        "count": 3,
+        "sentiment": 45
+      },
+      {
+        "name": "김경수 당선인 도정 정책 비전",
+        "side": "우리 유리",
+        "count": 3,
+        "sentiment": 40
+      }
+    ],
+    "ai_issue_summary": "현직 도정 성과(수출·산업)는 '상대 유리'로 작용하나, 간담회 논란·여당 분열·선거 공정성 문제가 김경수 캠프 기회 제공",
+    "issue_kim": 13,
+    "issue_park": 10,
+    "reaction_kim": 31,
+    "reaction_park": 20
+  },
+  {
+    "timestamp": "2026-03-27T20:16:08.282920",
+    "date": "03.27 20:16",
+    "issue_index": 57.4,
+    "reaction_index": 50.4,
+    "pandse": 52.7,
+    "top_clusters": [
+      {
+        "name": "국민의힘 내분·지지율 붕괴",
+        "side": "우리 유리",
+        "count": 6,
+        "sentiment": 45
+      },
+      {
+        "name": "경남 농수산물 수출 성과",
+        "side": "상대 유리",
+        "count": 5,
+        "sentiment": -35
+      },
+      {
+        "name": "민주당 경남 판세 반전·김경수 활동",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 55
+      },
+      {
+        "name": "정청래 vs 장동혁 선거운동 온도차",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 40
+      },
+      {
+        "name": "산불 위기경보 격상·도정 대응",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -40
+      }
+    ],
+    "ai_issue_summary": "국힘 지지율 급락·내분 심화로 우리 유리. 현직 성과 대비 부동산·청년정책 약점 공략 기회.",
+    "issue_kim": 27,
+    "issue_park": 12,
+    "reaction_kim": 22,
+    "reaction_park": 49
+  },
+  {
+    "timestamp": "2026-03-27T21:19:06.223768",
+    "date": "03.27 21:19",
+    "issue_index": 56.8,
+    "reaction_index": 50.3,
+    "pandse": 53.0,
+    "top_clusters": [
+      {
+        "name": "국힘 지지율 급락·내부 분열",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 45
+      },
+      {
+        "name": "민주당 김경수 경남도지사 후보 활동",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 35
+      },
+      {
+        "name": "정청래 민주당 경남지사 후보 활동",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 40
+      },
+      {
+        "name": "경남 농수산물 수출·산업 실적",
+        "side": "상대 유리",
+        "count": 5,
+        "sentiment": -30
+      },
+      {
+        "name": "박완수 도지사 도정 운영·성과",
+        "side": "상대 유리",
+        "count": 6,
+        "sentiment": -25
+      }
+    ],
+    "ai_issue_summary": "국힘 지지율 급락·내부 분열로 경남 보수진영 균열 심화. 민주당 탄력 회복 추세.",
+    "issue_kim": 23,
+    "issue_park": 14,
+    "reaction_kim": 16,
+    "reaction_park": 31
+  },
+  {
+    "timestamp": "2026-03-27T22:21:47.341541",
+    "date": "03.27 22:21",
+    "issue_index": 52.4,
+    "reaction_index": 45.1,
+    "pandse": 52.8,
+    "top_clusters": [
+      {
+        "name": "부산시장 선거 박형준 vs 주진우 토론",
+        "side": "중립",
+        "count": 6,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 지역 농수산물 수출 신기록",
+        "side": "상대 유리",
+        "count": 5,
+        "sentiment": -30
+      },
+      {
+        "name": "경남도 산불 대비 비상체제 강화",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -20
+      },
+      {
+        "name": "국민의힘 지지율 추락 및 내부 갈등",
+        "side": "우리 유리",
+        "count": 6,
+        "sentiment": 45
+      },
+      {
+        "name": "경남 예비후보 등록 현황",
+        "side": "중립",
+        "count": 3,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "국힘 지지율 붕괴로 야권 심리 유리하나, 현직 도정 성과(농수산 수출·산불 대비) 지속 홍보로 보수 기반 결집 중",
+    "issue_kim": 12,
+    "issue_park": 13,
+    "reaction_kim": 16,
+    "reaction_park": 31
+  },
+  {
+    "timestamp": "2026-03-27T23:24:29.017494",
+    "date": "03.27 23:24",
+    "issue_index": 53.6,
+    "reaction_index": 44.9,
+    "pandse": 53.0,
+    "top_clusters": [
+      {
+        "name": "국민의힘 지지율 붕괴·당 내 분열",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 45
+      },
+      {
+        "name": "부산시장 박형준 vs 주진우 첫 토론",
+        "side": "중립",
+        "count": 4,
+        "sentiment": 0
+      },
+      {
+        "name": "경남도 산불 위기 대응·공무원 비상",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -15
+      },
+      {
+        "name": "경남 농수산물 수출 실적·성장",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -25
+      },
+      {
+        "name": "경남지사 후보 박완수 정책·행보",
+        "side": "상대 유리",
+        "count": 4,
+        "sentiment": -20
+      }
+    ],
+    "ai_issue_summary": "현직 박완수의 도정 성과 보도 다수지만, 국힘 당 전체 지지율 붕괴와 경남 현안(통행료, 산단) 비판이 대항 기회 창출.",
+    "issue_kim": 12,
+    "issue_park": 16,
+    "reaction_kim": 17,
+    "reaction_park": 35
+  },
+  {
+    "timestamp": "2026-03-28T00:27:06.300012",
+    "date": "03.28 00:27",
+    "issue_index": 54.7,
+    "reaction_index": 43.7,
+    "pandse": 52.6,
+    "top_clusters": [
+      {
+        "name": "국민의힘 지지율 추락 및 당내 갈등",
+        "side": "우리 유리",
+        "count": 8,
+        "sentiment": 45
+      },
+      {
+        "name": "부산시장 보선: 박형준 vs 주진우 격돌",
+        "side": "중립",
+        "count": 5,
+        "sentiment": 0
+      },
+      {
+        "name": "경남도지사 선거: 김경수 산단 대전환 공약",
+        "side": "우리 유리",
+        "count": 6,
+        "sentiment": 55
+      },
+      {
+        "name": "박완수 도정 성과 및 정책 발표",
+        "side": "상대 유리",
+        "count": 8,
+        "sentiment": -40
+      },
+      {
+        "name": "경남 농수산물·산업 수출 성과",
+        "side": "상대 유리",
+        "count": 6,
+        "sentiment": -35
+      }
+    ],
+    "ai_issue_summary": "국힘 지지율 급락 대비 민주당 강한 리더십 부각. 현직 우위 선점.",
+    "issue_kim": 25,
+    "issue_park": 18,
+    "reaction_kim": 16,
+    "reaction_park": 65
+  },
+  {
+    "timestamp": "2026-03-28T09:29:40.738095",
+    "date": "03.28 09:29",
+    "issue_index": 55.9,
+    "reaction_index": 49.1,
+    "pandse": 53.2,
+    "top_clusters": [
+      {
+        "name": "국민의힘 지지율 급락 및 당내 분열",
+        "side": "우리 유리",
+        "count": 8,
+        "sentiment": 45
+      },
+      {
+        "name": "국힘 청년 오디션 논란 및 부정적 인사",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 55
+      },
+      {
+        "name": "부산시장 선거 박형준 vs 주진우 격돌",
+        "side": "중립",
+        "count": 4,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 농수산물 수출 및 산업 성과",
+        "side": "상대 유리",
+        "count": 7,
+        "sentiment": -30
+      },
+      {
+        "name": "경남 산불 위기경보 격상 및 재난 관리",
+        "side": "상대 유리",
+        "count": 3,
+        "sentiment": -20
+      }
+    ],
+    "ai_issue_summary": "여권 지지율 급락(19%)·내홍 vs 현직 도정 성과(수출·재난관리). 민주당 유리한 판세.",
+    "issue_kim": 21,
+    "issue_park": 14,
+    "reaction_kim": 23,
+    "reaction_park": 35
+  },
+  {
+    "timestamp": "2026-03-28T10:35:19.175579",
+    "date": "03.28 10:35",
+    "issue_index": 56.6,
+    "reaction_index": 55.3,
+    "pandse": 52.9,
+    "top_clusters": [
+      {
+        "name": "국민의힘 지지율 추락·내홍 심화",
+        "side": "우리 유리",
+        "count": 8,
+        "sentiment": 65
+      },
+      {
+        "name": "부산시장 보궐선거 박형준·주진우 격돌",
+        "side": "중립",
+        "count": 6,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 도정 수출·산업 성과 강조",
+        "side": "상대 유리",
+        "count": 7,
+        "sentiment": -45
+      },
+      {
+        "name": "경남 교육감 선거·후보 공약 경쟁",
+        "side": "중립",
+        "count": 3,
+        "sentiment": 0
+      },
+      {
+        "name": "여성 공천 차별·공천 투명성 논란",
+        "side": "우리 유리",
+        "count": 2,
+        "sentiment": 55
+      }
+    ],
+    "ai_issue_summary": "경남 지역 이슈는 여당 약세(국힘 지지율 19%)와 현직 도정 성과 선점이 대척. 야권 유리",
+    "issue_kim": 21,
+    "issue_park": 12,
+    "reaction_kim": 40,
+    "reaction_park": 48
   }
 ]
