@@ -79,11 +79,19 @@ export default function ReactionSidebar() {
                           <span className="text-[8px] text-amber-400 font-bold">댓글 {r.comments}</span>
                         )}
                         {/* 댓글 0이면 표시 안 함 */}
-                        {r.community_expected && r.community_expected !== "중립" && (
-                          <span className={`text-[7px] ${r.community_expected === "긍정" ? "text-emerald-500" : "text-red-400"}`}>
-                            민심 {r.community_expected}
-                          </span>
-                        )}
+                        {/* 민심 톤: 세그먼트 실데이터 기반 */}
+                        {(() => {
+                          const tones = (r.segments || []).map((s: any) => s.tone);
+                          const pos = tones.filter((t: string) => t === "긍정").length;
+                          const neg = tones.filter((t: string) => t === "부정").length;
+                          const label = pos > neg ? "긍정" : neg > pos ? "부정" : tones.length > 0 ? "혼합" : "";
+                          if (!label) return null;
+                          return (
+                            <span className={`text-[7px] ${label === "긍정" ? "text-emerald-500" : label === "부정" ? "text-red-400" : "text-gray-500"}`}>
+                              민심 {label}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
