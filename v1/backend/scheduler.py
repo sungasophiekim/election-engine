@@ -912,7 +912,8 @@ def _collect_cluster_reactions(clusters: list) -> dict:
             comm_count = 0
             comm_titles = []
             comm_breakdown = []  # 커뮤니티별 상세
-            for cid in ["dcinside", "fmkorea", "clien", "theqoo", "natepann", "82cook", "momcafe_changwon", "momcafe_gimhae", "momcafe_jinju", "momcafe_yangsan"]:
+            # 공개 커뮤니티 수집
+            for cid in ["dcinside", "fmkorea", "clien", "theqoo", "natepann", "82cook"]:
                 try:
                     sig = search_community(kw, cid)
                     if sig.result_count > 0:
@@ -921,7 +922,6 @@ def _collect_cluster_reactions(clusters: list) -> dict:
                         comm_sent_sum += sent
                         comm_count += 1
                         comm_titles.extend(sig.recent_titles[:2])
-                        # 커뮤니티 정보에서 세그먼트 매핑
                         comm_info = COMMUNITIES.get(cid, {})
                         comm_breakdown.append({
                             "id": cid,
@@ -932,6 +932,37 @@ def _collect_cluster_reactions(clusters: list) -> dict:
                         })
                 except Exception:
                     pass
+
+            # 맘카페 수집 — 네이버 카페 API로 "카페명 + 키워드" 검색
+            try:
+                from collectors.social_collector import search_cafes
+                MOMCAFES = [
+                    {"id": "momcafe_changwon", "name": "창원줌마렐라", "search": "창원줌마렐라", "demographic": "3040 여성 (창원)", "region": "창원"},
+                    {"id": "momcafe_gimhae", "name": "김해줌마렐라", "search": "김해줌마렐라", "demographic": "3040 여성 (김해)", "region": "김해"},
+                    {"id": "momcafe_jinju", "name": "진주아지매", "search": "진주아지매", "demographic": "3040 여성 (진주)", "region": "진주"},
+                    {"id": "momcafe_yangsan", "name": "러브양산맘", "search": "러브양산맘", "demographic": "3040 여성 (양산)", "region": "양산"},
+                ]
+                for mc in MOMCAFES:
+                    try:
+                        cafe_sig = search_cafes(f"{mc['search']} {kw}", display=10)
+                        if cafe_sig.total_count > 0:
+                            sent = cafe_sig.net_sentiment
+                            comm_total += cafe_sig.recent_24h or min(cafe_sig.total_count, 5)
+                            comm_sent_sum += sent
+                            comm_count += 1
+                            comm_titles.extend([item.get("title", "") for item in cafe_sig.top_items[:1]])
+                            comm_breakdown.append({
+                                "id": mc["id"],
+                                "name": mc["name"],
+                                "demographic": mc["demographic"],
+                                "region": mc["region"],
+                                "mentions": cafe_sig.recent_24h or min(cafe_sig.total_count, 5),
+                                "sentiment": round(sent, 3),
+                            })
+                    except Exception:
+                        pass
+            except Exception:
+                pass
             result["sources"]["community"] = {
                 "mentions": comm_total,
                 "net_sentiment": round(comm_sent_sum / comm_count, 3) if comm_count > 0 else 0,
