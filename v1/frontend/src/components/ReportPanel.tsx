@@ -188,13 +188,13 @@ function DailyReport() {
         <span className="text-[9px] text-gray-600">{data.date || ""}</span>
       </div>
 
-      {/* 생성 버튼 — 눈에 띄게 */}
-      <div className="flex items-center justify-between bg-gray-800/30 rounded-lg px-4 py-2.5">
-        <span className="text-[10px] text-gray-500">최신 데이터로 새 전략 리포트를 생성합니다 (Opus AI, 1~2분)</span>
+      {/* 생성 버튼 */}
+      <div className="bg-cyan-950/20 border border-cyan-800/30 rounded-lg px-4 py-3 text-center">
         <button onClick={generate} disabled={generating}
-          className="text-[11px] font-bold text-cyan-300 bg-cyan-900/40 border border-cyan-700/40 px-4 py-1.5 rounded-lg hover:bg-cyan-800/40 transition disabled:opacity-50 shrink-0">
-          {generating ? "AI 생성 중..." : "데일리 리포트 생성"}
+          className="text-sm font-bold text-cyan-300 bg-cyan-900/50 border border-cyan-600/50 px-6 py-2 rounded-lg hover:bg-cyan-800/50 transition disabled:opacity-50">
+          {generating ? "AI 생성 중... (1~2분 소요)" : "최신 데이터로 리포트 새로 생성"}
         </button>
+        <div className="text-[9px] text-gray-600 mt-1.5">현재 리포트: {data.date || "날짜 없음"} {data.generated_at?.slice(11,16) || ""} 생성</div>
       </div>
 
       {/* ── 0. Executive Summary ── */}
