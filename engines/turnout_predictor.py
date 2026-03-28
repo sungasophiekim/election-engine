@@ -584,28 +584,90 @@ def predict_turnout(
     # 기본모델 gap
     base_gap = round(base.kim_pct - base.park_pct, 2)
 
-    # ── 다이내믹 예측: D-day 연동 가변 가중치 ──
-    # D-90~60: 80:20, D-60~30: 70:30, D-30~14: 55:45, D-14~7: 40:60, D-7~1: 30:70
+    # ── 다이내믹 예측: 누적 판세 기반 ──
+    # 스냅샷이 아닌 누적 효과를 반영하는 구조:
+    #   1) 판세지수 이동평균 (7일/14일) — 오늘 값이 아닌 흐름
+    #   2) 추세 방향 보정 — 올라가는 중이면 가산, 내려가면 감산
+    #   3) 뉴스 노출 누적 격차 — 미디어 점유 누적 효과
+    #   4) D-day 가중 — 선거 가까울수록 캠페인 누적에 가중
+
     from datetime import date
+    import json as _json
+    from pathlib import Path as _Path
+
     election_day = date(2026, 6, 3)
     d_day = (election_day - date.today()).days
-    if d_day > 60:
-        MIX_BASE, MIX_PANDSE = 0.80, 0.20
-    elif d_day > 30:
-        MIX_BASE, MIX_PANDSE = 0.70, 0.30
-    elif d_day > 14:
-        MIX_BASE, MIX_PANDSE = 0.55, 0.45
-    elif d_day > 7:
-        MIX_BASE, MIX_PANDSE = 0.40, 0.60
+
+    # ── 1) 판세지수 이동평균 ──
+    hist_path = _Path(__file__).resolve().parent.parent / "data" / "indices_history.json"
+    pandse_history = []
+    try:
+        with open(hist_path) as _f:
+            raw_hist = _json.load(_f)
+        pandse_history = [h.get("pandse", 50) for h in raw_hist if h.get("pandse")]
+    except Exception:
+        pass
+
+    if len(pandse_history) >= 7:
+        pandse_ma7 = sum(pandse_history[-7:]) / 7
+        pandse_ma14 = sum(pandse_history[-14:]) / min(14, len(pandse_history)) if len(pandse_history) >= 3 else pandse_ma7
+    elif len(pandse_history) >= 3:
+        pandse_ma7 = sum(pandse_history) / len(pandse_history)
+        pandse_ma14 = pandse_ma7
     else:
-        MIX_BASE, MIX_PANDSE = 0.30, 0.70
-    dynamic_gap = round(MIX_BASE * base_gap + MIX_PANDSE * pandse_gap, 2)
+        # 데이터 부족 — 오늘 값 사용 (기존과 동일)
+        pandse_ma7 = pandse_index
+        pandse_ma14 = pandse_index
+
+    # ── 2) 추세 방향 보정 ──
+    # 최근 7건의 기울기: 양수면 우리에게 좋아지는 중, 음수면 나빠지는 중
+    trend_bonus = 0.0
+    if len(pandse_history) >= 5:
+        recent = pandse_history[-5:]
+        trend_slope = (recent[-1] - recent[0]) / len(recent)  # pt/회
+        # 기울기 1pt/회 = 추세 보정 ±0.3pt
+        trend_bonus = round(trend_slope * 0.3, 2)
+        trend_bonus = max(-1.5, min(1.5, trend_bonus))  # ±1.5pt 상한
+
+    # ── 3) 뉴스 노출 누적 격차 ──
+    # 누적 노출이 한쪽으로 치우치면 인식 고착 효과
+    exposure_bonus = 0.0
+    try:
+        kim_cumul = sum(h.get("issue_kim", 0) for h in raw_hist)
+        park_cumul = sum(h.get("issue_park", 0) for h in raw_hist)
+        total_cumul = kim_cumul + park_cumul
+        if total_cumul > 0:
+            # 노출 점유율 차이 → 보정 (최대 ±1.0pt)
+            kim_share = kim_cumul / total_cumul
+            exposure_bonus = round((kim_share - 0.5) * 4.0, 2)  # 50% 기준, 10%p 차이 = ±2pt
+            exposure_bonus = max(-1.0, min(1.0, exposure_bonus))
+    except Exception:
+        pass
+
+    # ── 4) 누적 판세 gap 계산 ──
+    # 이동평균 기반 gap + 추세 보정 + 노출 누적
+    accumulated_pandse = pandse_ma14
+    accumulated_gap = round((accumulated_pandse - 50) * 0.4 + trend_bonus + exposure_bonus, 2)
+
+    # ── 5) D-day 가중 ──
+    if d_day > 60:
+        MIX_BASE, MIX_ACCUMULATED = 0.80, 0.20
+    elif d_day > 30:
+        MIX_BASE, MIX_ACCUMULATED = 0.70, 0.30
+    elif d_day > 14:
+        MIX_BASE, MIX_ACCUMULATED = 0.55, 0.45
+    elif d_day > 7:
+        MIX_BASE, MIX_ACCUMULATED = 0.40, 0.60
+    else:
+        MIX_BASE, MIX_ACCUMULATED = 0.30, 0.70
+
+    dynamic_gap = round(MIX_BASE * base_gap + MIX_ACCUMULATED * accumulated_gap, 2)
     dynamic_kim = round(50 + dynamic_gap / 2, 1)
     dynamic_park = round(50 - dynamic_gap / 2, 1)
 
     prediction.correction = {
         "factors": PANDSE_FACTORS,
-        # 판세지수 (독립 모델)
+        # 판세지수 (독립 모델 — 오늘 스냅샷)
         "pandse_index": pandse_index,
         "pandse_gap": pandse_gap,
         "pandse_kim": pandse_kim,
@@ -614,13 +676,23 @@ def predict_turnout(
         "base_gap": base_gap,
         "base_kim": round(base.kim_pct, 1),
         "base_park": round(base.park_pct, 1),
-        # 다이내믹 (가중 평균)
+        # 다이내믹 (누적 판세 기반)
         "dynamic_gap": dynamic_gap,
         "dynamic_kim": dynamic_kim,
         "dynamic_park": dynamic_park,
-        "mix": f"기본 {int(MIX_BASE*100)}% + 판세 {int(MIX_PANDSE*100)}%",
+        "mix": f"기본 {int(MIX_BASE*100)}% + 누적판세 {int(MIX_ACCUMULATED*100)}%",
         "d_day": d_day,
         "mix_schedule": "D-90~60: 80:20 → D-60~30: 70:30 → D-30~14: 55:45 → D-14~7: 40:60 → D-7~1: 30:70",
+        # 누적 판세 상세
+        "accumulated": {
+            "pandse_ma7": round(pandse_ma7, 1),
+            "pandse_ma14": round(pandse_ma14, 1),
+            "pandse_today": pandse_index,
+            "trend_bonus": trend_bonus,
+            "exposure_bonus": exposure_bonus,
+            "accumulated_gap": accumulated_gap,
+            "data_points": len(pandse_history),
+        },
     }
 
     # ── 전략적 인사이트 ──

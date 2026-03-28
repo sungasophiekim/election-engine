@@ -284,6 +284,24 @@ def _update_all():
             snap["ai_issue_summary"] = _ai_issue_summary
             snap["ai_reaction_summary"] = _ai_reaction_summary
             src_ts["cluster_updated_at"] = datetime.now().isoformat()
+            # 클러스터 히스토리 저장 (이슈 지속일수 추적용)
+            try:
+                ch_path = LEGACY_DATA / "cluster_history.json"
+                ch = []
+                if ch_path.exists():
+                    with open(ch_path) as _f:
+                        ch = json.load(_f)
+                ch.append({
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "time": datetime.now().strftime("%H:%M"),
+                    "clusters": [c.get("name", "") for c in scored_clusters[:10]],
+                })
+                # 최근 30일분만 유지
+                ch = ch[-720:]  # 24회/일 × 30일
+                with open(ch_path, "w") as _f:
+                    json.dump(ch, _f, ensure_ascii=False)
+            except Exception:
+                pass
         else:
             print(f"[{_now()}] 클러스터 0건 — 이전 데이터 유지", flush=True)
 
