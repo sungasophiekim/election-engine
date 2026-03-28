@@ -67,6 +67,28 @@ def reset_history():
     return {"status": "히스토리 초기화 완료"}
 
 
+@app.post("/api/admin/fix-side")
+def fix_cluster_side(issue: str = "", side: str = "중립"):
+    """클러스터 진영 즉시 수정"""
+    import json
+    from v1config.settings import ENRICHMENT_PATH
+    try:
+        with open(ENRICHMENT_PATH) as f:
+            snap = json.load(f)
+        fixed = False
+        for c in snap.get("news_clusters", []):
+            if issue in c.get("name", ""):
+                c["side"] = side
+                fixed = True
+        if fixed:
+            with open(ENRICHMENT_PATH, "w") as f:
+                json.dump(snap, f, ensure_ascii=False, indent=2, default=str)
+            return {"status": f"'{issue}' → {side} 수정 완료"}
+        return {"error": f"'{issue}' 클러스터를 찾을 수 없음"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ── Next.js 정적 빌드 서빙 (Render 배포용) ──
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
