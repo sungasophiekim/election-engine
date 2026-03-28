@@ -183,6 +183,64 @@ function PandseTab({ indices }: { indices: any }) {
           이전 대비 <span className="text-amber-400 font-bold">1pt 이상 변동</span> 시 AI 분석 리포트 자동 생성
         </p>
       </div>
+
+      {/* 실투표 예측 동향 설명 */}
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">실투표 예측 동향 — 누적 판세 모델</div>
+        <p className="text-[10px] text-gray-400 leading-relaxed mb-2">
+          판세지수는 &quot;오늘 뉴스 지형&quot;의 스냅샷이지만, 선거는 누적입니다.
+          실투표 예측 동향은 판세지수의 <span className="text-cyan-400">이동평균 + 추세 방향 + 뉴스 노출 누적</span>을 반영하여
+          캠페인 효과가 시간에 따라 축적되는 것을 모델링합니다.
+          상승도 누적되고, 하락도 누적됩니다 — 양방향.
+        </p>
+        <div className="space-y-1">
+          {[
+            { name: "14일 이동평균", desc: "오늘 값이 아닌 14일간 판세 흐름. 하루 노이즈 제거" },
+            { name: "추세 방향 보정", range: "±1.5pt", desc: "올라가는 중이면 가산, 내려가는 중이면 감산" },
+            { name: "뉴스 노출 누적", range: "±1.0pt", desc: "누적 미디어 점유 격차 → 인식 고착 효과" },
+            { name: "D-day 가중", desc: "선거 가까울수록 누적 판세에 높은 가중" },
+          ].map((c) => (
+            <div key={c.name} className="flex items-center gap-2 py-1 border-b border-[#121e33] last:border-0">
+              <span className="text-[10px] text-gray-300 w-28 shrink-0">{c.name}</span>
+              {"range" in c && <span className="text-[8px] font-mono text-amber-400 w-12 shrink-0">{c.range}</span>}
+              <span className="text-[9px] text-gray-500">{c.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">D-day 가중 스케줄</div>
+        <div className="space-y-0.5">
+          {[
+            { period: "D-90~60", base: "80%", acc: "20%", desc: "구조(base)가 지배" },
+            { period: "D-60~30", base: "70%", acc: "30%", desc: "캠페인 누적 반영 시작" },
+            { period: "D-30~14", base: "55%", acc: "45%", desc: "캠페인 효과 본격 반영" },
+            { period: "D-14~7", base: "40%", acc: "60%", desc: "최근 흐름이 지배" },
+            { period: "D-7~1", base: "30%", acc: "70%", desc: "직전 캠페인이 최대 영향" },
+          ].map((s) => (
+            <div key={s.period} className="flex items-center gap-2 py-0.5 text-[9px]">
+              <span className="text-gray-400 w-16 shrink-0 font-mono">{s.period}</span>
+              <span className="text-blue-400 w-10 shrink-0">기본 {s.base}</span>
+              <span className="text-cyan-400 w-12 shrink-0">누적 {s.acc}</span>
+              <span className="text-gray-500">{s.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-1">양방향 누적 예시</div>
+        <div className="grid grid-cols-2 gap-2 text-[9px]">
+          <div className="bg-emerald-950/10 border border-emerald-800/20 rounded p-2">
+            <div className="text-emerald-400 font-bold mb-0.5">누적 상승</div>
+            <div className="text-gray-400">2주간 우리 뉴스 장악 → 이동평균↑ 추세+보정 노출+보정 → 동향 예측 상승</div>
+          </div>
+          <div className="bg-red-950/10 border border-red-800/20 rounded p-2">
+            <div className="text-red-400 font-bold mb-0.5">누적 하락</div>
+            <div className="text-gray-400">2주간 현직 성과 보도 → 이동평균↓ 추세-보정 노출-보정 → 동향 예측 하락</div>
+          </div>
+        </div>
+      </div>
+
       <div>
         <div className="text-[11px] text-cyan-300 font-bold mb-2">데이터 소스</div>
         <SourceRow name="이슈지수 (자체 엔진)" updatedAt={pandse?.sources?.issue_updated_at || indices?.issue?.updated_at} />
@@ -190,8 +248,9 @@ function PandseTab({ indices }: { indices: any }) {
         <SourceRow name="여론조사 데이터" updatedAt={pandse?.sources?.poll_updated_at} />
         <SourceRow name="국정지지율 (Gallup 등)" updatedAt={pandse?.sources?.national_poll_updated_at} />
         <SourceRow name="경제지표 (정부 통계)" updatedAt={pandse?.sources?.economic_updated_at} />
+        <SourceRow name="판세 히스토리 (이동평균용)" updatedAt={pandse?.sources?.pandse_updated_at} />
         <div className="mt-2 text-[9px] text-gray-600">
-          엔진 연산: 1시간 간격 · 여론조사: 발표 시 · 국정지지율: 주 1~2회 · 경제지표: 일/주간
+          엔진 연산: 1시간 간격 · 여론조사: 발표 시 · 국정지지율: 주 1~2회 · 경제지표: 일/주간 · 이동평균: 14일 후 안정화
         </div>
       </div>
     </div>
