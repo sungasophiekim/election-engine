@@ -339,18 +339,13 @@ def _update_all():
         prev_issue = snap.get("cluster_issue", {}).get("issue_index", 50)
         issue_delta = round(issue_index - prev_issue, 1)
         if abs(issue_delta) >= 3.0:
-            direction = "상승 (우리 유리)" if issue_delta > 0 else "하락 (상대 유리)"
-            snap["issue_alert"] = {
-                "prev": prev_issue, "now": issue_index, "delta": issue_delta,
-                "direction": "up" if issue_delta > 0 else "down",
-                "memo": f"이슈지수 {prev_issue:.1f}→{issue_index:.1f}pt ({issue_delta:+.1f}) {direction}. 우리유리 {our_count}건 vs 상대유리 {opp_count}건 (중립 {neutral_count}건)",
-                "timestamp": datetime.now().isoformat(),
-            }
-            print(f"[{_now()}] 이슈 ALERT: {issue_delta:+.1f}pt", flush=True)
+            alert = _ai_issue_alert(prev_issue, issue_index, issue_delta, scored_clusters)
+            snap["issue_alert"] = alert
+            print(f"[{_now()}] 이슈 ALERT: {issue_delta:+.1f}pt — {alert['memo'][:50]}", flush=True)
             try:
                 from telegram_bot import send_alert
                 arrow = "↑ 우리 유리" if issue_delta > 0 else "↓ 상대 유리"
-                send_alert(f"⚡ <b>이슈지수 Alert</b>\n\n이슈지수 {prev_issue:.1f} → {issue_index:.1f} (<b>{issue_delta:+.1f}pt</b> {arrow})\n우리 {our_count}건 vs 상대 {opp_count}건",
+                send_alert(f"⚡ <b>이슈지수 Alert</b>\n\n이슈지수 {prev_issue:.1f} → {issue_index:.1f} (<b>{issue_delta:+.1f}pt</b> {arrow})\n\n🤖 {alert['memo']}",
                     [[{"text": "📡 TOP 이슈", "callback_data": "issues"}, {"text": "📊 대시보드", "callback_data": "dashboard"}]])
             except Exception:
                 pass
@@ -388,18 +383,13 @@ def _update_all():
         new_reaction = snap.get("cluster_reaction", {}).get("reaction_index", 50)
         reaction_delta = round(new_reaction - prev_reaction, 1)
         if abs(reaction_delta) >= 3.0:
-            direction = "상승 (우리 유리)" if reaction_delta > 0 else "하락 (상대 유리)"
-            snap["reaction_alert"] = {
-                "prev": prev_reaction, "now": new_reaction, "delta": reaction_delta,
-                "direction": "up" if reaction_delta > 0 else "down",
-                "memo": f"반응지수 {prev_reaction:.1f}→{new_reaction:.1f}pt ({reaction_delta:+.1f}) {direction}. 총 {snap['cluster_reaction'].get('total_mentions',0)}건 수집",
-                "timestamp": datetime.now().isoformat(),
-            }
-            print(f"[{_now()}] 반응 ALERT: {reaction_delta:+.1f}pt", flush=True)
+            alert = _ai_reaction_alert(prev_reaction, new_reaction, reaction_delta, snap.get("cluster_reaction", {}))
+            snap["reaction_alert"] = alert
+            print(f"[{_now()}] 반응 ALERT: {reaction_delta:+.1f}pt — {alert['memo'][:50]}", flush=True)
             try:
                 from telegram_bot import send_alert
                 arrow = "↑ 우리 유리" if reaction_delta > 0 else "↓ 상대 유리"
-                send_alert(f"⚡ <b>반응지수 Alert</b>\n\n반응지수 {prev_reaction:.1f} → {new_reaction:.1f} (<b>{reaction_delta:+.1f}pt</b> {arrow})\n수집 {snap['cluster_reaction'].get('total_mentions',0)}건",
+                send_alert(f"⚡ <b>반응지수 Alert</b>\n\n반응지수 {prev_reaction:.1f} → {new_reaction:.1f} (<b>{reaction_delta:+.1f}pt</b> {arrow})\n\n🤖 {alert['memo']}",
                     [[{"text": "🧠 민심 레이더", "callback_data": "radar"}, {"text": "📊 대시보드", "callback_data": "dashboard"}]])
             except Exception:
                 pass
@@ -1218,6 +1208,77 @@ def _save_indices_history(snap: dict):
 
     with open(hist_path, "w") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
+
+
+def _ai_issue_alert(prev: float, now: float, delta: float, clusters: list) -> dict:
+    """이슈지수 변동 AI 원인분석"""
+    try:
+        _ensure_env()
+        import anthropic
+        client = anthropic.Anthropic()
+
+        direction = "상승 (우리 유리 이슈 확대)" if delta > 0 else "하락 (상대 유리 이슈 확대)"
+        cluster_text = "\n".join(f"  {c.get('name','')}: {c.get('side','')} {c.get('count',0)}건 감성{c.get('sentiment',0):+d}" for c in clusters[:8])
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=150,
+            messages=[{"role": "user", "content": f"""이슈지수가 {prev:.1f}pt → {now:.1f}pt로 {delta:+.1f}pt {direction}했습니다.
+
+현재 TOP 이슈:
+{cluster_text}
+
+변동 원인을 2줄 이내, 짧은 단어 위주로 설명. 어떤 이슈가 확대/축소되어 지수가 변했는지 구체적으로."""}],
+        )
+        memo = resp.content[0].text.strip()
+    except Exception:
+        our = sum(c.get("count", 0) for c in clusters if "우리" in c.get("side", ""))
+        opp = sum(c.get("count", 0) for c in clusters if "상대" in c.get("side", ""))
+        memo = f"이슈지수 {delta:+.1f}pt 변동. 우리유리 {our}건 vs 상대유리 {opp}건."
+
+    return {
+        "prev": prev, "now": now, "delta": delta,
+        "direction": "up" if delta > 0 else "down",
+        "memo": memo,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def _ai_reaction_alert(prev: float, now: float, delta: float, reaction_data: dict) -> dict:
+    """반응지수 변동 AI 원인분석"""
+    try:
+        _ensure_env()
+        import anthropic
+        client = anthropic.Anthropic()
+
+        direction = "상승 (우리 유리 민심 확대)" if delta > 0 else "하락 (상대 유리 민심 확대)"
+        details = reaction_data.get("details", [])
+        detail_text = "\n".join(
+            f"  {d.get('keyword','')[:20]} ({d.get('side','')}): " +
+            ", ".join(f"{k}={v.get('net_sentiment',0):+.2f}" for k, v in d.get("sources", {}).items() if isinstance(v, dict) and v.get("net_sentiment", 0) != 0)
+            for d in details[:6]
+        )
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=150,
+            messages=[{"role": "user", "content": f"""반응지수가 {prev:.1f}pt → {now:.1f}pt로 {delta:+.1f}pt {direction}했습니다.
+
+이슈별 민심 반응 (블로그/카페/커뮤니티/유튜브/뉴스댓글):
+{detail_text}
+
+변동 원인을 2줄 이내, 짧은 단어 위주로 설명. 어떤 이슈의 어떤 채널에서 민심이 변했는지 구체적으로."""}],
+        )
+        memo = resp.content[0].text.strip()
+    except Exception:
+        memo = f"반응지수 {delta:+.1f}pt 변동. 총 {reaction_data.get('total_mentions', 0)}건 수집."
+
+    return {
+        "prev": prev, "now": now, "delta": delta,
+        "direction": "up" if delta > 0 else "down",
+        "memo": memo,
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 def _ai_pandse_alert(prev: float, now: float, delta: float, factors: list) -> dict:
