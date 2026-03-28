@@ -652,7 +652,18 @@ def _ai_cluster_events(articles: list) -> list:
 다음 JSON 형식으로 답변 (코드블록 없이 순수 JSON만):
 {{
   "clusters": [
-    {{"name": "사건 한줄 요약 (20자 이내)", "count": 관련기사수, "comments": 해당이슈관련기사댓글합계, "side": "우리 유리|상대 유리|중립", "summary": "이 이슈가 무엇인지 한줄 설명 (30자)", "why": "왜 우리/상대에게 유리한지 한줄 이유 (30자)", "sentiment": 감성점수(-100~+100), "community_expected": "긍정|부정|중립", "tip": "캠프 대응 Tip 2줄 이내", "articles": ["대표 기사 제목1", "대표 기사 제목2"]}},
+    {{
+      "name": "사건 한줄 요약 (20자 이내)",
+      "count": 관련기사수,
+      "comments": 해당이슈관련기사댓글합계,
+      "side": "우리 유리|상대 유리|중립",
+      "summary": "이 이슈의 핵심 내용 한줄 (반드시 작성, 30자)",
+      "why": "왜 이 진영에 유리한지 한줄 이유 (반드시 작성, 30자)",
+      "sentiment": 감성점수(-100에서+100),
+      "community_expected": "긍정|부정|중립",
+      "tip": "캠프 대응 Tip 2줄 이내",
+      "articles": ["대표 기사 제목1", "대표 기사 제목2"]
+    }},
     ...
   ],
   "issue_summary": "이슈지수 한줄 해석 (오늘 미디어에서 어느 쪽이 유리한지 20자 요약)",
@@ -690,7 +701,11 @@ def _ai_cluster_events(articles: list) -> list:
 - sentiment: 김경수에게 긍정이면 +, 부정이면 - (-100~+100)
 - community_expected: 일반 민심 커뮤니티에서 예상되는 반응 (긍정/부정/중립)
 
-issue_summary와 reaction_summary는 반드시 포함 (clusters 배열 밖 최상위 필드)"""
+필수 출력:
+- 각 클러스터의 summary와 why는 반드시 채울 것. 빈 문자열 금지.
+- summary: "KF-21 양산 1호기 출고, 이재명 대통령 참석" 식으로 핵심 사실 1줄
+- why: "대통령 경남 방문 = 여당 후보 프레임 강화" 식으로 유불리 이유 1줄
+- issue_summary와 reaction_summary는 반드시 포함 (clusters 배열 밖 최상위 필드)"""
 
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
