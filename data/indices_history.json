@@ -548,5 +548,93 @@
     "issue_park": 12,
     "reaction_kim": 40,
     "reaction_park": 48
+  },
+  {
+    "timestamp": "2026-03-28T18:02:10.430321",
+    "date": "03.28 18:02",
+    "issue_index": 53.5,
+    "reaction_index": 62.3,
+    "pandse": 52.7,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 54,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 44,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 43,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 25,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "중립",
+        "count": 24,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 72,
+    "issue_park": 13,
+    "reaction_kim": 28,
+    "reaction_park": 5
+  },
+  {
+    "timestamp": "2026-03-28T19:04:27.266913",
+    "date": "03.28 19:04",
+    "issue_index": 53.4,
+    "reaction_index": 49.5,
+    "pandse": 52.6,
+    "top_clusters": [
+      {
+        "name": "국민의힘 지지율 급락 '내홍'",
+        "side": "우리 유리",
+        "count": 8,
+        "sentiment": 45
+      },
+      {
+        "name": "박형준·주진우 보수진영 갈등",
+        "side": "우리 유리",
+        "count": 7,
+        "sentiment": 40
+      },
+      {
+        "name": "경남 농수산물 수출 실적 증대",
+        "side": "상대 유리",
+        "count": 6,
+        "sentiment": -35
+      },
+      {
+        "name": "박완수 도정 산불 대응 강화",
+        "side": "상대 유리",
+        "count": 5,
+        "sentiment": -30
+      },
+      {
+        "name": "경남도지사 후보 의료정책 경쟁",
+        "side": "중립",
+        "count": 5,
+        "sentiment": 20
+      }
+    ],
+    "ai_issue_summary": "여당 지지율 급락·내홍으로 야당 상대적 유리. 현직 도정 성과 홍보 중.",
+    "issue_kim": 19,
+    "issue_park": 16,
+    "reaction_kim": 41,
+    "reaction_park": 58
   }
 ]
