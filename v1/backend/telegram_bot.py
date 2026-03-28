@@ -49,14 +49,14 @@ def _load_enrichment() -> dict:
 
 
 def _get_token() -> str:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         env_path = Path(__file__).resolve().parent.parent.parent / ".env"
         if env_path.exists():
             for line in open(env_path):
                 if line.startswith("TELEGRAM_BOT_TOKEN="):
-                    token = line.strip().split("=", 1)[1]
-    return token
+                    token = line.strip().split("=", 1)[1].strip()
+    return token.replace("\n", "").replace("\r", "")
 
 
 _bot_started = False
