@@ -733,6 +733,7 @@ def _ai_cluster_events(articles: list) -> list:
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=3000,
+            system="당신은 뉴스 사건 클러스터링 전문가입니다. 반드시 구체적 사건명으로 묶으세요. '선거/공천', '산업/경제', '기타' 같은 카테고리명은 절대 사용 금지. JSON만 출력하세요.",
             messages=[{"role": "user", "content": prompt}],
         )
         text = resp.content[0].text.strip()
@@ -744,7 +745,19 @@ def _ai_cluster_events(articles: list) -> list:
             if text.startswith("json"):
                 text = text[4:]
 
-        parsed = json.loads(text)
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            # JSON 시작/끝 찾기
+            start = text.find("{")
+            if start == -1:
+                start = text.find("[")
+            end = max(text.rfind("}"), text.rfind("]")) + 1
+            if start >= 0 and end > start:
+                parsed = json.loads(text[start:end])
+            else:
+                print(f"[{_now()}] 클러스터 JSON 파싱 실패: {text[:200]}", flush=True)
+                return []
 
         # 래퍼 객체 형식: {"clusters": [...], "issue_summary": "...", "reaction_summary": "..."}
         # 또는 배열 형식: [...]  (폴백)
