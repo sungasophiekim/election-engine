@@ -277,13 +277,23 @@ def _update_all():
         for c in scored_clusters:
             c.pop("_issue_summary", None)
             c.pop("_reaction_summary", None)
-        # 수집 실패 시 이전 데이터 유지 (빈 배열로 덮어쓰지 않음)
-        if scored_clusters:
+        # AI 성공 여부 판별: AI 결과에만 summary/why 필드가 있음
+        # 카테고리 폴백은 urgency/our_impact 필드가 있음 (AI 결과에는 없음)
+        is_ai_result = scored_clusters and any(c.get("summary") or c.get("why") for c in scored_clusters)
+        is_fallback = scored_clusters and any(c.get("urgency") for c in scored_clusters)
+
+        if is_fallback and not is_ai_result:
+            # 카테고리 폴백 → 이전 AI 클러스터 유지 (덮어쓰지 않음)
+            print(f"[{_now()}] AI 실패 → 카테고리 폴백 감지. 이전 클러스터 유지", flush=True)
+            # 지수 계산은 폴백 데이터로 계산 (scored_clusters 사용)
+        elif scored_clusters:
+            # AI 성공 → 새 클러스터로 교체
             snap["news_clusters"] = scored_clusters[:12]
             snap["news_clusters_timestamp"] = datetime.now().isoformat()
             snap["ai_issue_summary"] = _ai_issue_summary
             snap["ai_reaction_summary"] = _ai_reaction_summary
             src_ts["cluster_updated_at"] = datetime.now().isoformat()
+            print(f"[{_now()}] AI 클러스터 저장 완료: {len(scored_clusters)}개", flush=True)
             # 클러스터 히스토리 저장 (이슈 지속일수 추적용)
             try:
                 ch_path = LEGACY_DATA / "cluster_history.json"
