@@ -306,9 +306,11 @@ def _update_all():
             print(f"[{_now()}] 클러스터 0건 — 이전 데이터 유지", flush=True)
 
         # ── 3.5 클러스터 기반 이슈지수 (가중지수: 기사수 × 감성강도) ──
+        # scored_clusters가 빈 경우 snap의 기존 클러스터 사용
+        clusters_for_index = scored_clusters if scored_clusters else snap.get("news_clusters", [])
         our_score, opp_score, neutral_score = 0.0, 0.0, 0.0
         our_count, opp_count, neutral_count = 0, 0, 0
-        for c in scored_clusters:
+        for c in clusters_for_index:
             cnt = c.get("count", 0)
             intensity = max(10, abs(c.get("sentiment", 0)))
             impact = cnt * intensity
@@ -898,9 +900,15 @@ def _ai_cluster_events(articles: list) -> list:
                 side = "상대 유리"
             else:
                 side = "중립"
+            # sentiment: 우리유리면 +30, 상대유리면 -30, 중립 0
+            sent = 30 if "우리" in side else -30 if "상대" in side else 0
             result.append({
                 "name": cat, "count": c["count"], "articles": c["articles"],
-                "side": side, "urgency": "즉시" if c["count"] >= 10 else "오늘 내" if c["count"] >= 5 else "모니터링",
+                "side": side, "sentiment": sent,
+                "summary": "", "why": "",
+                "community_expected": "긍정" if "우리" in side else "부정" if "상대" in side else "중립",
+                "tip": "",
+                "urgency": "즉시" if c["count"] >= 10 else "오늘 내" if c["count"] >= 5 else "모니터링",
                 "our_impact": 1 if "우리" in side else -1 if "상대" in side else 0,
                 "opp_impact": -1 if "우리" in side else 1 if "상대" in side else 0,
                 "score": min(100, c["count"] * 5),
