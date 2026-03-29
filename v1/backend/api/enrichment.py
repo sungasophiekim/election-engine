@@ -124,17 +124,41 @@ def reaction_radar():
                 "mentions": v["mentions"], "communities": v["communities"][:2],
             })
 
-        # 커뮤니티 데이터가 없으면 이슈명 키워드 기반 폴백
+        # 커뮤니티 데이터가 없으면 이슈명 키워드 + 감성 기반 폴백
         if not segments:
             name_lower = name.lower()
-            if any(kw in name_lower for kw in ["청년", "취업", "대학"]):
-                segments.append({"label": "2030", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
-            if any(kw in name_lower for kw in ["경제", "산업", "민생", "공약"]):
-                segments.append({"label": "4050", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
-            if any(kw in name_lower for kw in ["방산", "kf-21", "조선"]):
-                segments.append({"label": "방산종사자", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
-            if not segments:
-                segments.append({"label": "전체", "reaction": "추정", "tone": "혼합", "mentions": 0, "communities": []})
+            tone_fb = "긍정" if sentiment > 20 else "부정" if sentiment < -20 else "혼합"
+
+            matched = False
+            if any(kw in name_lower for kw in ["청년", "취업", "대학", "mz", "20대", "30대", "인구유출", "sns", "캠퍼스", "등록금"]):
+                segments.append({"label": "2030", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["경제", "산업", "민생", "공약", "일자리", "부동산", "분양", "추경", "예산", "지원금", "교육"]):
+                segments.append({"label": "4050", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["복지", "안전", "의료", "노인", "경로", "도정", "성과", "축제"]):
+                segments.append({"label": "60+", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["방산", "kf-21", "kf21", "조선", "항공", "로봇", "한화"]):
+                segments.append({"label": "방산종사자", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["창원", "마산", "진해"]):
+                segments.append({"label": "창원", "type": "지역", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["김해"]):
+                segments.append({"label": "김해", "type": "지역", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["진주", "사천", "고성", "서부"]):
+                segments.append({"label": "서부권", "type": "지역", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["공천", "당내", "국힘", "민주당", "정당", "내홍"]):
+                segments.append({"label": "정치관심층", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
+                matched = True
+            if any(kw in name_lower for kw in ["성추행", "비리", "부패", "논란", "의혹"]):
+                segments.append({"label": "전체", "type": "연령", "reaction": "추정", "tone": "부정", "mentions": 0, "communities": []})
+                matched = True
+            if not matched:
+                segments.append({"label": "전체", "type": "연령", "reaction": "추정", "tone": tone_fb, "mentions": 0, "communities": []})
 
         # AI 시민 의견 (본문 분석 결과)
         ai_opinions = cr.get("sources", {}).get("community", {}).get("ai_opinions", [])
