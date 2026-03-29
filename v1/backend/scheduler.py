@@ -846,6 +846,23 @@ def _ai_cluster_events(articles: list) -> list:
             result[0]["_issue_summary"] = issue_summary
             result[0]["_reaction_summary"] = reaction_summary
 
+        # 텔레그램 수정 사항 재적용 (AI가 무시해도 corrections으로 덮어쓰기)
+        try:
+            corr_path = Path(__file__).resolve().parent.parent.parent / "data" / "side_corrections.json"
+            if corr_path.exists():
+                with open(corr_path) as _cf:
+                    corr_data = json.load(_cf)
+                for correction in corr_data.get("corrections", [])[-20:]:
+                    c_issue = correction.get("issue", "")
+                    c_side = correction.get("side", "")
+                    if c_issue and c_side:
+                        for r in result:
+                            if c_issue in r.get("name", "") or r.get("name", "") in c_issue:
+                                r["side"] = c_side
+                                print(f"[{_now()}] 수정 적용: \"{r['name']}\" → {c_side}", flush=True)
+        except Exception:
+            pass
+
         print(f"[{_now()}] AI 클러스터링 성공: {len(result)}개 사건 | 해석: {bool(issue_summary)}", flush=True)
         return result
 
