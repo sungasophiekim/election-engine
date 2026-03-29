@@ -88,18 +88,19 @@ export default function ReactionSidebar() {
                           const isOpp = r.side?.includes("상대");
                           const tone = pos > neg ? "긍정" : neg > pos ? "부정" : tones.length > 0 ? "혼합" : "";
                           if (!tone) return null;
-                          // 우리유리+긍정 → 우리민심↑ / 우리유리+부정 → 우리민심↓
-                          // 상대유리+긍정 → 상대민심↑ / 상대유리+부정 → 상대민심↓
-                          const prefix = isOurs ? "우리" : isOpp ? "상대" : "";
-                          const arrow = tone === "긍정" ? "↑" : tone === "부정" ? "↓" : "";
-                          const color = (isOurs && tone === "긍정") || (isOpp && tone === "부정")
-                            ? "text-emerald-500"
-                            : (isOurs && tone === "부정") || (isOpp && tone === "긍정")
-                            ? "text-red-400"
-                            : "text-gray-500";
+                          // 핵심: 우리에게 좋으면 초록, 나쁘면 빨강
+                          // 우리유리 + 시민긍정 = 우리에게 좋음 ✅
+                          // 우리유리 + 시민부정 = 우리 이슈인데 반응 나쁨 ❌
+                          // 상대유리 + 시민긍정 = 상대에게 좋은 반응 ❌
+                          // 상대유리 + 시민부정 = 상대 이슈에 부정 반응 ✅
+                          const goodForUs = (isOurs && tone === "긍정") || (isOpp && tone === "부정");
+                          const badForUs = (isOurs && tone === "부정") || (isOpp && tone === "긍정");
+                          const label = goodForUs ? "우리에게 유리" : badForUs ? "우리에게 불리" : "혼합";
+                          const color = goodForUs ? "text-emerald-500" : badForUs ? "text-red-400" : "text-gray-500";
+                          const icon = goodForUs ? "👍" : badForUs ? "👎" : "—";
                           return (
                             <span className={`text-[7px] ${color}`}>
-                              {prefix}민심{arrow}
+                              {icon} {label}
                             </span>
                           );
                         })()}
