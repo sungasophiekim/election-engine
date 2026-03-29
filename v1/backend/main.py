@@ -107,6 +107,39 @@ def trigger_collect():
     return {"status": "수집 시작됨"}
 
 
+@app.post("/api/admin/fix-party")
+def fix_party_labels():
+    """여야 표기 일괄 수정 — 국민의힘=야당, 민주당=여당"""
+    import json
+    from v1config.settings import ENRICHMENT_PATH
+    try:
+        with open(ENRICHMENT_PATH) as f:
+            snap = json.load(f)
+        fixed = 0
+        replacements = [
+            ("여당 약세", "야당(국힘) 약세"),
+            ("여당 분열", "야당(국힘) 분열"),
+            ("여당 내홍", "야당(국힘) 내홍"),
+            ("여당 지지율", "야당(국힘) 지지율"),
+            ("여당이 유리", "야당(국힘)이 유리"),
+            ("여당 약화", "야당(국힘) 약화"),
+            ("여당 위기", "야당(국힘) 위기"),
+        ]
+        for c in snap.get("news_clusters", []):
+            for field in ["summary", "why", "tip"]:
+                text = c.get(field, "")
+                for old, new in replacements:
+                    if old in text:
+                        c[field] = text.replace(old, new)
+                        text = c[field]
+                        fixed += 1
+        with open(ENRICHMENT_PATH, "w") as f:
+            json.dump(snap, f, ensure_ascii=False, indent=2, default=str)
+        return {"status": f"수정 완료: {fixed}건"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/api/admin/reset-history")
 def reset_history():
     """히스토리 초기화 — 잘못된 데이터 리셋"""
