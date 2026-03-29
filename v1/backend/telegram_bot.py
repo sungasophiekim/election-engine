@@ -150,6 +150,7 @@ D-{d_day} · 갱신 {ts}"""
         [{"text": "🧠 민심 레이더", "callback_data": "radar"}, {"text": "📈 지수 현황", "callback_data": "indices"}],
         [{"text": "🔧 이슈 수정", "callback_data": "fix_menu"}, {"text": "🔍 키워드 관리", "callback_data": "kw_menu"}],
         [{"text": "📋 데일리 요약", "callback_data": "daily"}, {"text": "📌 규칙 목록", "callback_data": "rules"}],
+        [{"text": "🔧 시스템 상태", "callback_data": "sys_status"}, {"text": "🚀 시스템 관리", "callback_data": "sys_admin"}],
     ]
     return text, buttons
 
@@ -198,6 +199,24 @@ def _handle_callback(cb_data, chat_id, msg_id, base):
 
     elif cb_data == "rules":
         _cb_rules(chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_status":
+        _cb_sys_status(snap, chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_admin":
+        _cb_sys_admin(chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_collect":
+        _cb_sys_collect(chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_restart":
+        _cb_sys_restart(chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_deploy":
+        _cb_sys_deploy(chat_id, msg_id, base, back)
+
+    elif cb_data == "sys_log":
+        _cb_sys_log(chat_id, msg_id, base, back)
 
 
 def _cb_dashboard(snap, chat_id, msg_id, base, back):
@@ -751,3 +770,184 @@ def start_telegram_bot():
 
     t = threading.Thread(target=_poll, daemon=True)
     t.start()
+
+    # 자동 헬스체크 — 30분 이상 갱신 없으면 알림
+    def _health_monitor():
+        while True:
+            time.sleep(600)  # 10분마다 체크
+            try:
+                snap = _snap()
+                ts = snap.get("timestamp", "")
+                if not ts:
+                    continue
+                from datetime import datetime
+                last = datetime.fromisoformat(ts.replace("Z", "+00:00").replace("+00:00", ""))
+                diff = (datetime.now() - last).total_seconds()
+                if diff > 1800:  # 30분 이상
+                    mins = int(diff / 60)
+                    send_alert(f"⚠️ <b>시스템 경고</b>\n\n스케줄러 {mins}분째 갱신 없음.\n마지막: {ts[:16]}\n\n/상태 로 확인하세요.")
+            except Exception:
+                pass
+
+    threading.Thread(target=_health_monitor, daemon=True).start()
+
+
+# ═══════════════════════════════════════
+# 시스템 운영 명령어
+# ═══════════════════════════════════════
+
+def _cb_sys_status(snap, chat_id, msg_id, base, back):
+    """시스템 상태 진단"""
+    from datetime import datetime
+
+    ts = snap.get("timestamp", "")
+    clusters = snap.get("news_clusters", [])
+    cr = snap.get("cluster_reaction", {})
+    corr = snap.get("turnout", {}).get("correction", {})
+
+    # 마지막 갱신 시간 차이
+    status_emoji = "🟢"
+    diff_min = 0
+    if ts:
+        try:
+            last = datetime.fromisoformat(ts)
+            diff_min = int((datetime.now() - last).total_seconds() / 60)
+            if diff_min > 30:
+                status_emoji = "🔴"
+            elif diff_min > 15:
+                status_emoji = "🟡"
+        except Exception:
+            pass
+
+    # 클러스터 품질 체크
+    cluster_names = [c.get("name", "") for c in clusters[:5]]
+    bad_names = [n for n in cluster_names if n in ("선거/공천", "기타", "산업/경제", "도정/예산", "KF-21/방산", "청년/복지", "정당/정치")]
+    cluster_quality = "❌ 카테고리 분류됨" if bad_names else f"✅ 사건 클러스터 {len(clusters)}개"
+
+    # 반응 데이터
+    reaction_details = len(cr.get("details", []))
+    reaction_mentions = cr.get("total_mentions", 0)
+
+    lines = [
+        f"{status_emoji} <b>시스템 상태</b>\n",
+        f"마지막 갱신: {ts[:16].replace('T',' ') if ts else '없음'}",
+        f"갱신 경과: {diff_min}분 전",
+        f"",
+        f"<b>데이터 상태:</b>",
+        f"  클러스터: {cluster_quality}",
+        f"  반응 수집: {reaction_details}개 키워드 / {reaction_mentions}건",
+        f"  판세지수: {corr.get('pandse_index', '?')}pt (D-{corr.get('d_day', '?')})",
+        f"",
+        f"<b>클러스터 TOP 5:</b>",
+    ]
+    for i, c in enumerate(clusters[:5], 1):
+        lines.append(f"  {i}. {c.get('name','')} ({c.get('count',0)}건)")
+
+    if bad_names:
+        lines.append(f"\n⚠️ 카테고리 분류 감지: {', '.join(bad_names)}")
+        lines.append("→ /수집 으로 재수집 필요")
+
+    buttons = [
+        [{"text": "🔄 수동 수집", "callback_data": "sys_collect"}, {"text": "📋 최근 로그", "callback_data": "sys_log"}],
+        back[0],
+    ]
+    _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)
+
+
+def _cb_sys_admin(chat_id, msg_id, base, back):
+    """시스템 관리 메뉴"""
+    lines = [
+        "🔧 <b>시스템 관리</b>\n",
+        "수동 수집: 즉시 데이터 수집 실행",
+        "스케줄러 재시작: 스레드 재시작",
+        "재배포: Render 서버 재배포",
+        "최근 로그: 에러 로그 확인",
+    ]
+    buttons = [
+        [{"text": "🔄 수동 수집", "callback_data": "sys_collect"}, {"text": "♻️ 스케줄러 재시작", "callback_data": "sys_restart"}],
+        [{"text": "🚀 재배포", "callback_data": "sys_deploy"}, {"text": "📋 최근 로그", "callback_data": "sys_log"}],
+        back[0],
+    ]
+    _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)
+
+
+def _cb_sys_collect(chat_id, msg_id, base, back):
+    """수동 데이터 수집 트리거"""
+    try:
+        import threading as _th
+        from scheduler import _update_all
+        _th.Thread(target=_update_all, daemon=True).start()
+        _send(base, chat_id, "🔄 수동 수집 시작됨.\n10분 후 /상태 에서 확인하세요.", back, edit_msg=msg_id)
+    except Exception as e:
+        _send(base, chat_id, f"❌ 수집 실행 실패: {e}", back, edit_msg=msg_id)
+
+
+def _cb_sys_restart(chat_id, msg_id, base, back):
+    """스케줄러 스레드 재시작"""
+    try:
+        from scheduler import start_scheduler
+        start_scheduler()
+        _send(base, chat_id, "♻️ 스케줄러 재시작 요청됨.\n새 스레드가 시작됩니다.", back, edit_msg=msg_id)
+    except Exception as e:
+        _send(base, chat_id, f"❌ 재시작 실패: {e}", back, edit_msg=msg_id)
+
+
+def _cb_sys_deploy(chat_id, msg_id, base, back):
+    """Render 재배포 트리거"""
+    try:
+        deploy_hook = os.environ.get("RENDER_DEPLOY_HOOK", "")
+        if not deploy_hook:
+            _send(base, chat_id, "❌ RENDER_DEPLOY_HOOK 환경변수가 설정되지 않았습니다.", back, edit_msg=msg_id)
+            return
+        resp = httpx.post(deploy_hook, timeout=10)
+        if resp.status_code == 200:
+            _send(base, chat_id, "🚀 Render 재배포 트리거 완료.\n빌드+배포까지 3~5분 소요.", back, edit_msg=msg_id)
+        else:
+            _send(base, chat_id, f"❌ 배포 트리거 실패: HTTP {resp.status_code}", back, edit_msg=msg_id)
+    except Exception as e:
+        _send(base, chat_id, f"❌ 배포 실패: {e}", back, edit_msg=msg_id)
+
+
+def _cb_sys_log(chat_id, msg_id, base, back):
+    """최근 에러 로그"""
+    try:
+        snap = _snap()
+        ts = snap.get("timestamp", "?")[:16].replace("T", " ")
+        clusters = snap.get("news_clusters", [])
+        cr = snap.get("cluster_reaction", {})
+
+        # 클러스터 품질 진단
+        issues = []
+        cluster_names = [c.get("name", "") for c in clusters]
+        bad = [n for n in cluster_names if "/" in n or n in ("기타",)]
+        if bad:
+            issues.append(f"⚠️ 카테고리 분류 감지: {', '.join(bad[:3])}")
+        if not clusters:
+            issues.append("❌ 클러스터 데이터 없음")
+
+        # 반응 데이터
+        details = cr.get("details", [])
+        empty_opinions = sum(1 for d in details if not d.get("sources", {}).get("community", {}).get("ai_opinions"))
+        if empty_opinions > 5:
+            issues.append(f"⚠️ AI 시민의견 없는 키워드: {empty_opinions}개")
+
+        # summary/why 누락
+        no_summary = sum(1 for c in clusters if not c.get("summary"))
+        if no_summary > 3:
+            issues.append(f"⚠️ summary 누락: {no_summary}/{len(clusters)}개")
+
+        if not issues:
+            issues.append("✅ 특이사항 없음")
+
+        lines = [
+            "📋 <b>시스템 진단 로그</b>\n",
+            f"마지막 갱신: {ts}",
+            f"클러스터: {len(clusters)}개",
+            f"반응 키워드: {len(details)}개",
+            "",
+            "<b>진단 결과:</b>",
+        ] + issues
+
+        _send(base, chat_id, "\n".join(lines), back, edit_msg=msg_id)
+    except Exception as e:
+        _send(base, chat_id, f"❌ 로그 조회 실패: {e}", back, edit_msg=msg_id)
