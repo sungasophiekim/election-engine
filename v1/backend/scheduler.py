@@ -1456,34 +1456,50 @@ def _daily_snapshot():
 
 
 def _scheduler_loop():
-    """메인 루프"""
-    print(f"[{_now()}] === 스케줄러 v2 시작 (광역수집 + AI분류) ===", flush=True)
-
-    # 시작 시 즉시 실행 생략 — 지수 안정성을 위해 정시 갱신만 실행
-    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 정시(60분 주기)에서 갱신", flush=True)
+    """메인 루프 — 절대 죽지 않는 구조"""
+    print(f"[{_now()}] === 스케줄러 v2 시작 (10분 주기) ===", flush=True)
+    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 10분 주기에서 갱신", flush=True)
 
     tick = 0
+    consecutive_errors = 0
+
     while True:
-        time.sleep(60)
-        tick += 1
-
-        # 10분마다 전체 갱신 (이슈수집 → 반응수집 포함)
-        if tick % 10 == 0:
-            try:
-                print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
-                _update_all()
-            except Exception as e:
-                print(f"[{_now()}] 정기 갱신 에러 (스레드 유지): {e}", flush=True)
-                import traceback
-                traceback.print_exc()
-
-        # 매일 08:00 스냅샷
         try:
-            now = datetime.now()
-            if now.hour == 8 and now.minute == 0:
-                _daily_snapshot()
-        except Exception:
-            pass
+            time.sleep(60)
+            tick += 1
+
+            # 10분마다 전체 갱신
+            if tick % 10 == 0:
+                try:
+                    print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
+                    _update_all()
+                    consecutive_errors = 0  # 성공하면 에러 카운트 리셋
+                    print(f"[{_now()}] 정기 갱신 완료", flush=True)
+                except Exception as e:
+                    consecutive_errors += 1
+                    print(f"[{_now()}] 정기 갱신 에러 #{consecutive_errors}: {e}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    # 연속 에러 5회 이상이면 10분 대기 후 재시도
+                    if consecutive_errors >= 5:
+                        print(f"[{_now()}] 연속 에러 {consecutive_errors}회 — 10분 대기", flush=True)
+                        time.sleep(600)
+
+            # 매일 08:00 스냅샷
+            try:
+                now = datetime.now()
+                if now.hour == 8 and now.minute == 0:
+                    _daily_snapshot()
+            except Exception:
+                pass
+
+        except Exception as e:
+            # 루프 자체의 에러도 잡기 — 절대 스레드 죽지 않음
+            print(f"[{_now()}] 스케줄러 루프 에러 (복구 중): {e}", flush=True)
+            try:
+                time.sleep(60)
+            except Exception:
+                pass
 
 
 def start_scheduler():
