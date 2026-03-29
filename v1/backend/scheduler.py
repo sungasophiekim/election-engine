@@ -730,13 +730,15 @@ def _ai_cluster_events(articles: list) -> list:
 - why: "대통령 경남 방문 = 여당 후보 프레임 강화" 식으로 유불리 이유 1줄
 - issue_summary와 reaction_summary는 반드시 포함 (clusters 배열 밖 최상위 필드)"""
 
+        print(f"[{_now()}] AI 클러스터링 호출 시작 (기사 {len(lines)}건, 프롬프트 ~{len(prompt)}자)", flush=True)
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=3000,
-            system="당신은 뉴스 사건 클러스터링 전문가입니다. 반드시 구체적 사건명으로 묶으세요. '선거/공천', '산업/경제', '기타' 같은 카테고리명은 절대 사용 금지. JSON만 출력하세요.",
+            max_tokens=4000,
+            system="당신은 뉴스 사건 클러스터링 전문가입니다. 반드시 구체적 사건명으로 묶으세요. '선거/공천', '산업/경제', '기타' 같은 카테고리명은 절대 사용 금지. 코드블록(```) 없이 순수 JSON만 출력하세요.",
             messages=[{"role": "user", "content": prompt}],
         )
         text = resp.content[0].text.strip()
+        print(f"[{_now()}] AI 클러스터링 응답: {len(text)}자 | 시작: {text[:50]}", flush=True)
 
         # JSON 파싱
         # 코드블록 제거
@@ -833,12 +835,16 @@ def _ai_cluster_events(articles: list) -> list:
 
     except Exception as e:
         print(f"[{_now()}] AI 클러스터링 실패: {e}", flush=True)
-        # 폴백: 카테고리 기반
+        import traceback
+        traceback.print_exc()
+        # 폴백: 대표 기사 제목 기반 (카테고리명 사용 금지)
         cats = {}
         for a in articles:
             cat = a.get("category", "기타") or "기타"
             if cat not in cats:
-                cats[cat] = {"name": cat, "count": 0, "articles": [], "kim": 0, "park": 0}
+                # 카테고리명 대신 첫 번째 기사 제목에서 핵심 추출
+                title = a.get("title", "")[:25]
+                cats[cat] = {"name": title or cat, "count": 0, "articles": [], "kim": 0, "park": 0, "_first_title": title}
             cats[cat]["count"] += 1
             cats[cat]["kim"] += a.get("kim_linked", 0)
             cats[cat]["park"] += a.get("park_linked", 0)
