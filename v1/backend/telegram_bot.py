@@ -5,7 +5,9 @@ import threading
 import time
 import httpx
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+KST = timezone(timedelta(hours=9))
 
 _DATA = Path(__file__).resolve().parent.parent.parent / "data"
 CORRECTIONS_PATH = _DATA / "side_corrections.json"
@@ -62,6 +64,18 @@ def _save(path, data):
 
 def _snap():
     return _load(ENRICHMENT_PATH)
+
+def _to_kst(iso_str: str) -> str:
+    """UTC ISO 문자열 → KST 'YYYY-MM-DD HH:MM' 변환"""
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return iso_str[:16].replace("T", " ")
 
 def _corrections():
     return _load(CORRECTIONS_PATH, {"corrections": [], "rules": []})
@@ -137,7 +151,7 @@ def _main_menu(snap=None):
     issue = ci.get("issue_index", 50)
     reaction = cr.get("reaction_index", 50)
     pandse = corr.get("pandse_index", 50)
-    ts = snap.get("timestamp", "")[:16].replace("T", " ")
+    ts = _to_kst(snap.get("timestamp", ""))
 
     text = f"""🏛 <b>김경수 캠프 AI 전략 어시스턴트</b>
 
@@ -377,7 +391,7 @@ def _cb_indices(snap, chat_id, msg_id, base, back):
 D-{corr.get('d_day', '?')}
 {h24}{f_text}
 
-갱신: {snap.get('timestamp', '')[:16].replace('T', ' ')}"""
+갱신: {_to_kst(snap.get('timestamp', ''))}"""
 
     buttons = [
         [{"text": "📊 대시보드", "callback_data": "dashboard"}, {"text": "📡 TOP 이슈", "callback_data": "issues"}],
@@ -817,9 +831,9 @@ def _cb_sys_status(snap, chat_id, msg_id, base, back):
         try:
             last = datetime.fromisoformat(ts)
             diff_min = int((datetime.now() - last).total_seconds() / 60)
-            if diff_min > 30:
+            if diff_min > 60:
                 status_emoji = "🔴"
-            elif diff_min > 15:
+            elif diff_min > 30:
                 status_emoji = "🟡"
         except Exception:
             pass
@@ -835,7 +849,7 @@ def _cb_sys_status(snap, chat_id, msg_id, base, back):
 
     lines = [
         f"{status_emoji} <b>시스템 상태</b>\n",
-        f"마지막 갱신: {ts[:16].replace('T',' ') if ts else '없음'}",
+        f"마지막 갱신: {_to_kst(ts) if ts else '없음'}",
         f"갱신 경과: {diff_min}분 전",
         f"",
         f"<b>데이터 상태:</b>",
@@ -917,7 +931,7 @@ def _cb_sys_log(chat_id, msg_id, base, back):
     """최근 에러 로그"""
     try:
         snap = _snap()
-        ts = snap.get("timestamp", "?")[:16].replace("T", " ")
+        ts = _to_kst(snap.get("timestamp", ""))
         clusters = snap.get("news_clusters", [])
         cr = snap.get("cluster_reaction", {})
 
