@@ -23,7 +23,13 @@ export const getReactionRadar = () => f<any>("/api/enrichment/reaction-radar");
 export const getDailyBriefing = () => f<any>("/api/strategy/daily-briefing");
 export const generateDailyBriefing = async (): Promise<any> => {
   // 생성 트리거
-  await fetch(`${API_BASE}/api/strategy/daily-briefing/generate`, { method: "POST" });
+  const triggerRes = await fetch(`${API_BASE}/api/strategy/daily-briefing/generate`, { method: "POST" });
+  const triggerData = await triggerRes.json();
+  // 1일 1회 제한: 이미 생성된 경우 기존 리포트 반환
+  if (triggerData.status === "already_generated") {
+    alert(triggerData.message);
+    return f<any>("/api/strategy/daily-briefing");
+  }
   // 폴링: 완료될 때까지 대기
   const maxRetries = 40;  // 최대 40회 × 3초 = 120초
   for (let i = 0; i < maxRetries; i++) {

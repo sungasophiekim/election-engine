@@ -480,9 +480,27 @@ def daily_briefing():
 
 @router.post("/daily-briefing/generate")
 def generate_daily_briefing():
-    """데일리 리포트 AI 생성 (수동 트리거) — 생성 후 아카이브 저장"""
+    """데일리 리포트 AI 생성 (수동 트리거) — 1일 1회 제한, 생성 후 아카이브 저장"""
     if _generating.get("daily"):
         return {"status": "generating", "message": "이미 생성 중입니다."}
+
+    # 1일 1회 제한: 오늘 이미 성공적으로 생성된 리포트가 있으면 차단
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
+        return {"status": "already_generated", "message": f"오늘({today}) 리포트가 이미 생성되었습니다. 내일 다시 시도해주세요."}
+    # 파일 아카이브도 확인
+    today_file = LEGACY_DATA / "daily_reports" / f"{today}.json"
+    if today_file.exists():
+        try:
+            with open(today_file) as _f:
+                existing = json.load(_f)
+            if not existing.get("error"):
+                # 캐시에도 로드
+                _cache["daily"]["date"] = today
+                _cache["daily"]["data"] = existing
+                return {"status": "already_generated", "message": f"오늘({today}) 리포트가 이미 생성되었습니다. 내일 다시 시도해주세요."}
+        except Exception:
+            pass
 
     _generating["daily"] = True
     threading.Thread(target=_generate_daily_sync, daemon=True).start()
