@@ -148,13 +148,15 @@ def _load_history() -> list:
 def _build_chart_data(history_entries: list) -> dict:
     """history entries에서 프론트엔드 차트용 데이터 생성."""
     if not history_entries:
-        return {}
+        return {"timestamps": [], "issue_index": [], "reaction_index": [], "pandse": [], "summary": {}}
     timestamps = [h.get("date", "") for h in history_entries]
-    issue_vals = [h.get("issue_index", 50) for h in history_entries]
-    reaction_vals = [h.get("reaction_index", 50) for h in history_entries]
-    pandse_vals = [h.get("pandse", 50) for h in history_entries]
+    issue_vals = [float(h.get("issue_index", 50)) for h in history_entries]
+    reaction_vals = [float(h.get("reaction_index", 50)) for h in history_entries]
+    pandse_vals = [float(h.get("pandse", 50)) for h in history_entries]
 
     def _summary(vals):
+        if not vals:
+            return {"min": 0, "max": 0, "current": 0, "range": 0}
         return {
             "min": round(min(vals), 1),
             "max": round(max(vals), 1),
@@ -384,13 +386,18 @@ def _generate_daily_sync():
     global _generating
     today = datetime.now().strftime("%Y-%m-%d")
     try:
+        print(f"[Strategy] 데일리 생성 시작 ({today})", flush=True)
         snap = _load_snap()
+        if not snap:
+            print("[Strategy] WARNING: snap이 비어있음", flush=True)
 
         # report_meta에서 이전 생성 시각 읽기
         meta = _load_report_meta()
         since_ts = meta.get("last_daily_generated_at")
+        print(f"[Strategy] meta 로드 완료, since_ts={since_ts}", flush=True)
 
         context = _build_daily_context(snap, since_timestamp=since_ts)
+        print(f"[Strategy] context 빌드 완료 ({len(context)}자)", flush=True)
         _ensure_env()
 
         import anthropic
@@ -400,6 +407,7 @@ def _generate_daily_sync():
         weekday_kr = ["월","화","수","목","금","토","일"][datetime.now().weekday()]
 
         prompt, system_msg = _build_daily_prompt(context, today_str, weekday_kr)
+        print(f"[Strategy] AI 호출 시작...", flush=True)
 
         resp = client.messages.create(
             model="claude-sonnet-4-6",
@@ -408,6 +416,7 @@ def _generate_daily_sync():
             messages=[{"role": "user", "content": prompt}],
         )
         text = resp.content[0].text.strip()
+        print(f"[Strategy] AI 응답 수신 ({len(text)}자)", flush=True)
         data = _parse_json(text)
         data["generated_at"] = datetime.now().isoformat()
         data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
@@ -428,9 +437,11 @@ def _generate_daily_sync():
             _save_report_meta(meta)
             print(f"[Strategy] 데일리 리포트 생성 완료 (since={since_ts or 'all'})", flush=True)
         else:
+            print(f"[Strategy] AI 응답에 error 포함: {data.get('error','')[:100]}", flush=True)
             _cache["daily"]["data"] = data
     except Exception as e:
         import traceback
+        print(f"[Strategy] 데일리 생성 실패: {e}", flush=True)
         traceback.print_exc()
         _cache["daily"]["data"] = {"error": str(e), "generated_at": datetime.now().isoformat()}
     finally:
