@@ -2,6 +2,7 @@
 import json
 import os
 from datetime import datetime, timedelta
+from typing import Optional
 from fastapi import APIRouter
 from v1config.settings import ENRICHMENT_PATH, LEGACY_DATA
 
@@ -90,7 +91,7 @@ def _load_polls() -> list:
         return []
 
 
-def _filter_history_since(history: list, since_iso: str | None) -> list:
+def _filter_history_since(history: list, since_iso: Optional[str]) -> list:
     """since_iso 이후의 history entries만 반환. None이면 전체 반환."""
     if not since_iso or not history:
         return history
@@ -193,7 +194,7 @@ def _ensure_env():
             break
 
 
-def _build_daily_context(snap: dict, since_timestamp: str | None = None) -> str:
+def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> str:
     clusters = snap.get("news_clusters", [])
     buzz = snap.get("candidate_buzz", {})
     corr = snap.get("turnout", {}).get("correction", {})
@@ -509,8 +510,8 @@ def list_daily_reports():
     return {"reports": reports}
 
 
-def _build_daily_prompt(context: str, today_str: str, weekday_kr: str) -> str:
-    return f"""{context}
+def _build_daily_prompt(context: str, today_str: str, weekday_kr: str):
+    prompt = f"""{context}
 
 당신은 김경수 경남도지사 캠프의 전략 총 책임자입니다.
 이것은 예측 리포트가 아닙니다. 진단 중심 전략 리포트입니다.
