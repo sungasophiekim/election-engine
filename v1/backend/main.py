@@ -87,6 +87,13 @@ app.include_router(enrichment_router)
 app.include_router(strategy_router)
 
 
+@app.get("/health")
+def health():
+    """헬스체크 — UptimeRobot 핑용 (Render 슬립 방지)"""
+    from scheduler import _now
+    return {"status": "ok", "time": _now()}
+
+
 @app.on_event("startup")
 def on_startup():
     from scheduler import start_scheduler
