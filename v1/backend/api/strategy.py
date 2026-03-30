@@ -281,7 +281,7 @@ def _generate_daily_sync():
         prompt, system_msg = _build_daily_prompt(context, today_str, weekday_kr)
 
         resp = client.messages.create(
-            model="claude-opus-4-6",
+            model="claude-sonnet-4-6",
             max_tokens=16000,
             system=system_msg,
             messages=[{"role": "user", "content": prompt}],
@@ -693,7 +693,7 @@ def weekly_briefing(force: bool = False):
 }}"""
 
         resp = client.messages.create(
-            model="claude-opus-4-6",
+            model="claude-sonnet-4-6",
             max_tokens=8000,
             system="You are a Korean election campaign strategist. Respond with valid JSON only. No markdown, no code blocks. Start with { end with }.",
             messages=[{"role": "user", "content": prompt}],
