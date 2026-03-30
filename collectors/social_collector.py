@@ -5,10 +5,17 @@ Election Strategy Engine — 소셜/커뮤니티 데이터 수집기
 """
 import os
 import re
+import time
+import threading
 import httpx
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from dataclasses import dataclass, field
+
+# 네이버 API 글로벌 rate limiter (초당 10건 제한 → 0.12초 간격)
+_naver_lock = threading.Lock()
+_naver_last_call = 0.0
+_NAVER_MIN_INTERVAL = 0.12
 
 
 @dataclass
@@ -67,11 +74,23 @@ def _strip_html(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text).replace("&quot;", '"').replace("&amp;", "&")
 
 
+def _naver_rate_limit():
+    """글로벌 rate limiter — 병렬 호출에서도 초당 10건 미만 보장"""
+    global _naver_last_call
+    with _naver_lock:
+        now = time.time()
+        elapsed = now - _naver_last_call
+        if elapsed < _NAVER_MIN_INTERVAL:
+            time.sleep(_NAVER_MIN_INTERVAL - elapsed)
+        _naver_last_call = time.time()
+
+
 def _search(url: str, query: str, display: int = 100, sort: str = "date") -> tuple[list[dict], int]:
     """
     네이버 검색 API 범용 호출.
     Returns: (items, total_count)
     """
+    _naver_rate_limit()
     headers = _get_headers()
     params = {"query": query, "display": min(display, 100), "sort": sort}
     with httpx.Client(timeout=10) as client:

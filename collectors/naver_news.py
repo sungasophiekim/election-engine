@@ -7,6 +7,8 @@ API 키 발급: https://developers.naver.com/apps/#/register
 """
 import os
 import re
+import time
+import threading
 import httpx
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -14,6 +16,22 @@ from models.schemas import IssueSignal
 
 
 NAVER_SEARCH_URL = "https://openapi.naver.com/v1/search/news.json"
+
+# 네이버 API 글로벌 rate limiter (초당 10건 제한 → 0.12초 간격)
+_naver_lock = threading.Lock()
+_naver_last_call = 0.0
+_NAVER_MIN_INTERVAL = 0.12
+
+
+def _naver_rate_limit():
+    """글로벌 rate limiter — 병렬 호출에서도 초당 10건 미만 보장"""
+    global _naver_last_call
+    with _naver_lock:
+        now = time.time()
+        elapsed = now - _naver_last_call
+        if elapsed < _NAVER_MIN_INTERVAL:
+            time.sleep(_NAVER_MIN_INTERVAL - elapsed)
+        _naver_last_call = time.time()
 
 
 def _get_headers() -> dict:
@@ -49,6 +67,7 @@ def search_news(query: str, display: int = 100, sort: str = "date", pages: int =
         if start > 1000:
             break
         params = {"query": query, "display": min(display, 100), "sort": sort, "start": start}
+        _naver_rate_limit()
         try:
             with httpx.Client(timeout=10) as client:
                 resp = client.get(NAVER_SEARCH_URL, headers=headers, params=params)
@@ -79,6 +98,7 @@ def search_news(query: str, display: int = 100, sort: str = "date", pages: int =
 
 def count_mentions(query: str) -> int:
     """검색 결과 총 건수 반환"""
+    _naver_rate_limit()
     headers = _get_headers()
     params = {"query": query, "display": 1, "sort": "date"}
 
