@@ -1514,8 +1514,8 @@ def _daily_snapshot():
 
 def _scheduler_loop():
     """메인 루프 — 절대 죽지 않는 구조"""
-    print(f"[{_now()}] === 스케줄러 v2 시작 (10분 주기) ===", flush=True)
-    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 10분 주기에서 갱신", flush=True)
+    print(f"[{_now()}] === 스케줄러 v2 시작 (60분 주기) ===", flush=True)
+    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 60분 주기에서 갱신", flush=True)
 
     tick = 0
     consecutive_errors = 0
@@ -1525,8 +1525,8 @@ def _scheduler_loop():
             time.sleep(60)
             tick += 1
 
-            # 10분마다 전체 갱신
-            if tick % 10 == 0:
+            # 60분마다 전체 갱신
+            if tick % 60 == 0:
                 try:
                     print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
                     _update_all()
