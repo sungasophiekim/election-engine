@@ -636,5 +636,885 @@
     "issue_park": 16,
     "reaction_kim": 41,
     "reaction_park": 58
+  },
+  {
+    "timestamp": "2026-03-28T20:14:11.244201",
+    "date": "03.28 20:14",
+    "issue_index": 53.3,
+    "reaction_index": 53.3,
+    "pandse": 52.1,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 39,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 25,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 23,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 88,
+    "issue_park": 34,
+    "reaction_kim": 18,
+    "reaction_park": 17
+  },
+  {
+    "timestamp": "2026-03-28T22:50:11.110308",
+    "date": "03.28 22:50",
+    "issue_index": 55.0,
+    "reaction_index": 55.9,
+    "pandse": 52.6,
+    "top_clusters": [
+      {
+        "name": "경남도지사 선거 판세",
+        "side": "중립",
+        "count": 8,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 수출·산업 성과",
+        "side": "상대 유리",
+        "count": 8,
+        "sentiment": -25
+      },
+      {
+        "name": "창원시장 선거 국힘 분열",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 35
+      },
+      {
+        "name": "국힘 도덕성·비리 논란",
+        "side": "우리 유리",
+        "count": 5,
+        "sentiment": 40
+      },
+      {
+        "name": "진주시장 선거 국힘 역전",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 25
+      }
+    ],
+    "ai_issue_summary": "경남 도정 성과·산업 실적은 현직 유리, 국힘 내분·도덕 논란은 우리 유리 양강 국면",
+    "issue_kim": 21,
+    "issue_park": 13,
+    "reaction_kim": 29,
+    "reaction_park": 32
+  },
+  {
+    "timestamp": "2026-03-28T23:52:19.176726",
+    "date": "03.28 23:52",
+    "issue_index": 51.8,
+    "reaction_index": 49.4,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 47,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 46,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 42,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 64,
+    "issue_park": 35,
+    "reaction_kim": 26,
+    "reaction_park": 19
+  },
+  {
+    "timestamp": "2026-03-29T00:54:10.544727",
+    "date": "03.29 00:54",
+    "issue_index": 51.8,
+    "reaction_index": 49.7,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 49,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 44,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 43,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 27,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 65,
+    "issue_park": 36,
+    "reaction_kim": 26,
+    "reaction_park": 18
+  },
+  {
+    "timestamp": "2026-03-29T01:56:15.248405",
+    "date": "03.29 01:56",
+    "issue_index": 53.8,
+    "reaction_index": 54.1,
+    "pandse": 52.7,
+    "top_clusters": [
+      {
+        "name": "경남도지사 선거 판세",
+        "side": "중립",
+        "count": 8,
+        "sentiment": 0
+      },
+      {
+        "name": "경남 농수산물 수출 호황",
+        "side": "상대 유리",
+        "count": 6,
+        "sentiment": -25
+      },
+      {
+        "name": "국민의힘 내부 갈등·비리",
+        "side": "우리 유리",
+        "count": 7,
+        "sentiment": 45
+      },
+      {
+        "name": "박완수 현직 도정 활동·행사",
+        "side": "상대 유리",
+        "count": 7,
+        "sentiment": -30
+      },
+      {
+        "name": "민주당 선거 전략·결집",
+        "side": "우리 유리",
+        "count": 4,
+        "sentiment": 35
+      }
+    ],
+    "ai_issue_summary": "현직 박완수 도정 성과(수출·행사) vs 야권 공약·여당 내홍 3:3:4 균형. 현직 프리미엄 여전하나 야권 응집력 상승 중.",
+    "issue_kim": 18,
+    "issue_park": 16,
+    "reaction_kim": 37,
+    "reaction_park": 28
+  },
+  {
+    "timestamp": "2026-03-29T02:58:12.531555",
+    "date": "03.29 02:58",
+    "issue_index": 51.8,
+    "reaction_index": 56.3,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 49,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 44,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 43,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 65,
+    "issue_park": 35,
+    "reaction_kim": 27,
+    "reaction_park": 11
+  },
+  {
+    "timestamp": "2026-03-29T04:00:12.866083",
+    "date": "03.29 04:00",
+    "issue_index": 51.8,
+    "reaction_index": 55.0,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 49,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 44,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 43,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 65,
+    "issue_park": 35,
+    "reaction_kim": 28,
+    "reaction_park": 14
+  },
+  {
+    "timestamp": "2026-03-29T05:02:07.785504",
+    "date": "03.29 05:02",
+    "issue_index": 51.8,
+    "reaction_index": 56.4,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 49,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 45,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 28,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 65,
+    "issue_park": 35,
+    "reaction_kim": 27,
+    "reaction_park": 11
+  },
+  {
+    "timestamp": "2026-03-29T06:04:07.271124",
+    "date": "03.29 06:04",
+    "issue_index": 51.4,
+    "reaction_index": 56.5,
+    "pandse": 51.7,
+    "top_clusters": [
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 47,
+        "sentiment": 0
+      },
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 46,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 38,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 63,
+    "issue_park": 40,
+    "reaction_kim": 27,
+    "reaction_park": 11
+  },
+  {
+    "timestamp": "2026-03-29T07:05:53.928706",
+    "date": "03.29 07:05",
+    "issue_index": 52.0,
+    "reaction_index": 54.3,
+    "pandse": 51.9,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 53,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 47,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 40,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 25,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 68,
+    "issue_park": 36,
+    "reaction_kim": 28,
+    "reaction_park": 16
+  },
+  {
+    "timestamp": "2026-03-29T08:07:50.490984",
+    "date": "03.29 08:07",
+    "issue_index": 52.2,
+    "reaction_index": 50.8,
+    "pandse": 51.8,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 54,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 42,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 42,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 73,
+    "issue_park": 36,
+    "reaction_kim": 28,
+    "reaction_park": 17
+  },
+  {
+    "timestamp": "2026-03-29T09:09:49.829377",
+    "date": "03.29 09:09",
+    "issue_index": 49.5,
+    "reaction_index": 48.6,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 53,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "상대 유리",
+        "count": 46,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 26,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 24,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 71,
+    "issue_park": 79,
+    "reaction_kim": 29,
+    "reaction_park": 23
+  },
+  {
+    "timestamp": "2026-03-29T10:11:54.784544",
+    "date": "03.29 10:11",
+    "issue_index": 52.1,
+    "reaction_index": 51.2,
+    "pandse": 51.6,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 55,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 44,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 36,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 32,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 25,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 74,
+    "issue_park": 39,
+    "reaction_kim": 29,
+    "reaction_park": 24
+  },
+  {
+    "timestamp": "2026-03-29T11:53:55.165660",
+    "date": "03.29 11:53",
+    "issue_index": 52.0,
+    "reaction_index": 49.4,
+    "pandse": 51.7,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 71,
+    "issue_park": 37,
+    "reaction_kim": 23,
+    "reaction_park": 17
+  },
+  {
+    "timestamp": "2026-03-29T12:54:38.988134",
+    "date": "03.29 12:54",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-29T14:18:33.574575",
+    "date": "03.29 14:18",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-29T15:20:42.785825",
+    "date": "03.29 15:20",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-29T19:51:17.154979",
+    "date": "03.29 19:51",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-29T21:02:20.086019",
+    "date": "03.29 21:02",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
+  },
+  {
+    "timestamp": "2026-03-29T22:15:11.536637",
+    "date": "03.29 22:15",
+    "issue_index": 50.0,
+    "reaction_index": 50.0,
+    "pandse": 52.0,
+    "top_clusters": [
+      {
+        "name": "선거/공천",
+        "side": "우리 유리",
+        "count": 56,
+        "sentiment": 0
+      },
+      {
+        "name": "산업/경제",
+        "side": "중립",
+        "count": 48,
+        "sentiment": 0
+      },
+      {
+        "name": "기타",
+        "side": "중립",
+        "count": 41,
+        "sentiment": 0
+      },
+      {
+        "name": "도정/예산",
+        "side": "상대 유리",
+        "count": 29,
+        "sentiment": 0
+      },
+      {
+        "name": "KF-21/방산",
+        "side": "중립",
+        "count": 26,
+        "sentiment": 0
+      }
+    ],
+    "ai_issue_summary": "",
+    "issue_kim": 0,
+    "issue_park": 0,
+    "reaction_kim": 0,
+    "reaction_park": 0
   }
 ]

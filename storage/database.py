@@ -571,6 +571,50 @@ class ElectionDB:
         )
         self._conn.commit()
 
+    def get_recent_decisions(self, hours: int = 24, tenant_id: str = None) -> list[dict]:
+        """최근 N시간 이내 결정 목록 조회."""
+        query = """
+            SELECT * FROM v5_decisions
+            WHERE created_at >= datetime('now', ?)
+        """
+        params = [f"-{hours} hours"]
+        if tenant_id:
+            query += " AND tenant_id = ?"
+            params.append(tenant_id)
+        query += " ORDER BY created_at DESC"
+        rows = self._conn.execute(query, params).fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get("context_snapshot"):
+                d["context_snapshot"] = json.loads(d["context_snapshot"])
+            result.append(d)
+        return result
+
+    def get_decision(self, decision_id: str) -> dict | None:
+        """단일 결정 조회."""
+        row = self._conn.execute(
+            "SELECT * FROM v5_decisions WHERE decision_id = ?",
+            (decision_id,),
+        ).fetchone()
+        if row:
+            d = dict(row)
+            if d.get("context_snapshot"):
+                d["context_snapshot"] = json.loads(d["context_snapshot"])
+            return d
+        return None
+
+    def get_recent_opponent_signals(self, limit: int = 5) -> list[dict]:
+        """최근 상대 후보 시그널 조회."""
+        rows = self._conn.execute(
+            """SELECT opponent_name, recorded_at, recent_mentions,
+                      message_shift, attack_prob, recommended_action
+               FROM opponent_signals
+               ORDER BY recorded_at DESC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def get_pending_decisions(self, hours_ago: int = 48, tenant_id: str = None) -> list[dict]:
         """평가 대기 중인 결정 목록 조회 (v5_outcomes에 아직 없는 것)."""
         query = """

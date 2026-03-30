@@ -4,12 +4,11 @@ Election Engine — 텔레그램 전략 봇
 
 명령어:
   /start — 봇 시작 + 사용법
-  /분석 [키워드] — AI 감성 분석 (하루 3회)
-  /전략 — 오늘의 전략 브리핑
-  /이슈 — 현재 이슈 스코어 요약
-  /여론 — 여론조사 현황
-  /상대 — 상대 후보 동향
-  /도움 — 명령어 목록
+  /analyze [키워드] — AI 감성 분석 (하루 3회)
+  /strategy — 오늘의 전략 브리핑
+  /issues — 현재 이슈 스코어 요약
+  /poll — 여론조사 현황
+  /opponent — 상대 후보 동향
 
   v5 학습 루프:
   /decisions — 오늘 추천 요약
@@ -27,6 +26,7 @@ import os
 import sys
 import json
 import logging
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -42,14 +42,15 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
-# 허용된 채팅 ID (설정 안 하면 누구나 사용 가능)
+# 허용된 채팅 ID (설정 안 하면 접근 거부)
 ALLOWED_CHATS = os.getenv("TELEGRAM_ALLOWED_CHATS", "").split(",")
 ALLOWED_CHATS = [c.strip() for c in ALLOWED_CHATS if c.strip()]
 
 
 def _check_access(update: Update) -> bool:
     if not ALLOWED_CHATS:
-        return True
+        logger.warning("TELEGRAM_ALLOWED_CHATS 미설정 — 모든 접근 차단")
+        return False
     chat_id = str(update.effective_chat.id)
     return chat_id in ALLOWED_CHATS
 
@@ -57,6 +58,16 @@ def _check_access(update: Update) -> bool:
 def _get_db():
     from storage.database import ElectionDB
     return ElectionDB()
+
+
+def _parse_json_response(raw: str) -> dict:
+    """Claude 응답에서 JSON을 안전하게 추출."""
+    text = raw.strip()
+    # ```json ... ``` 블록 추출
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if match:
+        text = match.group(1).strip()
+    return json.loads(text)
 
 
 # ── 기본 타입 한글 매핑 ─────────────────────────────────────────
@@ -77,26 +88,28 @@ _GRADE_EMOJI = {
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
+    if not _check_access(update):
+        await update.message.reply_text("⛔ 접근 권한이 없습니다. 관리자에게 채팅 ID를 문의하세요.")
+        return
+
     await update.message.reply_text(
-        f"🗳 *Election Engine 전략 봇*\n\n"
-        f"캠프 전략 AI 에이전트입니다.\n"
-        f"채팅 ID: `{chat_id}`\n\n"
-        f"*기본 명령어:*\n"
-        f"/analyze 키워드 — AI 감성 분석 (하루 3회)\n"
-        f"/strategy — 오늘의 전략 브리핑\n"
-        f"/issues — 이슈 스코어 요약\n"
-        f"/poll — 여론조사 현황\n"
-        f"/opponent — 상대 후보 동향\n\n"
-        f"*학습 루프:*\n"
-        f"/decisions — 오늘 추천 목록\n"
-        f"/approve N — N번 실행 완료\n"
-        f"/override N 값 사유 — N번 수정\n"
-        f"/skip N — N번 건너뜀\n"
-        f"/evaluate — 평가 대기 목록\n"
-        f"/grade N 등급 — N번 수동 평가\n"
-        f"/accuracy — 정확도 리포트\n\n"
-        f"단축: /a /s /i /p /o /d /acc",
+        "🗳 *Election Engine 전략 봇*\n\n"
+        "캠프 전략 AI 에이전트입니다.\n\n"
+        "*기본 명령어:*\n"
+        "/analyze 키워드 — AI 감성 분석 (하루 3회)\n"
+        "/strategy — 오늘의 전략 브리핑\n"
+        "/issues — 이슈 스코어 요약\n"
+        "/poll — 여론조사 현황\n"
+        "/opponent — 상대 후보 동향\n\n"
+        "*학습 루프:*\n"
+        "/decisions — 오늘 추천 목록\n"
+        "/approve N — N번 실행 완료\n"
+        "/override N 값 사유 — N번 수정\n"
+        "/skip N — N번 건너뜀\n"
+        "/evaluate — 평가 대기 목록\n"
+        "/grade N 등급 — N번 수동 평가\n"
+        "/accuracy — 정확도 리포트\n\n"
+        "단축: /a /s /i /p /o /d /acc",
         parse_mode="Markdown",
     )
 
@@ -112,30 +125,33 @@ async def cmd_analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyword = " ".join(context.args) if context.args else ""
     if not keyword:
-        await update.message.reply_text("사용법: /분석 경남도지사")
+        await update.message.reply_text("사용법: /analyze 경남도지사")
         return
 
     await update.message.reply_text(f"🤖 '{keyword}' 분석 중...")
 
     try:
-        db = _get_db()
-        today_count = db.count_ai_today()
-        if today_count >= 3:
-            db.close()
-            await update.message.reply_text(f"⚠ 오늘 분석 3회 한도 초과 (사용: {today_count}회)")
-            return
+        with _get_db() as db:
+            today_count = db.count_ai_today()
+            if today_count >= 3:
+                await update.message.reply_text(f"⚠ 오늘 분석 3회 한도 초과 (사용: {today_count}회)")
+                return
 
-        from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
-        from collectors.naver_news import search_news
-        config = SAMPLE_GYEONGNAM_CONFIG
+            from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+            from collectors.naver_news import search_news
+            config = SAMPLE_GYEONGNAM_CONFIG
 
-        articles = search_news(keyword, display=100)
-        titles = [a["title"] for a in articles[:15]]
+            articles = search_news(keyword, display=100)
+            if not articles:
+                await update.message.reply_text("⚠ 뉴스 검색 결과가 없습니다. 다른 키워드를 시도하세요.")
+                return
 
-        import anthropic
-        client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+            titles = [a["title"] for a in articles[:15]]
 
-        prompt = f"""당신은 '{config.candidate_name}' 후보 캠프의 수석 전략 참모입니다.
+            import anthropic
+            client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+
+            prompt = f"""당신은 '{config.candidate_name}' 후보 캠프의 수석 전략 참모입니다.
 슬로건: {config.slogan}
 상대: {', '.join(config.opponents)}
 
@@ -145,22 +161,19 @@ async def cmd_analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
 캠프 전략가 관점에서 분석하세요. JSON으로만 응답:
 {{"sentiment":"긍정/부정/중립/혼재","score":-1.0~1.0,"summary":"2문장 요약","risk":"위험요소","opportunity":"기회","action":"지금 해야 할 것"}}"""
 
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=400,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = response.content[0].text.strip()
-        if "```" in raw:
-            raw = raw.split("```")[1].replace("json", "").strip()
-        result = json.loads(raw)
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=400,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.content[0].text.strip()
+            result = _parse_json_response(raw)
 
-        db.save_ai_analysis("telegram_sentiment", keyword,
-                           json.dumps({"titles": titles}, ensure_ascii=False),
-                           json.dumps(result, ensure_ascii=False),
-                           "telegram")
-        remaining = 3 - today_count - 1
-        db.close()
+            db.save_ai_analysis("telegram_sentiment", keyword,
+                               json.dumps({"titles": titles}, ensure_ascii=False),
+                               json.dumps(result, ensure_ascii=False),
+                               "telegram")
+            remaining = 3 - today_count - 1
 
         score = result.get("score", 0)
         emoji = "🟢" if score > 0.2 else ("🔴" if score < -0.2 else "🟡")
@@ -175,8 +188,12 @@ async def cmd_analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
 
+    except json.JSONDecodeError:
+        logger.error("Claude 응답 JSON 파싱 실패", exc_info=True)
+        await update.message.reply_text("❌ AI 응답을 해석하지 못했습니다. 잠시 후 다시 시도하세요.")
     except Exception as e:
-        await update.message.reply_text(f"❌ 분석 실패: {str(e)[:100]}")
+        logger.error(f"분석 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 분석 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.")
 
 
 async def cmd_strategy(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,9 +212,8 @@ async def cmd_strategy(update: Update, context: ContextTypes.DEFAULT_TYPE):
         wp = polling.calculate_win_probability()
         trend = polling.calculate_trend()
 
-        db = _get_db()
-        scores = db.get_latest_scores()
-        db.close()
+        with _get_db() as db:
+            scores = db.get_latest_scores()
 
         crisis = sum(1 for s in scores if (s.get("crisis_level") or "").upper() == "CRISIS")
         alert = sum(1 for s in scores if (s.get("crisis_level") or "").upper() == "ALERT")
@@ -222,7 +238,8 @@ async def cmd_strategy(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"전략 브리핑 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 전략 브리핑을 불러오지 못했습니다.")
 
 
 async def cmd_issues(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -231,9 +248,8 @@ async def cmd_issues(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        scores = db.get_latest_scores()
-        db.close()
+        with _get_db() as db:
+            scores = db.get_latest_scores()
 
         if not scores:
             await update.message.reply_text("데이터 없음 — 대시보드에서 전략 갱신을 먼저 하세요")
@@ -248,7 +264,8 @@ async def cmd_issues(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"이슈 조회 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 이슈 데이터를 불러오지 못했습니다.")
 
 
 async def cmd_polling(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -267,12 +284,14 @@ async def cmd_polling(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "📈 *여론조사 현황*\n━━━━━━━━━━━━━━━\n"
         for p in pt.polls[-5:]:
             opp = list(p.opponent_support.values())[0] if p.opponent_support else 0
-            msg += f"`{p.poll_date[5:]}` {p.pollster[:8]:8s} {p.our_support:.1f}% vs {opp:.1f}%\n"
+            pollster = p.pollster[:12]
+            msg += f"`{p.poll_date[5:]}` {pollster:12s} {p.our_support:.1f}% vs {opp:.1f}%\n"
 
         msg += f"\n*승률:* {wp.get('win_prob', 0)*100:.1f}% (격차 {wp.get('gap', 0):+.1f}%p)"
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"여론조사 조회 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 여론조사 데이터를 불러오지 못했습니다.")
 
 
 async def cmd_opponent(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -281,11 +300,8 @@ async def cmd_opponent(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        rows = db._conn.execute(
-            "SELECT * FROM opponent_signals ORDER BY recorded_at DESC LIMIT 5"
-        ).fetchall()
-        db.close()
+        with _get_db() as db:
+            rows = db.get_recent_opponent_signals(limit=5)
 
         if not rows:
             await update.message.reply_text("상대 후보 데이터 없음 — 전략 갱신 필요")
@@ -293,16 +309,17 @@ async def cmd_opponent(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         msg = "👥 *상대 후보 동향*\n━━━━━━━━━━━━━━━\n"
         for r in rows:
-            r = dict(r)
             prob = r.get("attack_prob", 0) * 100
             emoji = "🔴" if prob >= 70 else ("🟡" if prob >= 40 else "🟢")
             msg += f"{emoji} *{r.get('opponent_name', '')}* 공격확률 {prob:.0f}%\n"
-            if r.get("message_shift"):
-                msg += f"   _{r['message_shift']}_\n"
+            shift = r.get("message_shift", "")
+            if shift:
+                msg += f"   _{shift[:80]}_\n"
 
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"상대 동향 조회 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 상대 후보 데이터를 불러오지 못했습니다.")
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -316,13 +333,8 @@ async def cmd_decisions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        rows = db._conn.execute(
-            """SELECT * FROM decision_log
-               WHERE created_at >= datetime('now', '-24 hours')
-               ORDER BY created_at DESC""",
-        ).fetchall()
-        db.close()
+        with _get_db() as db:
+            rows = db.get_recent_decisions(hours=24)
 
         if not rows:
             await update.message.reply_text("📋 오늘 추천 기록이 없습니다. 대시보드에서 전략 갱신을 먼저 하세요.")
@@ -330,14 +342,12 @@ async def cmd_decisions(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         msg = "🧠 *오늘의 추천 목록*\n━━━━━━━━━━━━━━━\n"
         for idx, r in enumerate(rows):
-            r = dict(r)
             type_ko = _TYPE_KO.get(r.get("decision_type", ""), r.get("decision_type", ""))
             kw = r.get("keyword") or r.get("region") or ""
             val = r.get("recommended_value", "")
             override = r.get("override_value")
             executed = r.get("was_executed")
 
-            # 상태 이모지
             if override:
                 status = "✏️"
             elif executed is not None and executed:
@@ -363,10 +373,11 @@ async def cmd_decisions(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"`/override N 값 사유` — 수정"
         )
 
-        # 인라인 버튼 (상위 3건에 대해)
+        # 인라인 버튼 (미처리 건에 대해, 최대 5개)
         buttons = []
-        for idx, r in enumerate(rows[:3]):
-            r = dict(r)
+        for idx, r in enumerate(rows):
+            if len(buttons) >= 5:
+                break
             if r.get("was_executed") is None and not r.get("override_value"):
                 did = r["decision_id"]
                 buttons.append([
@@ -377,7 +388,8 @@ async def cmd_decisions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=reply_markup)
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"추천 목록 조회 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 추천 목록을 불러오지 못했습니다.")
 
 
 async def cmd_approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -406,29 +418,24 @@ async def _execute_by_index(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         return
 
     try:
-        db = _get_db()
-        rows = db._conn.execute(
-            """SELECT decision_id FROM decision_log
-               WHERE created_at >= datetime('now', '-24 hours')
-               ORDER BY created_at DESC""",
-        ).fetchall()
+        with _get_db() as db:
+            rows = db.get_recent_decisions(hours=24)
 
-        if idx < 0 or idx >= len(rows):
-            db.close()
-            await update.message.reply_text(f"⚠ {idx+1}번 추천이 없습니다. (총 {len(rows)}건)")
-            return
+            if idx < 0 or idx >= len(rows):
+                await update.message.reply_text(f"⚠ {idx+1}번 추천이 없습니다. (총 {len(rows)}건)")
+                return
 
-        decision_id = rows[idx]["decision_id"]
-        from engines.decision_logger import log_execution
-        exec_rec = log_execution(decision_id, was_executed, "텔레그램")
-        db.save_execution(exec_rec)
-        db.close()
+            decision_id = rows[idx]["decision_id"]
+            from engines.decision_logger import log_execution
+            exec_rec = log_execution(decision_id, was_executed, "텔레그램")
+            db.save_execution(exec_rec)
 
         emoji = "✅" if was_executed else "⏭"
         action = "실행 완료" if was_executed else "건너뜀"
         await update.message.reply_text(f"{emoji} {idx+1}번 추천: {action}")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"추천 처리 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 처리 중 오류가 발생했습니다.")
 
 
 async def cmd_override(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -448,30 +455,28 @@ async def cmd_override(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("사용법: /override 1 counter 사유")
         return
 
+    if len(new_value) > 100:
+        await update.message.reply_text("⚠ 값이 너무 깁니다. 100자 이내로 입력하세요.")
+        return
+
     try:
-        db = _get_db()
-        rows = db._conn.execute(
-            """SELECT decision_id, recommended_value FROM decision_log
-               WHERE created_at >= datetime('now', '-24 hours')
-               ORDER BY created_at DESC""",
-        ).fetchall()
+        with _get_db() as db:
+            rows = db.get_recent_decisions(hours=24)
 
-        if idx < 0 or idx >= len(rows):
-            db.close()
-            await update.message.reply_text(f"⚠ {idx+1}번 추천이 없습니다.")
-            return
+            if idx < 0 or idx >= len(rows):
+                await update.message.reply_text(f"⚠ {idx+1}번 추천이 없습니다.")
+                return
 
-        row = dict(rows[idx])
-        from engines.decision_logger import log_override
-        override = log_override(
-            row["decision_id"],
-            row["recommended_value"],
-            new_value,
-            reason,
-            "텔레그램",
-        )
-        db.save_override(override)
-        db.close()
+            row = rows[idx]
+            from engines.decision_logger import log_override
+            override = log_override(
+                row["decision_id"],
+                row["recommended_value"],
+                new_value,
+                reason[:200],
+                "텔레그램",
+            )
+            db.save_override(override)
 
         await update.message.reply_text(
             f"✏️ {idx+1}번 수정: `{row['recommended_value']}` → `{new_value}`\n"
@@ -479,7 +484,8 @@ async def cmd_override(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
         )
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"오버라이드 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 수정 중 오류가 발생했습니다.")
 
 
 async def cmd_evaluate(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -488,9 +494,8 @@ async def cmd_evaluate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        pending = db.get_pending_decisions(hours_ago=24)
-        db.close()
+        with _get_db() as db:
+            pending = db.get_pending_decisions(hours_ago=24)
 
         if not pending:
             await update.message.reply_text("📋 평가 대기 건이 없습니다.")
@@ -512,8 +517,8 @@ async def cmd_evaluate(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 line += f" → `{override}`"
             msg += line + "\n"
 
-            # 상위 3건에 인라인 버튼
-            if idx < 3:
+            # 상위 5건에 인라인 버튼
+            if idx < 5:
                 did = d["decision_id"]
                 buttons.append([
                     InlineKeyboardButton("🟢적중", callback_data=f"lrn_grade:{did}:correct"),
@@ -527,7 +532,8 @@ async def cmd_evaluate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=reply_markup)
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"평가 목록 조회 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 평가 목록을 불러오지 못했습니다.")
 
 
 async def cmd_grade(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -549,7 +555,6 @@ async def cmd_grade(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("사용법: /grade 1 correct")
         return
 
-    # 약칭 매핑
     grade_map = {
         "correct": "correct", "c": "correct",
         "partial": "partially_correct", "p": "partially_correct",
@@ -562,31 +567,30 @@ async def cmd_grade(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        pending = db.get_pending_decisions(hours_ago=24)
+        with _get_db() as db:
+            pending = db.get_pending_decisions(hours_ago=24)
 
-        if idx < 0 or idx >= len(pending):
-            db.close()
-            await update.message.reply_text(f"⚠ {idx+1}번이 없습니다. (총 {len(pending)}건)")
-            return
+            if idx < 0 or idx >= len(pending):
+                await update.message.reply_text(f"⚠ {idx+1}번이 없습니다. (총 {len(pending)}건)")
+                return
 
-        d = pending[idx]
-        from engines.outcome_evaluator import OutcomeRecord
-        outcome = OutcomeRecord(
-            decision_id=d["decision_id"],
-            decision_type=d.get("decision_type", ""),
-            keyword=d.get("keyword", ""),
-            recommended_value=d.get("recommended_value", ""),
-            actual_outcome="텔레그램 수동 평가",
-            outcome_grade=grade,
-        )
-        db.save_outcomes([outcome])
-        db.close()
+            d = pending[idx]
+            from engines.outcome_evaluator import OutcomeRecord
+            outcome = OutcomeRecord(
+                decision_id=d["decision_id"],
+                decision_type=d.get("decision_type", ""),
+                keyword=d.get("keyword", ""),
+                recommended_value=d.get("recommended_value", ""),
+                actual_outcome="텔레그램 수동 평가",
+                outcome_grade=grade,
+            )
+            db.save_outcomes([outcome])
 
         emoji = _GRADE_EMOJI.get(grade, grade)
         await update.message.reply_text(f"{emoji} {idx+1}번 평가 완료")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"평가 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 평가 중 오류가 발생했습니다.")
 
 
 async def cmd_accuracy(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -595,16 +599,14 @@ async def cmd_accuracy(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        db = _get_db()
-        summary = db.get_accuracy_summary(days=7)
-        override_stats = db.get_override_stats(days=7)
-        db.close()
+        with _get_db() as db:
+            summary = db.get_accuracy_summary(days=7)
+            override_stats = db.get_override_stats(days=7)
 
         if not summary:
             await update.message.reply_text("📊 아직 평가된 결정이 없습니다.")
             return
 
-        # 전체 집계
         total = sum(r.get("total", 0) for r in summary)
         correct = sum(r.get("correct", 0) for r in summary)
         partial = sum(r.get("partial", 0) for r in summary)
@@ -620,7 +622,6 @@ async def cmd_accuracy(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"  적중 {correct} | 부분 {partial} | 오류 {wrong} | 총 {total}\n\n"
         )
 
-        # 유형별
         for r in summary:
             type_ko = _TYPE_KO.get(r["decision_type"], r["decision_type"])
             rate = r.get("accuracy_rate", 0) if "accuracy_rate" in r else (
@@ -630,7 +631,6 @@ async def cmd_accuracy(update: Update, context: ContextTypes.DEFAULT_TYPE):
             bar = "█" * bar_len + "░" * (10 - bar_len)
             msg += f"  {type_ko}: `{bar}` {rate*100:.0f}%\n"
 
-        # 오버라이드
         if override_stats:
             msg += "\n*오버라이드 패턴:*\n"
             for dtype, data in override_stats.items():
@@ -643,7 +643,8 @@ async def cmd_accuracy(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ 오류: {str(e)[:100]}")
+        logger.error(f"정확도 리포트 실패: {e}", exc_info=True)
+        await update.message.reply_text("❌ 정확도 리포트를 불러오지 못했습니다.")
 
 
 # ── 인라인 버튼 콜백 핸들러 ─────────────────────────────────────
@@ -658,66 +659,81 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        if data.startswith("lrn_approve:"):
-            decision_id = data.split(":")[1]
-            db = _get_db()
-            from engines.decision_logger import log_execution
-            db.save_execution(log_execution(decision_id, True, "텔레그램 버튼"))
-            db.close()
-            await query.edit_message_text(
-                query.message.text + f"\n\n✅ 실행 완료 처리됨",
-                parse_mode="Markdown",
-            )
+        if data.startswith("lrn_approve:") or data.startswith("lrn_skip:"):
+            parts = data.split(":", 1)
+            if len(parts) != 2 or not parts[1]:
+                return
+            decision_id = parts[1]
+            was_executed = data.startswith("lrn_approve:")
 
-        elif data.startswith("lrn_skip:"):
-            decision_id = data.split(":")[1]
-            db = _get_db()
-            from engines.decision_logger import log_execution
-            db.save_execution(log_execution(decision_id, False, "텔레그램 버튼"))
-            db.close()
-            await query.edit_message_text(
-                query.message.text + f"\n\n⏭ 건너뜀 처리됨",
-                parse_mode="Markdown",
-            )
+            with _get_db() as db:
+                from engines.decision_logger import log_execution
+                db.save_execution(log_execution(decision_id, was_executed, "텔레그램 버튼"))
+
+            status = "✅ 실행 완료 처리됨" if was_executed else "⏭ 건너뜀 처리됨"
+            try:
+                await query.edit_message_text(
+                    query.message.text + f"\n\n{status}",
+                    parse_mode="Markdown",
+                )
+            except Exception:
+                pass  # 메시지 이미 삭제/수정된 경우 무시
 
         elif data.startswith("lrn_grade:"):
             parts = data.split(":")
+            if len(parts) != 3 or not parts[1] or not parts[2]:
+                return
             decision_id = parts[1]
             grade = parts[2]
-            db = _get_db()
-            row = db._conn.execute(
-                "SELECT * FROM decision_log WHERE decision_id=?", (decision_id,)
-            ).fetchone()
-            if row:
-                from engines.outcome_evaluator import OutcomeRecord
-                outcome = OutcomeRecord(
-                    decision_id=decision_id,
-                    decision_type=dict(row).get("decision_type", ""),
-                    keyword=dict(row).get("keyword", ""),
-                    recommended_value=dict(row).get("recommended_value", ""),
-                    actual_outcome="텔레그램 버튼 평가",
-                    outcome_grade=grade,
-                )
-                db.save_outcomes([outcome])
-            db.close()
+
+            valid_grades = {"correct", "partially_correct", "wrong", "inconclusive"}
+            if grade not in valid_grades:
+                return
+
+            with _get_db() as db:
+                row = db.get_decision(decision_id)
+                if row:
+                    from engines.outcome_evaluator import OutcomeRecord
+                    outcome = OutcomeRecord(
+                        decision_id=decision_id,
+                        decision_type=row.get("decision_type", ""),
+                        keyword=row.get("keyword", ""),
+                        recommended_value=row.get("recommended_value", ""),
+                        actual_outcome="텔레그램 버튼 평가",
+                        outcome_grade=grade,
+                    )
+                    db.save_outcomes([outcome])
+
             emoji = _GRADE_EMOJI.get(grade, grade)
-            await query.edit_message_text(
-                query.message.text + f"\n\n{emoji} 평가 완료",
-                parse_mode="Markdown",
-            )
+            try:
+                await query.edit_message_text(
+                    query.message.text + f"\n\n{emoji} 평가 완료",
+                    parse_mode="Markdown",
+                )
+            except Exception:
+                pass
 
     except Exception as e:
-        logger.error(f"Callback error: {e}")
-        await query.edit_message_text(
-            query.message.text + f"\n\n❌ 오류: {str(e)[:80]}",
-            parse_mode="Markdown",
-        )
+        logger.error(f"Callback error: {e}", exc_info=True)
+        try:
+            await query.edit_message_text(
+                query.message.text + "\n\n❌ 처리 중 오류가 발생했습니다.",
+                parse_mode="Markdown",
+            )
+        except Exception:
+            pass
 
 
 def main():
     if not TOKEN:
-        print("❌ TELEGRAM_BOT_TOKEN 미설정")
-        return
+        print("❌ TELEGRAM_BOT_TOKEN 미설정 — .env 파일을 확인하세요.")
+        sys.exit(1)
+
+    if not ANTHROPIC_KEY:
+        print("⚠ ANTHROPIC_API_KEY 미설정 — /analyze 명령이 작동하지 않습니다.")
+
+    if not ALLOWED_CHATS:
+        print("⚠ TELEGRAM_ALLOWED_CHATS 미설정 — 모든 접근이 차단됩니다.")
 
     app = Application.builder().token(TOKEN).build()
 
@@ -750,6 +766,7 @@ def main():
     app.add_handler(CallbackQueryHandler(callback_handler))
 
     print("🤖 텔레그램 전략 봇 시작...")
+    print(f"   허용 채팅: {', '.join(ALLOWED_CHATS) if ALLOWED_CHATS else '없음 (전체 차단)'}")
     print(f"   기본: /start /analyze /strategy /issues /poll /opponent")
     print(f"   학습: /decisions /approve /skip /override /evaluate /grade /accuracy")
     app.run_polling()
