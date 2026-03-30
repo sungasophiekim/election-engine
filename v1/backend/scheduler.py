@@ -217,10 +217,20 @@ def _update_all():
                         a["park_linked"] = 1 if "박완수" in t else 0
                         all_articles.append(a)
                 time.sleep(0.3)
-            except Exception:
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "quota" in err_msg.lower() or "limit" in err_msg.lower():
+                    print(f"[{_now()}] ⚠ 네이버 API 쿼터 초과: {q} — {err_msg[:80]}", flush=True)
+                    break  # 쿼터 초과면 나머지 쿼리도 실패하므로 중단
                 pass
 
         src_ts["news_updated_at"] = datetime.now().isoformat()
+
+        # ── 1.1 뉴스 0건이면 이전 데이터 유지 + 조기 종료 ──
+        if not all_articles:
+            print(f"[{_now()}] ⚠ 뉴스 수집 0건 (API 쿼터 초과 가능성). 이전 데이터 유지", flush=True)
+            _save_snap(snap)
+            return
 
         # ── 1.2 기사별 댓글 수 수집 (상위 50건) ──
         _fetch_comment_counts(all_articles[:50])

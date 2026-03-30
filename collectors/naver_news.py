@@ -67,6 +67,10 @@ def search_news(query: str, display: int = 100, sort: str = "date", pages: int =
             # 반환 건수가 요청보다 적으면 더 이상 없음
             if len(data.get("items", [])) < display:
                 break
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                print(f"[naver_news] ⚠ API 쿼터 초과 (429): {query}")
+            break
         except Exception:
             break
 
