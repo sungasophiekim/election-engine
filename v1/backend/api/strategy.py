@@ -62,6 +62,26 @@ def _load_snap() -> dict:
         return {}
 
 
+def _load_report_meta() -> dict:
+    """report_meta.json 로드 — last_daily_generated_at 등 저장"""
+    meta_path = LEGACY_DATA / "report_meta.json"
+    if meta_path.exists():
+        try:
+            with open(meta_path) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def _save_report_meta(meta: dict):
+    """report_meta.json 저장"""
+    meta_path = LEGACY_DATA / "report_meta.json"
+    LEGACY_DATA.mkdir(parents=True, exist_ok=True)
+    with open(meta_path, "w") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+
 def _load_polls() -> list:
     try:
         with open(LEGACY_DATA / "polls.json") as f:
@@ -70,12 +90,89 @@ def _load_polls() -> list:
         return []
 
 
+def _filter_history_since(history: list, since_iso: str | None) -> list:
+    """since_iso 이후의 history entries만 반환. None이면 전체 반환."""
+    if not since_iso or not history:
+        return history
+    filtered = [h for h in history if h.get("date", "") > since_iso]
+    # 필터 후 빈 결과 → 최근 24건 폴백
+    if not filtered:
+        return history[-24:]
+    return filtered
+
+
+def _accumulate_top_clusters(filtered_history: list, current_clusters: list, limit: int = 5) -> list:
+    """이전 리포트 이후 history의 top_clusters를 합산하여 TOP N 반환."""
+    from collections import Counter
+    cluster_scores: Counter = Counter()
+    cluster_sides: dict = {}
+
+    # history에서 누적
+    for entry in filtered_history:
+        for c in entry.get("top_clusters", []):
+            name = c.get("name", "")
+            if name:
+                cluster_scores[name] += c.get("count", 1)
+                cluster_sides.setdefault(name, c.get("side", "중립"))
+
+    # 현재 클러스터도 반영 (가중치 2배 — 최신 데이터 우선)
+    for c in current_clusters:
+        name = c.get("name", "")
+        if name:
+            cluster_scores[name] += c.get("count", 1) * 2
+            cluster_sides[name] = c.get("side", "중립")
+
+    # TOP N 추출
+    top = cluster_scores.most_common(limit)
+    result = []
+    for name, score in top:
+        # current_clusters에서 상세 정보 가져오기
+        detail = next((c for c in current_clusters if c.get("name") == name), {})
+        result.append({
+            **detail,
+            "name": name,
+            "side": cluster_sides.get(name, "중립"),
+            "accumulated_score": score,
+        })
+    return result
+
+
 def _load_history() -> list:
     try:
         with open(LEGACY_DATA / "indices_history.json") as f:
             return json.load(f)
     except Exception:
         return []
+
+
+def _build_chart_data(history_entries: list) -> dict:
+    """history entries에서 프론트엔드 차트용 데이터 생성."""
+    if not history_entries:
+        return {}
+    timestamps = [h.get("date", "") for h in history_entries]
+    issue_vals = [h.get("issue_index", 50) for h in history_entries]
+    reaction_vals = [h.get("reaction_index", 50) for h in history_entries]
+    pandse_vals = [h.get("pandse", 50) for h in history_entries]
+
+    def _summary(vals):
+        return {
+            "min": round(min(vals), 1),
+            "max": round(max(vals), 1),
+            "current": round(vals[-1], 1),
+            "range": round(max(vals) - min(vals), 1),
+        }
+
+    return {
+        "timestamps": timestamps,
+        "issue_index": issue_vals,
+        "reaction_index": reaction_vals,
+        "pandse": pandse_vals,
+        "summary": {
+            "issue": _summary(issue_vals),
+            "reaction": _summary(reaction_vals),
+            "pandse": _summary(pandse_vals),
+        },
+    }
 
 
 def _ensure_env():
@@ -94,7 +191,7 @@ def _ensure_env():
             break
 
 
-def _build_daily_context(snap: dict) -> str:
+def _build_daily_context(snap: dict, since_timestamp: str | None = None) -> str:
     clusters = snap.get("news_clusters", [])
     buzz = snap.get("candidate_buzz", {})
     corr = snap.get("turnout", {}).get("correction", {})
@@ -103,8 +200,18 @@ def _build_daily_context(snap: dict) -> str:
     factors = corr.get("factors", [])
     polls = _load_polls()
     latest_poll = polls[-1] if polls else {}
-    history = _load_history()[-7:]
-    history_24h = _load_history()[-24:]  # 최근 24시간
+
+    full_history = _load_history()
+    # since_timestamp 기반 필터링
+    filtered_history = _filter_history_since(full_history, since_timestamp)
+    history = filtered_history[-7:]
+    history_24h = filtered_history[-24:] if len(filtered_history) >= 2 else full_history[-24:]
+
+    # 클러스터 누적 TOP 5
+    if since_timestamp:
+        accumulated_clusters = _accumulate_top_clusters(filtered_history, clusters, limit=5)
+    else:
+        accumulated_clusters = clusters[:5]
 
     # 24시간 지수 흐름 분석
     h24_analysis = ""
@@ -150,6 +257,12 @@ def _build_daily_context(snap: dict) -> str:
     cluster_text = "\n".join(
         f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | {c.get('count',0)}건 | 감성{c.get('sentiment',0):+d} | 시민반응: {c.get('community_expected','?')} | tip: {c.get('tip','')}"
         for i, c in enumerate(clusters[:10])
+    ) or "없음"
+
+    # 누적 TOP 5 클러스터 (이전 리포트 이후 합산)
+    accumulated_text = "\n".join(
+        f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | 누적점수 {c.get('accumulated_score',0)}"
+        for i, c in enumerate(accumulated_clusters)
     ) or "없음"
 
     # 이슈지수 (가중지수)
@@ -217,6 +330,9 @@ def _build_daily_context(snap: dict) -> str:
 ### 뉴스 클러스터 TOP 10 (감성·시민반응 포함)
 {cluster_text}
 
+### 누적 주요 클러스터 TOP 5 (이전 리포트 이후 합산)
+{accumulated_text}
+
 ### AI 한줄 해석
 - 이슈: {snap.get('ai_issue_summary', '없음')}
 - 반응: {snap.get('ai_reaction_summary', '없음')}
@@ -264,12 +380,17 @@ _generating = {"daily": False, "weekly": False}
 
 
 def _generate_daily_sync():
-    """백그라운드에서 데일리 리포트 생성"""
+    """백그라운드에서 데일리 리포트 생성 — report_meta 기반 누적 필터링"""
     global _generating
     today = datetime.now().strftime("%Y-%m-%d")
     try:
         snap = _load_snap()
-        context = _build_daily_context(snap)
+
+        # report_meta에서 이전 생성 시각 읽기
+        meta = _load_report_meta()
+        since_ts = meta.get("last_daily_generated_at")
+
+        context = _build_daily_context(snap, since_timestamp=since_ts)
         _ensure_env()
 
         import anthropic
@@ -291,12 +412,21 @@ def _generate_daily_sync():
         data["generated_at"] = datetime.now().isoformat()
         data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")
         data["date"] = today
+        data["data_since"] = since_ts or "all"
+
+        # chart_data 첨부
+        full_history = _load_history()
+        filtered_for_chart = _filter_history_since(full_history, since_ts)
+        data["chart_data"] = _build_chart_data(filtered_for_chart)
 
         if not data.get("error"):
             _cache["daily"]["date"] = today
             _cache["daily"]["data"] = data
             _save_daily_cache(today, data)
-            print(f"[Strategy] 데일리 리포트 생성 완료", flush=True)
+            # 성공 후에만 타임스탬프 기록
+            meta["last_daily_generated_at"] = datetime.now().isoformat()
+            _save_report_meta(meta)
+            print(f"[Strategy] 데일리 리포트 생성 완료 (since={since_ts or 'all'})", flush=True)
         else:
             _cache["daily"]["data"] = data
     except Exception as e:
@@ -585,20 +715,99 @@ def daily_reports_list():
     return {"reports": reports[:30], "total": len(reports)}
 
 
+def _load_week_dailies(week_key: str) -> list:
+    """해당 주의 데일리 리포트 파일들을 로드. week_key: '2026-W13' 형식."""
+    report_dir = LEGACY_DATA / "daily_reports"
+    if not report_dir.exists():
+        return []
+    # week_key에서 해당 주의 월요일~일요일 날짜 범위 계산
+    year, week_num = int(week_key[:4]), int(week_key.split("W")[1])
+    from datetime import date
+    # ISO week: 월요일 시작
+    try:
+        monday = date.fromisocalendar(year, week_num, 1)
+        sunday = date.fromisocalendar(year, week_num, 7)
+    except (ValueError, AttributeError):
+        # Python 3.8 이하 폴백
+        monday = date(year, 1, 4)  # ISO week 1 contains Jan 4
+        monday -= timedelta(days=monday.weekday())
+        monday += timedelta(weeks=week_num - 1)
+        sunday = monday + timedelta(days=6)
+
+    mon_str = monday.strftime("%Y-%m-%d")
+    sun_str = sunday.strftime("%Y-%m-%d")
+
+    dailies = []
+    for fp in sorted(report_dir.glob("*.json")):
+        date_str = fp.stem
+        if mon_str <= date_str <= sun_str:
+            try:
+                with open(fp) as f:
+                    d = json.load(f)
+                if not d.get("error"):
+                    dailies.append(d)
+            except Exception:
+                continue
+    return dailies
+
+
+def _build_weekly_context_from_dailies(dailies: list) -> str:
+    """데일리 리포트들에서 위클리 컨텍스트 생성."""
+    parts = []
+    for i, d in enumerate(dailies, 1):
+        date_str = d.get("date", f"Day {i}")
+        summary = d.get("executive_summary", "없음")
+        decision = d.get("decision_layer", {})
+        theme = d.get("daily_theme", {})
+        strategies = d.get("strategies", [])
+        field = d.get("field_schedule", [])
+        diagnosis = d.get("situation_diagnosis", {})
+
+        strat_text = "\n".join(
+            f"    - {s.get('title','')}: {s.get('action','')[:80]}"
+            for s in strategies[:3]
+        ) or "    없음"
+
+        field_text = "\n".join(
+            f"    - {f.get('region','')}: {f.get('concept','')}"
+            for f in field[:2]
+        ) or "    없음"
+
+        # chart_data 요약
+        chart = d.get("chart_data", {})
+        chart_summary = ""
+        if chart.get("summary"):
+            cs = chart["summary"]
+            chart_summary = f"\n  - 지수범위: 이슈 {cs.get('issue',{}).get('min','')}~{cs.get('issue',{}).get('max','')}, 반응 {cs.get('reaction',{}).get('min','')}~{cs.get('reaction',{}).get('max','')}, 판세 {cs.get('pandse',{}).get('min','')}~{cs.get('pandse',{}).get('max','')}"
+
+        parts.append(f"""### [{date_str}] 데일리 리포트
+  - 종합: {summary[:200]}
+  - 국면: {decision.get('moment_type', '?')}
+  - 테마: {theme.get('keyword', '?')} — {theme.get('rationale', '')[:100]}
+  - 방어: {decision.get('must_protect', '?')[:100]}
+  - 공격: {decision.get('can_push', '?')[:100]}{chart_summary}
+  - 주요 전략:
+{strat_text}
+  - 현장일정:
+{field_text}""")
+
+    return "\n\n".join(parts)
+
+
 @router.get("/weekly-briefing")
 def weekly_briefing(force: bool = False):
     today = datetime.now().strftime("%Y-%m-%d")
     week_key = datetime.now().strftime("%Y-W%W")
 
     # 1. 메모리 캐시
-    if _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
+    if not force and _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
         return _cache["weekly"]["data"]
 
     # 2. 파일 캐시
     weekly_dir = LEGACY_DATA / "weekly_reports"
     weekly_dir.mkdir(parents=True, exist_ok=True)
     weekly_fp = weekly_dir / f"{week_key}.json"
-    if weekly_fp.exists():
+    if not force and weekly_fp.exists():
         try:
             with open(weekly_fp) as f:
                 cached = json.load(f)
@@ -609,28 +818,38 @@ def weekly_briefing(force: bool = False):
         except Exception:
             pass
 
-    snap = _load_snap()
-    history = _load_history()
-    polls = _load_polls()
-    corr = snap.get("turnout", {}).get("correction", {})
     _ensure_env()
 
-    # 주간 데이터 추출
-    week_data = history[-48:]  # 최근 48건 (약 1주일)
-    first = week_data[0] if week_data else {}
-    last = week_data[-1] if week_data else {}
+    # 데일리 기반 위클리 시도
+    dailies = _load_week_dailies(week_key)
+    use_dailies = len(dailies) >= 2
 
-    trend_text = "\n".join(
-        f"  {h.get('date','')}: 이슈(김{h.get('issue_kim',0)}/박{h.get('issue_park',0)}) 반응(김{h.get('reaction_kim',0)}/박{h.get('reaction_park',0)}) 판세{h.get('pandse',50):.1f}"
-        for h in week_data[::6]  # 6건 간격 샘플링
-    ) or "없음"
+    if use_dailies:
+        context = _build_weekly_context_from_dailies(dailies)
+        context_header = f"## 주간 전략 종합 ({today}, {week_key}, 데일리 {len(dailies)}건 기반)\n\n{context}"
+        source = "dailies"
+    else:
+        # 데일리 2개 미만 → 기존 raw 방식 폴백
+        snap = _load_snap()
+        history = _load_history()
+        polls = _load_polls()
+        corr = snap.get("turnout", {}).get("correction", {})
 
-    polls_text = "\n".join(
-        f"  - {p.get('label','')}: 김{p.get('kim',0)}% 박{p.get('park',0)}% ({p.get('date','')})"
-        for p in polls[-5:]
-    ) or "없음"
+        week_data = history[-48:]
+        first = week_data[0] if week_data else {}
+        last = week_data[-1] if week_data else {}
 
-    context = f"""## 주간 성과 측정 데이터 ({today}, D-{corr.get('d_day','?')})
+        trend_text = "\n".join(
+            f"  {h.get('date','')}: 이슈(김{h.get('issue_kim',0)}/박{h.get('issue_park',0)}) 반응(김{h.get('reaction_kim',0)}/박{h.get('reaction_park',0)}) 판세{h.get('pandse',50):.1f}"
+            for h in week_data[::6]
+        ) or "없음"
+
+        polls_text = "\n".join(
+            f"  - {p.get('label','')}: 김{p.get('kim',0)}% 박{p.get('park',0)}% ({p.get('date','')})"
+            for p in polls[-5:]
+        ) or "없음"
+
+        context_header = f"""## 주간 성과 측정 데이터 ({today}, D-{corr.get('d_day','?')})
 
 ### 주간 지표 변동
 - 판세지수: {first.get('pandse',50):.1f} → {last.get('pandse',50):.1f} ({last.get('pandse',50)-first.get('pandse',50):+.1f}pt)
@@ -647,14 +866,16 @@ def weekly_briefing(force: bool = False):
 
 ### 현재 판세지수 팩터
 {chr(10).join(f"  - {f.get('name','')}: {f.get('value',0):+.1f}" for f in corr.get('factors', []))}"""
+        source = "raw_fallback"
 
     try:
         import anthropic
         client = anthropic.Anthropic()
 
-        prompt = f"""{context}
+        prompt = f"""{context_header}
 
 당신은 김경수 캠프 전략 총 책임자입니다. 한 주간 성과를 측정하는 위클리 리포트를 작성하세요.
+{'이 위클리는 ' + str(len(dailies)) + '개 데일리 리포트를 종합한 것입니다. 각 데일리의 진단·전략·현장일정을 관통하는 주간 흐름과 성과를 분석하세요.' if use_dailies else ''}
 
 아래 JSON 형식으로만 답변:
 {{
@@ -702,6 +923,8 @@ def weekly_briefing(force: bool = False):
         data = _parse_json(text)
         data["generated_at"] = datetime.now().isoformat()
         data["week"] = week_key
+        data["source"] = source
+        data["dailies_count"] = len(dailies) if use_dailies else 0
 
         if not data.get("error"):
             _cache["weekly"]["date"] = week_key
