@@ -1553,10 +1553,18 @@ def _daily_snapshot():
 def _scheduler_loop():
     """메인 루프 — 절대 죽지 않는 구조"""
     print(f"[{_now()}] === 스케줄러 v2 시작 (60분 주기) ===", flush=True)
-    print(f"[{_now()}] 시작 시 즉시 갱신 생략 — 다음 60분 주기에서 갱신", flush=True)
 
     tick = 0
     consecutive_errors = 0
+
+    # 시작 시 즉시 첫 갱신 (2분 대기 후 — 서버 안정화)
+    try:
+        time.sleep(120)
+        print(f"[{_now()}] 시작 시 즉시 갱신 실행", flush=True)
+        _update_all()
+        print(f"[{_now()}] 초기 갱신 완료", flush=True)
+    except Exception as e:
+        print(f"[{_now()}] 초기 갱신 실패: {e}", flush=True)
 
     while True:
         try:
