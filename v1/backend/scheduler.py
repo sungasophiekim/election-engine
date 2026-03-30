@@ -282,7 +282,13 @@ def _update_all():
         is_ai_result = scored_clusters and any(c.get("summary") or c.get("why") for c in scored_clusters)
         is_fallback = scored_clusters and any(c.get("urgency") for c in scored_clusters)
 
-        if is_fallback and not is_ai_result:
+        if not scored_clusters:
+            # AI 클러스터링 완전 실패 (빈 배열) → 이전 클러스터 유지, 없으면 경고만
+            if not snap.get("news_clusters"):
+                print(f"[{_now()}] ⚠ 클러스터 데이터 없음: AI 실패 + 이전 데이터 없음", flush=True)
+            else:
+                print(f"[{_now()}] AI 클러스터링 빈 결과 → 이전 클러스터 유지", flush=True)
+        elif is_fallback and not is_ai_result:
             # 카테고리 폴백 → 이전 AI 클러스터 유지 (덮어쓰지 않음)
             # 단, 이전 값이 None이면 폴백 데이터라도 저장
             if not snap.get("news_clusters"):
@@ -920,6 +926,8 @@ def _ai_cluster_events(articles: list) -> list:
             print(f"[{_now()}] 여야 표기 자동 교정: {fix_count}건", flush=True)
 
         print(f"[{_now()}] AI 클러스터링 성공: {len(result)}개 사건 | 해석: {bool(issue_summary)}", flush=True)
+        if not result:
+            raise ValueError("AI 응답 파싱 성공했지만 클러스터 0건 — 폴백 전환")
         return result
 
     except Exception as e:
