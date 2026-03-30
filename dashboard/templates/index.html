@@ -656,8 +656,9 @@ select.role-sel{background:#1a2332;color:#e0e0e0;border:1px solid #1e3a5f;paddin
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3 style="color:#64b5f6">전략대응 리포트</h3>
           <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" id="gen-report-btn" onclick="generateReport()" style="font-size:.8em">리포트 갱신</button>
             <button class="btn btn-secondary" onclick="loadReport()" style="font-size:.8em">새로고침</button>
-            <button class="btn btn-primary" onclick="printReport()" style="font-size:.8em">인쇄</button>
+            <button class="btn btn-secondary" onclick="printReport()" style="font-size:.8em">인쇄</button>
           </div>
         </div>
         <div id="report-meta" style="font-size:.8em;color:#546e7f;margin-bottom:12px"></div>
@@ -2708,6 +2709,21 @@ function loadLrnPatterns(){
   }).catch(function(){});
 }
 /* ===== Strategic Report ===== */
+async function generateReport(){
+  var btn=document.getElementById('gen-report-btn');
+  var el=document.getElementById('report-content');
+  btn.disabled=true;btn.textContent='생성 중...';
+  el.innerHTML='<div class="skeleton skeleton-block"></div><p style="color:#78909c;text-align:center;margin-top:12px">AI가 리포트를 생성하고 있습니다... (30초~1분 소요)</p>';
+  try{
+    var r=await fetch('/api/v2/generate-report',{method:'POST'});
+    if(r.status===401){window.location='/login';return}
+    var d=await r.json();
+    if(!r.ok){toast(d.error||'리포트 생성 실패');el.innerHTML='<p style="color:#f44336">'+(d.error||'생성 실패')+'</p>';return}
+    toast('리포트 생성 완료');
+    loadReport();
+  }catch(e){toast('서버 연결 실패');el.innerHTML='<p style="color:#f44336">서버 연결 실패</p>'}
+  finally{btn.disabled=false;btn.textContent='리포트 갱신'}
+}
 function loadReport(){
   var el=document.getElementById('report-content');
   var meta=document.getElementById('report-meta');

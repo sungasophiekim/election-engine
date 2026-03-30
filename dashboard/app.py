@@ -3694,6 +3694,13 @@ def _run_strategy_sync():
     # --- 엔리치먼트 캐시 스냅샷 저장 (재시작 후 복원용) ---
     _save_enrichment_snapshot()
 
+    # --- 전략대응 리포트 자동 생성 ---
+    try:
+        _generate_strategic_report_md()
+        print("[Pipeline] Strategic report MD generated")
+    except Exception as e:
+        print(f"[Pipeline] Strategic report generation failed: {e}")
+
     # --- Build response ---
     return {
         "candidate": config.candidate_name,
@@ -3854,6 +3861,150 @@ async def api_v2_news_clusters(session_token: str = Cookie(default=None)):
         "clusters": _v2_enrichment_cache.get("news_clusters", []),
         "timestamp": _v2_enrichment_cache.get("news_clusters_timestamp", ""),
     }
+
+
+# ---------------------------------------------------------------------------
+# Strategic Report MD Generation
+# ---------------------------------------------------------------------------
+
+def _generate_strategic_report_md():
+    """캐시된 전략 데이터로 전략대응 리포트 마크다운 파일 생성."""
+    import anthropic
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key or "xxxxx" in api_key:
+        print("[ReportGen] Anthropic API 키 미설정 — 스킵")
+        return
+
+    if not _v2_enrichment_cache:
+        print("[ReportGen] 캐시 없음 — 스킵")
+        return
+
+    from config.tenant_config import SAMPLE_GYEONGNAM_CONFIG
+    config = SAMPLE_GYEONGNAM_CONFIG
+
+    # 데이터 수집
+    clusters = _v2_enrichment_cache.get("news_clusters", [])
+    briefing = _v2_enrichment_cache.get("ai_briefing", {})
+    candidate_buzz = _v2_enrichment_cache.get("candidate_buzz", {})
+    issue_responses = _issue_response_cache.get("data", {}).get("responses", [])
+
+    # 여론조사 데이터
+    polling_info = ""
+    try:
+        from storage.database import ElectionDB
+        db = ElectionDB()
+        polls = db.get_all_polls()
+        db.close()
+        if polls:
+            latest = polls[-1]
+            polling_info = f"최신 여론조사: {latest.get('poll_date', '')} {latest.get('pollster', '')} — {config.candidate_name} {latest.get('our_support', 0)}% vs {config.opponents[0] if config.opponents else '상대'} {latest.get('opponent_support', 0)}%"
+    except Exception:
+        pass
+
+    # 뉴스 클러스터 요약
+    cluster_text = ""
+    total_articles = sum(c.get("count", 0) for c in clusters)
+    for i, c in enumerate(clusters[:10], 1):
+        impact_labels = {-3: "매우 불리", -2: "불리", -1: "소폭 불리", 0: "영향 없음", 1: "소폭 유리", 2: "유리", 3: "매우 유리"}
+        our = impact_labels.get(c.get("our_impact", 0), "?")
+        opp = impact_labels.get(c.get("opp_impact", 0), "?")
+        cluster_text += f"{i}. [{c.get('side', '중립')}] {c.get('name', '?')} — 기사 {c.get('count', 0)}건, 우리에게 {our}, 상대에게 {opp}, 긴급도: {c.get('urgency', '?')}, 대응: {c.get('direction', '?')}\n"
+
+    # 이슈 대응 요약
+    issue_text = ""
+    for r in issue_responses[:10]:
+        issue_text += f"- {r.get('keyword', '')}: 점수 {r.get('score', 0)}, 수준 {r.get('level', '')}, 입장 {r.get('stance', '')}, 긴급도 {r.get('urgency', '')}, 대응메시지: {r.get('response_message', '')[:80]}\n"
+
+    # 후보 버즈 요약
+    buzz_text = ""
+    if candidate_buzz:
+        for kw, data in candidate_buzz.items():
+            if isinstance(data, dict):
+                buzz_text += f"- {kw}: 기사 {data.get('count', 0)}건, 부정비율 {data.get('negative_ratio', 0):.1%}\n"
+
+    # AI 브리핑 요약
+    briefing_text = ""
+    if briefing:
+        briefing_text = f"헤드라인: {briefing.get('headline', '')}\n상황: {briefing.get('situation', '')}"
+
+    now = datetime.now()
+    election_date = datetime(2026, 6, 3)
+    days_left = (election_date - now).days
+
+    prompt = f"""당신은 '{config.candidate_name}' 후보 ({config.region} {config.election_type}) 캠프의 수석 전략 분석관입니다.
+아래 데이터를 바탕으로 **오늘의 전략대응 리포트**를 마크다운으로 작성하세요.
+
+## 기본 정보
+- 후보: {config.candidate_name}
+- 상대: {', '.join(config.opponents)}
+- 슬로건: {config.slogan}
+- 선거일: 2026.06.03 (D-{days_left}일)
+- 리포트 시각: {now.strftime('%Y.%m.%d %H:%M')}
+{polling_info}
+
+## AI 브리핑
+{briefing_text}
+
+## 오늘의 뉴스 클러스터 (총 {total_articles}건 수집)
+{cluster_text}
+
+## 이슈별 대응 현황
+{issue_text}
+
+## 후보 뉴스 노출
+{buzz_text}
+
+## 작성 지침
+1. 제목: "# 경남도지사 선거 전략대응 리포트" + 날짜/시각/D-day
+2. "## 한줄 요약" — 판세와 핵심 시사점 1문장
+3. "## 오늘의 판세" — 여론조사/지지율 테이블 + 해석
+4. "## 오늘의 뉴스 전장" — TOP 10 클러스터 테이블 (순위/사건/누구측/기사수/우리영향/상대영향/긴급도/할일) + 종합 해석
+5. "## 사건별 상세 분석과 실행안" — 긴급 사건 3~5개에 대해 배경/위협분석/실행안(테이블) 상세 작성
+6. "## 시민이 관심 있는 이슈는 따로 있다" — 뉴스 보도량 vs 시민 반응도 비교
+7. "## 후보 뉴스 노출 비교" — 후보별 노출/부정비율 테이블
+8. "## 상대가 선점한 정책 — 우리의 대응" — 정책별 대응 전략 테이블
+9. "## 이번 주 실행 일정표" — 날짜별 할일/이유/담당 테이블
+10. "## 주의해서 지켜봐야 할 것" — 리스크 모니터링 테이블
+11. "## 데이터 출처" — 수집 소스, 마지막 갱신 시각
+
+중요 원칙:
+- 현직 도지사(박완수)의 정책 발표·성과는 기본적으로 상대에게 유리, 우리에게 불리로 판정
+- 구체적 수치와 근거 기반 분석
+- 실행 가능한 액션 아이템 중심
+- 마크다운 테이블 적극 활용
+- 분량: 충분히 상세하게 (200줄 이상)"""
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=8000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    md_content = response.content[0].text.strip()
+
+    # 파일 저장
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    filename = f"strategic_report_{now.strftime('%Y%m%d')}.md"
+    filepath = os.path.join(data_dir, filename)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(md_content)
+    print(f"[ReportGen] Saved: {filename}")
+
+
+@app.post("/api/v2/generate-report")
+async def api_v2_generate_report(session_token: str = Cookie(default=None)):
+    """캐시된 데이터로 전략대응 리포트 즉시 생성."""
+    if not check_auth(session_token):
+        return JSONResponse({"error": "인증 필요"}, status_code=401)
+    if not _v2_enrichment_cache:
+        return JSONResponse({"error": "전략 갱신을 먼저 실행해주세요."}, status_code=400)
+    try:
+        result = await run_in_threadpool(_generate_strategic_report_md)
+        return {"ok": True, "message": "리포트 생성 완료"}
+    except Exception as e:
+        return JSONResponse({"error": f"리포트 생성 실패: {str(e)}"}, status_code=500)
 
 
 @app.get("/api/v2/strategic-report")
