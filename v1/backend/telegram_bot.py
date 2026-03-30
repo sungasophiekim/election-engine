@@ -263,8 +263,10 @@ D-{corr.get('d_day', '?')} · {snap.get('timestamp', '')[:16].replace('T', ' ')}
 
 
 def _cb_issues(snap, chat_id, msg_id, base, back):
-    clusters = snap.get("news_clusters", [])
+    clusters = snap.get("news_clusters") or []
     lines = ["📡 <b>TOP 이슈</b>\n"]
+    if not clusters:
+        lines.append("⚠ 이슈 데이터가 아직 없습니다.\n스케줄러 갱신을 기다려주세요.")
     for i, c in enumerate(clusters[:8], 1):
         side = c.get("side", "?")
         emoji = "🔵" if "우리" in side else "🔴" if "상대" in side else "⚪"
@@ -289,9 +291,12 @@ def _cb_issues(snap, chat_id, msg_id, base, back):
 
 
 def _cb_radar(snap, chat_id, msg_id, base, back):
-    cr = snap.get("cluster_reaction", {})
-    details = cr.get("details", [])
+    cr = snap.get("cluster_reaction") or {}
+    details = cr.get("details") or []
     lines = ["🧠 <b>민심 반응 레이더</b>\n"]
+
+    if not details:
+        lines.append("⚠ 민심 데이터가 아직 없습니다.\n스케줄러 갱신을 기다려주세요.")
 
     for det in details[:6]:
         kw = det.get("keyword", "")[:20]

@@ -284,7 +284,13 @@ def _update_all():
 
         if is_fallback and not is_ai_result:
             # 카테고리 폴백 → 이전 AI 클러스터 유지 (덮어쓰지 않음)
-            print(f"[{_now()}] AI 실패 → 카테고리 폴백 감지. 이전 클러스터 유지", flush=True)
+            # 단, 이전 값이 None이면 폴백 데이터라도 저장
+            if not snap.get("news_clusters"):
+                snap["news_clusters"] = scored_clusters[:12]
+                snap["news_clusters_timestamp"] = datetime.now().isoformat()
+                print(f"[{_now()}] AI 실패 + 이전 클러스터 없음 → 카테고리 폴백 저장: {len(scored_clusters)}개", flush=True)
+            else:
+                print(f"[{_now()}] AI 실패 → 카테고리 폴백 감지. 이전 클러스터 유지", flush=True)
             # 지수 계산은 폴백 데이터로 계산 (scored_clusters 사용)
         elif scored_clusters:
             # AI 성공 → 새 클러스터로 교체
