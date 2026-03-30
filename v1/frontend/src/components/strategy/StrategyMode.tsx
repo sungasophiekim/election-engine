@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { getDailyBriefing, getWeeklyBriefing, getIndicesCurrent, getIndicesHistory, getNewsClusters, getDailyReports, getTrainingData } from "@/lib/api";
+import { getDailyBriefing, generateDailyBriefing, getWeeklyBriefing, getIndicesCurrent, getIndicesHistory, getNewsClusters, getDailyReports, getTrainingData } from "@/lib/api";
 import { ResearchPage } from "../ResearchTab";
 
 type Page = "daily" | "weekly" | "archive" | "training" | "research";
@@ -384,6 +384,7 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
   const [page, setPage] = useState<Page>("daily");
   const [subTab, setSubTab] = useState<SubTab>("summary");
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [data, setData] = useState<any>({});
 
   const load = useCallback(async () => {
@@ -403,6 +404,16 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      await generateDailyBriefing();
+      await load();
+    } finally {
+      setGenerating(false);
+    }
+  }, [load]);
 
   const dDay = data.indices?.pandse?.d_day || "?";
   const daily = data.daily || {};
@@ -473,6 +484,10 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={handleGenerate} disabled={generating}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[#2457A4] rounded-md hover:bg-[#1B3A6B] transition disabled:opacity-50">
+              {generating ? "AI 생성 중..." : "리포트 갱신"}
+            </button>
             <button onClick={() => page === "research" ? exportResearchPDF() : exportPDF(data)} className="px-3 py-1.5 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
               🖨 PDF 출력
             </button>
