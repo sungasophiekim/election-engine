@@ -418,6 +418,16 @@ def _generate_daily_sync():
         )
         text = resp.content[0].text.strip()
         print(f"[Strategy] AI 응답 수신 ({len(text)}자)", flush=True)
+        # 여야 표기 자동 교정 (AI가 국힘=여당으로 잘못 쓰는 패턴 강제 수정)
+        for _old, _new in [
+            ("여당 약세", "야당(국힘) 약세"), ("여당 분열", "야당(국힘) 분열"),
+            ("여당 내홍", "야당(국힘) 내홍"), ("여당 지지율", "야당(국힘) 지지율"),
+            ("여당이 유리", "야당(국힘)이 유리"), ("여당 약화", "야당(국힘) 약화"),
+            ("여당 위기", "야당(국힘) 위기"), ("여당 갈등", "야당(국힘) 갈등"),
+            ("여당 공천", "야당(국힘) 공천"), ("여당 비리", "야당(국힘) 비리"),
+            ("여당의 분열", "야당(국힘)의 분열"), ("여당의 내홍", "야당(국힘)의 내홍"),
+        ]:
+            text = text.replace(_old, _new)
         data = _parse_json(text)
         data["generated_at"] = datetime.now().isoformat()
         data["d_day"] = snap.get("turnout", {}).get("correction", {}).get("d_day", "?")

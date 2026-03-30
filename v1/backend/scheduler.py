@@ -875,6 +875,44 @@ def _ai_cluster_events(articles: list) -> list:
         except Exception:
             pass
 
+        # ── 여야 표기 자동 교정 (AI가 국힘=여당으로 잘못 쓰는 패턴 강제 수정) ──
+        _party_fixes = [
+            ("여당 약세", "야당(국힘) 약세"),
+            ("여당 분열", "야당(국힘) 분열"),
+            ("여당 내홍", "야당(국힘) 내홍"),
+            ("여당 지지율", "야당(국힘) 지지율"),
+            ("여당이 유리", "야당(국힘)이 유리"),
+            ("여당 약화", "야당(국힘) 약화"),
+            ("여당 위기", "야당(국힘) 위기"),
+            ("여당 갈등", "야당(국힘) 갈등"),
+            ("여당 공천", "야당(국힘) 공천"),
+            ("여당 비리", "야당(국힘) 비리"),
+            ("여당의 분열", "야당(국힘)의 분열"),
+            ("여당의 내홍", "야당(국힘)의 내홍"),
+        ]
+        fix_count = 0
+        for r in result:
+            for field in ("summary", "why", "tip", "name"):
+                text = r.get(field, "")
+                if not text:
+                    continue
+                for old, new in _party_fixes:
+                    if old in text:
+                        r[field] = text.replace(old, new)
+                        text = r[field]
+                        fix_count += 1
+        # issue_summary, reaction_summary도 교정
+        for old, new in _party_fixes:
+            if old in issue_summary:
+                issue_summary = issue_summary.replace(old, new)
+            if old in reaction_summary:
+                reaction_summary = reaction_summary.replace(old, new)
+        if result:
+            result[0]["_issue_summary"] = issue_summary
+            result[0]["_reaction_summary"] = reaction_summary
+        if fix_count:
+            print(f"[{_now()}] 여야 표기 자동 교정: {fix_count}건", flush=True)
+
         print(f"[{_now()}] AI 클러스터링 성공: {len(result)}개 사건 | 해석: {bool(issue_summary)}", flush=True)
         return result
 
