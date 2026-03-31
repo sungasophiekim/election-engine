@@ -151,6 +151,30 @@ def download_backup():
     )
 
 
+@app.get("/api/admin/report-pdf")
+def download_report_pdf(date: str = ""):
+    """데일리 리포트 PDF 다운로드"""
+    import json
+    from fastapi.responses import Response
+    from v1config.settings import LEGACY_DATA
+    from pdf_report import generate_pdf
+
+    if not date:
+        from datetime import datetime
+        date = datetime.now().strftime("%Y-%m-%d")
+    fp = LEGACY_DATA / "daily_reports" / f"{date}.json"
+    if not fp.exists():
+        return {"error": f"{date} 리포트 없음"}
+    with open(fp) as f:
+        rpt = json.load(f)
+    pdf_bytes = generate_pdf(rpt)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=daily_report_{date}.pdf"},
+    )
+
+
 @app.post("/api/admin/fix-party")
 def fix_party_labels():
     """여야 표기 일괄 수정 — 국민의힘=야당, 민주당=여당"""

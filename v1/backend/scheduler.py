@@ -1775,6 +1775,22 @@ def _auto_generate_daily_report():
                   {"text": "📊 대시보드", "callback_data": "dashboard"}]]
             )
             print(f"[{_now()}] 데일리 리포트 텔레그램 발송 완료", flush=True)
+
+            # PDF 생성 + 텔레그램 전송
+            try:
+                from pdf_report import generate_pdf
+                from telegram_bot import _send_pdf, _get_base, _alert_chats
+                pdf_bytes = generate_pdf(rpt)
+                base = _get_base()
+                if base:
+                    for cid in _alert_chats:
+                        _send_pdf(base, cid, pdf_bytes,
+                                  f"전략리포트_{today}.pdf",
+                                  f"📋 {today} 전략대응 데일리 리포트 (D-{d_day})")
+                    print(f"[{_now()}] PDF 텔레그램 전송 완료", flush=True)
+            except Exception as e:
+                print(f"[{_now()}] PDF 전송 실패: {e}", flush=True)
+
         except Exception as e:
             print(f"[{_now()}] 텔레그램 발송 실패: {e}", flush=True)
 

@@ -121,15 +121,32 @@ def _send(base, chat_id, text, buttons=None, edit_msg=None):
         pass
 
 
+def _send_pdf(base, chat_id, pdf_bytes: bytes, filename: str, caption: str = ""):
+    """PDF 파일 전송"""
+    try:
+        files = {"document": (filename, pdf_bytes, "application/pdf")}
+        data = {"chat_id": chat_id, "parse_mode": "HTML"}
+        if caption:
+            data["caption"] = caption[:1024]
+        httpx.post(f"{base}/sendDocument", data=data, files=files, timeout=30)
+    except Exception as e:
+        print(f"[PDF 전송 실패] {e}", flush=True)
+
+
 # ═══════════════════════════════════════
 # Alert 시스템 — 외부에서 호출
 # ═══════════════════════════════════════
+def _get_base() -> str:
+    """Bot API base URL 반환"""
+    token = _get_token()
+    return f"https://api.telegram.org/bot{token}" if token else ""
+
+
 def send_alert(text: str, buttons=None):
     """스케줄러에서 Alert 발송 시 호출"""
-    token = _get_token()
-    if not token or not _alert_chats:
+    base = _get_base()
+    if not base or not _alert_chats:
         return
-    base = f"https://api.telegram.org/bot{token}"
     for chat_id in _alert_chats:
         _send(base, chat_id, text, buttons)
 
@@ -519,8 +536,10 @@ def _cb_daily(chat_id, msg_id, base, back):
         for r in risks[:3]:
             lines.append(f"  • {r.get('risk','')}: {r.get('response','')}")
 
+    report_date = rpt.get("date", "")
     buttons = [
-        [{"text": "🔗 전체 리포트", "url": f"{DASHBOARD_URL}"}],
+        [{"text": "📄 PDF 다운로드", "url": f"{DASHBOARD_URL}/api/admin/report-pdf?date={report_date}"},
+         {"text": "🔗 전체 리포트", "url": f"{DASHBOARD_URL}"}],
         back[0],
     ]
     full_text = "\n".join(lines)
