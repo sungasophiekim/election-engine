@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
+import { fmtTs } from "@/lib/format";
 import {
   getIndicesCurrent,
   getNewsClusters,
@@ -470,10 +471,7 @@ export default function MobileDashboard() {
         (historyRes as any)?.candidate_trend || []
       );
       setLastUpdated(
-        new Date().toLocaleString("ko-KR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+        (indicesRes as any)?.server_updated_at || new Date().toISOString()
       );
     } catch {
       setError("데이터 로딩 실패");
@@ -568,7 +566,7 @@ export default function MobileDashboard() {
           <div className="flex items-center gap-3">
             {lastUpdated && (
               <span className="text-[10px] text-gray-600">
-                {lastUpdated} 갱신
+                {fmtTs(lastUpdated)}
               </span>
             )}
             <button

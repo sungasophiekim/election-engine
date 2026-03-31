@@ -8,7 +8,6 @@ interface WarRoomState {
   history: any[];
   candidateTrend: any[];
   newsClusters: any[];
-  issueRadar: any[];
   reactionRadar: any[];
   loading: boolean;
   lastUpdated: string;
@@ -24,7 +23,6 @@ export const useStore = create<WarRoomState>((set) => ({
   history: [],
   candidateTrend: [],
   newsClusters: [],
-  issueRadar: [],
   reactionRadar: [],
   loading: true,
   lastUpdated: "",
@@ -33,13 +31,12 @@ export const useStore = create<WarRoomState>((set) => ({
   fetchAll: async () => {
     const prevPolls = useStore.getState().polls;
     set({ loading: true });
-    const [polls, prediction, indices, hist, clusters, issue, reaction] = await Promise.all([
+    const [polls, prediction, indices, hist, clusters, reaction] = await Promise.all([
       api.getPolls().catch(() => ({ polls: [] })),
       api.getPrediction().catch(() => null),
       api.getIndicesCurrent().catch(() => null),
       api.getIndicesHistory().catch(() => ({ trend: [] })),
       api.getNewsClusters().catch(() => ({ clusters: [] })),
-      api.getIssueRadar().catch(() => ({ items: [] })),
       api.getReactionRadar().catch(() => ({ items: [] })),
     ]);
     const newPolls = polls?.polls || [];
@@ -59,7 +56,6 @@ export const useStore = create<WarRoomState>((set) => ({
       history: hist?.trend || [],
       candidateTrend: hist?.candidate_trend || [],
       newsClusters: clusters?.clusters || [],
-      issueRadar: issue?.items || [],
       reactionRadar: reaction?.items || [],
       loading: false,
       newPollAlert,

@@ -7,7 +7,6 @@ import PollChart from "@/components/PollChart";
 import PredictionBars from "@/components/PredictionBars";
 import IndicesPanel from "@/components/IndicesPanel";
 import NewsTop from "@/components/NewsTop";
-import RadarPanel from "@/components/RadarPanel";
 import ReactionSidebar from "@/components/ReactionSidebar";
 import SystemPanel from "@/components/SystemPanel";
 import ReportPanel from "@/components/ReportPanel";
@@ -114,8 +113,7 @@ export default function WarRoom() {
           <PollChart />
           <PredictionBars />
           <IndicesPanel />
-          {/* RadarPanel 삭제 — 오른쪽 사이드에 통합 */}
-        </div>
+</div>
 
         {/* 오른쪽 사이드 */}
         <div className="col-span-3 grid grid-rows-2 gap-3" style={{ height: "fit-content" }}>

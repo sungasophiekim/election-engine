@@ -6,7 +6,6 @@ export default function IndicesPanel() {
   const indices = useStore((s) => s.indices);
   const history = useStore((s) => s.history);
   const candidateTrend = useStore((s) => s.candidateTrend);
-  const lastUpdated = useStore((s) => s.lastUpdated);
   if (!indices) return null;
 
   const { issue, reaction, pandse } = indices;
@@ -247,69 +246,6 @@ export default function IndicesPanel() {
           })()}
           {candidateTrend.length >= 2 && <MiniChart data={candidateTrend} field="pandse" color="#06b6d4" label="판세" />}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function DualChart({ data, kimField, parkField }: { data: any[]; kimField: string; parkField: string }) {
-  const n = data.length;
-  const w = 220, h = 55, pl = 4, pr = 4, pt = 6, pb = 14;
-  const kimVals = data.map(d => d[kimField] || 0);
-  const parkVals = data.map(d => d[parkField] || 0);
-  const allVals = [...kimVals, ...parkVals];
-  if (allVals.every(v => v === 0)) return null;
-  const mn = Math.min(...allVals) - 3, mx = Math.max(...allVals) + 3, rng = mx - mn || 1;
-  const xs = (w - pl - pr) / Math.max(n - 1, 1);
-  const Y = (v: number) => pt + (1 - (v - mn) / rng) * (h - pt - pb);
-
-  // 라인 길이 계산
-  const calcLen = (vals: number[]) => {
-    let l = 0;
-    for (let i = 1; i < vals.length; i++) {
-      const dx = xs, dy = Y(vals[i]) - Y(vals[i-1]);
-      l += Math.sqrt(dx*dx + dy*dy);
-    }
-    return Math.ceil(l);
-  };
-  const kimLen = calcLen(kimVals);
-  const parkLen = calcLen(parkVals);
-
-  return (
-    <div className="mt-2">
-      <svg width="100%" viewBox={`0 0 ${w} ${h}`}>
-        <style>{`
-          .dual-kim { stroke-dasharray:${kimLen}; stroke-dashoffset:${kimLen}; animation: drawLine 1.2s ease-out 0.3s forwards; }
-          .dual-park { stroke-dasharray:${parkLen}; stroke-dashoffset:${parkLen}; animation: drawLine 1.2s ease-out 0.5s forwards; }
-          .dual-dot { opacity:0; animation: dotFade 0.3s ease-out forwards; }
-          @keyframes drawLine { to { stroke-dashoffset:0; } }
-          @keyframes dotFade { to { opacity:1; } }
-        `}</style>
-        {/* 격차 영역 (반투명) */}
-        <polygon
-          points={kimVals.map((v,i)=>`${pl+i*xs},${Y(v)}`).join(" ") + " " + [...parkVals].reverse().map((v,i)=>`${pl+(n-1-i)*xs},${Y(v)}`).join(" ")}
-          fill={kimVals[n-1] > parkVals[n-1] ? "rgba(37,99,235,0.06)" : "rgba(239,68,68,0.06)"}
-          className="dual-dot" style={{animationDelay:"1s"}}
-        />
-        <polyline points={parkVals.map((v, i) => `${pl + i * xs},${Y(v)}`).join(" ")} fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7" strokeDasharray="3,2" className="dual-park" />
-        <polyline points={kimVals.map((v, i) => `${pl + i * xs},${Y(v)}`).join(" ")} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinejoin="round" className="dual-kim" />
-        {kimVals.map((v, i) => (
-          <circle key={`k${i}`} cx={pl + i * xs} cy={Y(v)} r={i === n - 1 ? 3 : 1} fill={i === n - 1 ? "#2563eb" : "#1e3a5f"} className="dual-dot" style={{animationDelay:`${0.8+i*0.1}s`}} />
-        ))}
-        {parkVals.map((v, i) => (
-          <circle key={`p${i}`} cx={pl + i * xs} cy={Y(v)} r={i === n - 1 ? 2.5 : 1} fill={i === n - 1 ? "#ef4444" : "#5b2130"} className="dual-dot" style={{animationDelay:`${0.9+i*0.1}s`}} />
-        ))}
-        <text x={pl + (n - 1) * xs + 3} y={Y(kimVals[n - 1]) + 3} fill="#2563eb" fontSize="7" fontWeight="bold" fontFamily="monospace" className="dual-dot" style={{animationDelay:"1.5s"}}>{kimVals[n - 1]}</text>
-        <text x={pl + (n - 1) * xs + 3} y={Y(parkVals[n - 1]) + 3} fill="#ef4444" fontSize="7" fontWeight="bold" fontFamily="monospace" className="dual-dot" style={{animationDelay:"1.5s"}}>{parkVals[n - 1]}</text>
-        {data.map((d, i) => (
-          i % Math.max(1, Math.floor(n / 4)) === 0 || i === n - 1 ? (
-            <text key={i} x={pl + i * xs} y={h - 2} fill="#4b5563" fontSize="5" textAnchor="middle" fontFamily="monospace" className="dual-dot" style={{animationDelay:`${1+i*0.05}s`}}>{(d.date || "").slice(0, 5)}</text>
-          ) : null
-        ))}
-      </svg>
-      <div className="flex justify-end gap-2 text-[6px] mt-0.5">
-        <span className="flex items-center gap-0.5"><span className="w-2 h-[2px] bg-blue-500 inline-block" />김경수</span>
-        <span className="flex items-center gap-0.5"><span className="w-2 h-[2px] bg-red-500 inline-block opacity-60" />박완수</span>
       </div>
     </div>
   );
