@@ -16,7 +16,7 @@ _V1 = str(Path(__file__).resolve().parent)
 if _V1 not in sys.path:
     sys.path.append(_V1)
 
-from v1config.settings import ENRICHMENT_PATH, LEGACY_DATA, INDEX_HISTORY_DIR
+from v1config.settings import ENRICHMENT_PATH, LEGACY_DATA
 
 
 def _now():
@@ -1522,23 +1522,7 @@ def _daily_snapshot():
         np_data = snap.get("national_poll", {})
         clusters = snap.get("news_clusters", [])
 
-        # ── 1. 일일 스냅샷 (기존 호환) ──
-        INDEX_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
-        snapshot = {
-            "date": today,
-            "timestamp": datetime.now().isoformat(),
-            "issue_index": ci.get("issue_index", 50),
-            "reaction_index": cr.get("reaction_index", 50),
-            "leading_index": corr.get("pandse_index", 50),
-            "issue_index_avg": ci.get("issue_index", 50),
-            "reaction_index_avg": cr.get("reaction_index", 50),
-            "data_quality": "auto",
-        }
-        fp = INDEX_HISTORY_DIR / f"snapshot_{today}.json"
-        with open(fp, "w") as f:
-            json.dump(snapshot, f, ensure_ascii=False, indent=2)
-
-        # ── 2. 학습데이터 (전일 24시간 추세 기반) ──
+        # ── 학습데이터 (전일 24시간 추세 기반) ──
         TRAINING_DIR = LEGACY_DATA / "training_data"
         TRAINING_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1671,7 +1655,7 @@ def _daily_snapshot():
         with open(tp, "w") as f:
             json.dump(training, f, ensure_ascii=False, indent=2)
 
-        print(f"[{_now()}] 일일 스냅샷 + 학습데이터 저장: {fp.name}, {tp.name}", flush=True)
+        print(f"[{_now()}] 학습데이터 저장: {tp.name}", flush=True)
 
         # 전일 수집 요약 텔레그램 알림
         try:

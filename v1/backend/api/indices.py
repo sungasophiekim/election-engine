@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi import APIRouter
-from v1config.settings import ENRICHMENT_PATH, INDEX_HISTORY_DIR, LEGACY_DATA, CANDIDATE, OPPONENT
+from v1config.settings import ENRICHMENT_PATH, LEGACY_DATA, CANDIDATE, OPPONENT
 
 router = APIRouter(prefix="/api/indices", tags=["indices"])
 
@@ -16,18 +16,6 @@ def _load_enrichment() -> dict:
         return {}
 
 
-def _load_index_history() -> list:
-    """index_history/*.json 파일들을 날짜순으로 로드"""
-    history = []
-    if not INDEX_HISTORY_DIR.exists():
-        return history
-    for fp in sorted(INDEX_HISTORY_DIR.glob("snapshot_*.json")):
-        try:
-            with open(fp) as f:
-                history.append(json.load(f))
-        except Exception:
-            pass
-    return history
 
 
 @router.get("/current")
@@ -123,23 +111,10 @@ def index_history():
     except Exception:
         pass
 
-    # 일일 스냅샷 (기존)
-    daily = _load_index_history()
-
     return {
-        "trend": [
-            {
-                "date": h.get("date", ""),
-                "issue_avg": h.get("issue_index_avg", 0),
-                "reaction_avg": h.get("reaction_index_avg", 0),
-                "leading_index": h.get("leading_index", 50),
-                "poll_kim": h.get("poll_actual_kim", 0),
-                "poll_park": h.get("poll_actual_park", 0),
-            }
-            for h in daily
-        ],
+        "trend": [],  # 하위 호환 (프론트에서 미사용)
         "candidate_trend": candidate_history[-168:],  # 최근 168건 (7일 × 24시간)
-        "days": len(daily),
+        "days": 0,
     }
 
 

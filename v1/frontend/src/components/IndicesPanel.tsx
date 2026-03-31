@@ -4,7 +4,6 @@ import { fmtTs } from "@/lib/format";
 
 export default function IndicesPanel() {
   const indices = useStore((s) => s.indices);
-  const history = useStore((s) => s.history);
   const candidateTrend = useStore((s) => s.candidateTrend);
   if (!indices) return null;
 

@@ -8,11 +8,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # election_
 _RENDER_DISK = Path("/data")
 LEGACY_DATA = _RENDER_DISK if _RENDER_DISK.exists() and os.environ.get("RENDER") else PROJECT_ROOT / "data"
 ENRICHMENT_PATH = LEGACY_DATA / "enrichment_snapshot.json"
-INDEX_HISTORY_DIR = LEGACY_DATA / "index_history"
 
 # 디렉토리 자동 생성
 os.makedirs(LEGACY_DATA, exist_ok=True)
-os.makedirs(INDEX_HISTORY_DIR, exist_ok=True)
 os.makedirs(LEGACY_DATA / "daily_reports", exist_ok=True)
 os.makedirs(LEGACY_DATA / "training_data", exist_ok=True)
 os.makedirs(LEGACY_DATA / "strategy_feedback", exist_ok=True)
