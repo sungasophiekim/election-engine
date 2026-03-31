@@ -19,6 +19,7 @@ export const getIndicesCurrent = () => f<any>("/api/indices/current");
 export const getIndicesHistory = () => f<any>("/api/indices/history");
 export const getNewsClusters = () => f<any>("/api/enrichment/news-clusters");
 export const getReactionRadar = () => f<any>("/api/enrichment/reaction-radar");
+export const getCollectionStatus = () => f<any>("/api/indices/collection-status");
 export const getDailyBriefing = () => f<any>("/api/strategy/daily-briefing");
 export const generateDailyBriefing = async (): Promise<any> => {
   // 생성 트리거

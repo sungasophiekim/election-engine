@@ -1,8 +1,9 @@
 """지표 현황 API — enrichment snapshot에서 읽기"""
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi import APIRouter
-from v1config.settings import ENRICHMENT_PATH, INDEX_HISTORY_DIR, CANDIDATE, OPPONENT
+from v1config.settings import ENRICHMENT_PATH, INDEX_HISTORY_DIR, LEGACY_DATA, CANDIDATE, OPPONENT
 
 router = APIRouter(prefix="/api/indices", tags=["indices"])
 
@@ -139,4 +140,64 @@ def index_history():
         ],
         "candidate_trend": candidate_history[-168:],  # 최근 168건 (7일 × 24시간)
         "days": len(daily),
+    }
+
+
+@router.get("/collection-status")
+def collection_status():
+    """수집 상태 — 최근 7일 수집 건수 + API 상태"""
+    hist_path = ENRICHMENT_PATH.parent / "indices_history.json"
+    all_hist = []
+    try:
+        with open(hist_path) as f:
+            all_hist = json.load(f)
+    except Exception:
+        pass
+
+    # 날짜별 수집 건수 집계
+    daily_counts = {}
+    for h in all_hist:
+        ts = h.get("timestamp", "")
+        if not ts:
+            continue
+        day = ts[:10]  # YYYY-MM-DD
+        daily_counts[day] = daily_counts.get(day, 0) + 1
+
+    # 최근 7일
+    days = []
+    for i in range(7):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        count = daily_counts.get(d, 0)
+        status = "ok" if count >= 20 else "warning" if count >= 10 else "error" if count > 0 else "missing"
+        days.append({"date": d, "count": count, "expected": 24, "status": status})
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    today_count = daily_counts.get(today, 0)
+    # 오늘 경과 시간 기준 예상 건수
+    hours_passed = datetime.now().hour + 1
+    expected_so_far = hours_passed  # 1시간당 1건
+    today_status = "ok" if today_count >= expected_so_far * 0.8 else "warning" if today_count >= expected_so_far * 0.5 else "error"
+
+    # 최근 7일 수집률
+    total_collected = sum(d["count"] for d in days)
+    total_expected = sum(d["expected"] for d in days)
+    collection_rate = round(total_collected / total_expected * 100, 1) if total_expected > 0 else 0
+
+    # API 상태
+    api_status = []
+    try:
+        from collectors.api_cache import get_all_status
+        api_status = get_all_status()
+    except Exception:
+        pass
+
+    # 마지막 수집 시각
+    last_ts = all_hist[-1].get("timestamp", "") if all_hist else ""
+
+    return {
+        "today": {"date": today, "count": today_count, "expected": expected_so_far, "status": today_status},
+        "days": days,
+        "collection_rate_7d": collection_rate,
+        "last_collected_at": last_ts,
+        "api_status": api_status,
     }

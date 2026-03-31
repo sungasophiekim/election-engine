@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { fmtTs } from "@/lib/format";
 
-const TABS = ["이슈지수", "반응지수", "판세지수"] as const;
+const TABS = ["이슈지수", "반응지수", "판세지수", "수집 현황"] as const;
 type Tab = (typeof TABS)[number];
 
 function SourceRow({ name, updatedAt }: { name: string; updatedAt?: string }) {
@@ -257,9 +257,95 @@ function PandseTab({ indices }: { indices: any }) {
   );
 }
 
+function CollectionTab({ data }: { data: any }) {
+  if (!data) return <div className="text-center py-10 text-gray-500 text-sm">수집 상태 로딩 중...</div>;
+
+  const today = data.today || {};
+  const days = data.days || [];
+  const apis = data.api_status || [];
+  const rate = data.collection_rate_7d || 0;
+
+  const statusColor = (s: string) =>
+    s === "ok" ? "text-emerald-400" : s === "warning" ? "text-amber-400" : s === "missing" ? "text-gray-600" : "text-rose-400";
+  const statusIcon = (s: string) =>
+    s === "ok" ? "●" : s === "warning" ? "▲" : s === "missing" ? "○" : "✕";
+  const barColor = (s: string) =>
+    s === "ok" ? "bg-emerald-500" : s === "warning" ? "bg-amber-400" : s === "missing" ? "bg-gray-700" : "bg-rose-500";
+
+  return (
+    <div className="space-y-4">
+      {/* 오늘 현황 */}
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-2">오늘 수집 현황</div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className={`text-[24px] font-black ${statusColor(today.status)}`}>
+            {today.count}/{today.expected}건
+          </span>
+          <span className={`text-[10px] ${statusColor(today.status)}`}>
+            {today.status === "ok" ? "정상" : today.status === "warning" ? "수집 불안정" : "수집 중단"}
+          </span>
+        </div>
+        <div className="text-[9px] text-gray-500">
+          마지막 수집: {fmtTs(data.last_collected_at)}
+        </div>
+      </div>
+
+      {/* 7일 수집률 */}
+      <div>
+        <div className="text-[11px] text-cyan-300 font-bold mb-2">
+          최근 7일 수집률: <span className={rate >= 90 ? "text-emerald-400" : rate >= 60 ? "text-amber-400" : "text-rose-400"}>{rate}%</span>
+          <span className="text-[9px] text-gray-500 font-normal ml-1">(목표 95%)</span>
+        </div>
+        <div className="space-y-1.5">
+          {days.map((d: any) => (
+            <div key={d.date} className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 w-20 font-mono">{d.date.slice(5)}</span>
+              <div className="flex-1 h-3 bg-[#0e1825] rounded-full overflow-hidden">
+                <div className={`h-full ${barColor(d.status)} rounded-full transition-all`}
+                  style={{ width: `${Math.min(100, (d.count / d.expected) * 100)}%` }} />
+              </div>
+              <span className={`text-[10px] font-mono w-12 text-right ${statusColor(d.status)}`}>
+                {statusIcon(d.status)} {d.count}/{d.expected}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* API 상태 */}
+      {apis.length > 0 && (
+        <div>
+          <div className="text-[11px] text-cyan-300 font-bold mb-2">API 상태</div>
+          <div className="space-y-1">
+            {apis.map((a: any) => (
+              <div key={a.api} className="flex items-center justify-between py-1.5 border-b border-[#121e33] last:border-0">
+                <span className="text-[10px] text-gray-300">{a.api}</span>
+                <div className="flex items-center gap-3 text-[9px]">
+                  <span className="text-gray-500">오늘 {a.calls_today}건</span>
+                  <span className="text-gray-500">남은 {a.remaining}</span>
+                  <span className={`font-mono ${a.status === "ok" ? "text-emerald-400" : "text-rose-400"}`}>
+                    {a.last_call}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="text-[9px] text-gray-600 leading-relaxed">
+        수집 주기: 60분 · 목표: 24건/일 · 20건 이상 정상 · 10건 미만 경고
+        <br/>수집 누락 시 학습데이터 품질 저하 → 리포트 정확도에 직접 영향
+      </div>
+    </div>
+  );
+}
+
+
 export default function SystemPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("이슈지수");
   const indices = useStore((s) => s.indices);
+  const collectionStatus = useStore((s) => s.collectionStatus);
 
   if (!open) return null;
 
@@ -301,6 +387,7 @@ export default function SystemPanel({ open, onClose }: { open: boolean; onClose:
           {tab === "이슈지수" && <IssueTab indices={indices} />}
           {tab === "반응지수" && <ReactionTab indices={indices} />}
           {tab === "판세지수" && <PandseTab indices={indices} />}
+          {tab === "수집 현황" && <CollectionTab data={collectionStatus} />}
         </div>
       </div>
     </div>

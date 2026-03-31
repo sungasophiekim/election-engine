@@ -13,7 +13,7 @@ import ReportPanel from "@/components/ReportPanel";
 import LoginPage from "@/components/LoginPage";
 
 export default function WarRoom() {
-  const { fetchAll, loading, lastUpdated, newPollAlert, dismissAlert } = useStore();
+  const { fetchAll, loading, lastUpdated, newPollAlert, dismissAlert, collectionStatus } = useStore();
   const { token, tier, username, label, logout, checkSession } = useAuth();
   const [systemOpen, setSystemOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -93,6 +93,17 @@ export default function WarRoom() {
             </>
           )}
           <span className="text-[9px] text-gray-600">{fmtTs(lastUpdated)}</span>
+          {collectionStatus?.today && (() => {
+            const t = collectionStatus.today;
+            const icon = t.status === "ok" ? "text-emerald-500" : t.status === "warning" ? "text-amber-400" : "text-rose-500";
+            const dot = t.status === "ok" ? "bg-emerald-500" : t.status === "warning" ? "bg-amber-400" : "bg-rose-500";
+            return (
+              <span className={`text-[9px] ${icon} flex items-center gap-1`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${dot} ${t.status !== "ok" ? "animate-pulse" : ""}`} />
+                {t.count}/{t.expected}건
+              </span>
+            );
+          })()}
           <span className="text-[10px] text-gray-500">경남도지사 선거 · Election Engine v1</span>
           <span className="text-[9px] text-gray-600 border-l border-[#1a2844] pl-3">
             {username} <span className="text-gray-700">({label})</span>

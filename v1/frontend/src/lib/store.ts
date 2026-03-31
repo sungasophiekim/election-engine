@@ -9,6 +9,7 @@ interface WarRoomState {
   candidateTrend: any[];
   newsClusters: any[];
   reactionRadar: any[];
+  collectionStatus: any;
   loading: boolean;
   lastUpdated: string;
   newPollAlert: { label: string; date: string } | null;
@@ -24,6 +25,7 @@ export const useStore = create<WarRoomState>((set) => ({
   candidateTrend: [],
   newsClusters: [],
   reactionRadar: [],
+  collectionStatus: null,
   loading: true,
   lastUpdated: "",
   newPollAlert: null,
@@ -31,13 +33,14 @@ export const useStore = create<WarRoomState>((set) => ({
   fetchAll: async () => {
     const prevPolls = useStore.getState().polls;
     set({ loading: true });
-    const [polls, prediction, indices, hist, clusters, reaction] = await Promise.all([
+    const [polls, prediction, indices, hist, clusters, reaction, colStatus] = await Promise.all([
       api.getPolls().catch(() => ({ polls: [] })),
       api.getPrediction().catch(() => null),
       api.getIndicesCurrent().catch(() => null),
       api.getIndicesHistory().catch(() => ({ trend: [] })),
       api.getNewsClusters().catch(() => ({ clusters: [] })),
       api.getReactionRadar().catch(() => ({ items: [] })),
+      api.getCollectionStatus().catch(() => null),
     ]);
     const newPolls = polls?.polls || [];
     // 새 여론조사 감지: 이전 데이터가 있고 최신 poll이 변경된 경우
@@ -57,6 +60,7 @@ export const useStore = create<WarRoomState>((set) => ({
       candidateTrend: hist?.candidate_trend || [],
       newsClusters: clusters?.clusters || [],
       reactionRadar: reaction?.items || [],
+      collectionStatus: colStatus,
       loading: false,
       newPollAlert,
       lastUpdated: indices?.server_updated_at || new Date().toISOString(),

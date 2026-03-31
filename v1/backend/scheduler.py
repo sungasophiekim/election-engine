@@ -1623,6 +1623,26 @@ def _daily_snapshot():
             json.dump(training, f, ensure_ascii=False, indent=2)
 
         print(f"[{_now()}] 일일 스냅샷 + 학습데이터 저장: {fp.name}, {tp.name}", flush=True)
+
+        # 전일 수집 요약 텔레그램 알림
+        try:
+            yesterday = (datetime.now() - __import__('datetime').timedelta(days=1)).strftime("%Y-%m-%d")
+            hist_path_ = LEGACY_DATA / "indices_history.json"
+            with open(hist_path_) as _hf2:
+                all_h = json.load(_hf2)
+            y_count = sum(1 for h in all_h if h.get("timestamp", "").startswith(yesterday))
+            rate = round(y_count / 24 * 100)
+            icon = "✅" if y_count >= 20 else "⚠️" if y_count >= 10 else "🚨"
+            from telegram_bot import send_alert
+            send_alert(
+                f"📡 <b>일일 수집 리포트</b>\n\n"
+                f"어제({yesterday}): <b>{y_count}/24건</b> {icon} ({rate}%)\n"
+                f"학습데이터: {tp.name} 저장 완료\n"
+                f"7일 수집률: {training.get('hours_collected', 0)}건 기반",
+                [[{"text": "📊 대시보드", "callback_data": "dashboard"}]]
+            )
+        except Exception:
+            pass
     except Exception as e:
         print(f"[{_now()}] 스냅샷 오류: {e}", flush=True)
 
