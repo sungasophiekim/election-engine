@@ -1702,6 +1702,88 @@ def _daily_snapshot():
         print(f"[{_now()}] 스냅샷 오류: {e}", flush=True)
 
 
+def _auto_generate_daily_report():
+    """08:00 자동 데일리 리포트 생성 + 텔레그램 요약 발송"""
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        report_path = LEGACY_DATA / "daily_reports" / f"{today}.json"
+
+        # 이미 오늘 리포트가 있으면 스킵
+        if report_path.exists():
+            print(f"[{_now()}] 데일리 리포트 이미 존재: {today}", flush=True)
+            return
+
+        print(f"[{_now()}] 데일리 리포트 자동 생성 시작", flush=True)
+
+        # strategy API의 생성 함수 호출
+        import sys
+        _v1 = str(Path(__file__).resolve().parent)
+        if _v1 not in sys.path:
+            sys.path.insert(0, _v1)
+        from api.strategy import _generate_daily_sync
+        _generate_daily_sync()
+
+        # 생성 확인
+        if not report_path.exists():
+            print(f"[{_now()}] 데일리 리포트 생성 실패 — 파일 없음", flush=True)
+            return
+
+        print(f"[{_now()}] 데일리 리포트 생성 완료: {today}", flush=True)
+
+        # 텔레그램 요약 발송
+        try:
+            with open(report_path) as f:
+                rpt = json.load(f)
+
+            from telegram_bot import send_alert
+
+            summary = rpt.get("executive_summary", "")
+            theme = rpt.get("daily_theme", {})
+            d_day = rpt.get("d_day", "?")
+            strategies = rpt.get("strategies", [])
+            schedule = rpt.get("field_schedule", [])
+
+            lines = [f"📋 <b>데일리 전략 리포트 생성 완료</b>\n"]
+            lines.append(f"📅 {today} · D-{d_day}")
+            if theme:
+                lines.append(f"🏷 테마: <b>{theme.get('keyword', theme.get('theme', ''))}</b>\n")
+
+            # 핵심 진단 (문장별 불렛)
+            lines.append("🔍 <b>핵심 진단</b>")
+            for sent in summary.split(". ")[:4]:
+                sent = sent.strip().rstrip(".")
+                if sent:
+                    lines.append(f"  • {sent}")
+
+            # 전략 요약
+            if strategies:
+                lines.append(f"\n📐 <b>대응 전략</b>")
+                for s in strategies[:3]:
+                    lines.append(f"  • {s.get('title', '')}")
+
+            # 현장 일정
+            if schedule:
+                lines.append(f"\n📍 <b>현장 일정</b>")
+                for s in schedule[:3]:
+                    lines.append(f"  • {s.get('region', '')} — \"{s.get('message', '')}\"")
+
+            lines.append("\n🧠 AI 분석 완료 · 전략모드에서 전체 리포트 확인")
+
+            send_alert(
+                "\n".join(lines),
+                [[{"text": "📋 전체 리포트", "callback_data": "daily"},
+                  {"text": "📊 대시보드", "callback_data": "dashboard"}]]
+            )
+            print(f"[{_now()}] 데일리 리포트 텔레그램 발송 완료", flush=True)
+        except Exception as e:
+            print(f"[{_now()}] 텔레그램 발송 실패: {e}", flush=True)
+
+    except Exception as e:
+        print(f"[{_now()}] 데일리 리포트 자동 생성 오류: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+
 def _scheduler_loop():
     """메인 루프 — 절대 죽지 않는 구조"""
     print(f"[{_now()}] === 스케줄러 v2 시작 (60분 주기) ===", flush=True)
@@ -1763,11 +1845,15 @@ def _scheduler_loop():
                         print(f"[{_now()}] 연속 에러 {consecutive_errors}회 — 10분 대기", flush=True)
                         time.sleep(600)
 
-            # 매일 08:00 스냅샷
+            # 매일 08:00 학습데이터 + 데일리 리포트 자동 생성
+            # minute < 5로 체크 — sleep(60) 루프가 정확히 :00을 놓쳐도 08:01~08:04에 잡힘
             try:
                 now = datetime.now()
-                if now.hour == 8 and now.minute == 0:
-                    _daily_snapshot()
+                if now.hour == 8 and now.minute < 5:
+                    today_tp = LEGACY_DATA / "training_data" / f"{now.strftime('%Y-%m-%d')}.json"
+                    if not today_tp.exists():  # 오늘 이미 실행했으면 스킵
+                        _daily_snapshot()
+                        _auto_generate_daily_report()
             except Exception:
                 pass
 
