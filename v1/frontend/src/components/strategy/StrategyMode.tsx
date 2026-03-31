@@ -442,10 +442,6 @@ export default function StrategyMode({ onExit }: { onExit: () => void }) {
           <NavItem label="위클리 리포트" icon="📊" active={page === "weekly"} onClick={() => setPage("weekly")} />
           <NavItem label="리포트 아카이브" icon="🗂" active={page === "archive"} onClick={() => setPage("archive")} />
 
-          <div className="px-5 py-1 mt-3 text-[9px] tracking-[2px] text-white/30 font-medium">ANALYSIS</div>
-          <NavItem label="실시간 이슈" icon="📡" badge={String(data.clusters?.clusters?.length || 0)} onClick={() => { setPage("daily"); setSubTab("issue"); }} />
-          <NavItem label="위기 알림" icon="⚠️" badge={hasCrisis ? String(urgentItems.length) : undefined} onClick={() => { setPage("daily"); setSubTab("summary"); }} />
-
           <div className="px-5 py-1 mt-3 text-[9px] tracking-[2px] text-white/30 font-medium">DATA</div>
           <NavItem label="학습데이터" icon="🧠" active={page === "training"} badge={String(data.training?.total || 0)} badgeColor="bg-[#2457A4]" onClick={() => setPage("training")} />
           <NavItem label="리서치" icon="🔍" active={page === "research"} onClick={() => setPage("research")} />
@@ -712,17 +708,6 @@ function IssueTab({ daily, clusters }: { daily: any; clusters: any }) {
         </Card>
       </div>
 
-      {/* News Clusters from real-time data */}
-      {clusters?.clusters?.length > 0 && (
-        <Card title="실시간 뉴스 클러스터" sub="AI 분류 TOP 10">
-          <div className="grid grid-cols-2 gap-x-4">
-            {clusters.clusters.slice(0, 10).map((c: any, i: number) => (
-              <IssueRow key={i} rank={i + 1} name={c.name} count={c.count}
-                side={c.side} body={c.tip || ""} sentiment={c.sentiment} />
-            ))}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
