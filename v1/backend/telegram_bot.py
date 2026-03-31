@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
 
-_DATA = Path(__file__).resolve().parent.parent.parent / "data"
+from v1config.settings import LEGACY_DATA as _DATA
 CORRECTIONS_PATH = _DATA / "side_corrections.json"
 ENRICHMENT_PATH = _DATA / "enrichment_snapshot.json"
 CUSTOM_KEYWORDS_PATH = _DATA / "custom_keywords.json"

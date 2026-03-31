@@ -10,6 +10,10 @@ services:
       npx next build &&
       echo "BUILD HASH:" && ls out/_next/static/chunks/app/page-*.js 2>/dev/null
     startCommand: cd v1/backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: election-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8

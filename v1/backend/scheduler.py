@@ -638,7 +638,7 @@ def _ai_cluster_events(articles: list) -> list:
         # 사용자 수정/규칙 로드 → 프롬프트 주입
         corrections_text = ""
         try:
-            corr_path = Path(__file__).resolve().parent.parent.parent / "data" / "side_corrections.json"
+            corr_path = LEGACY_DATA / "side_corrections.json"
             if corr_path.exists():
                 with open(corr_path) as f:
                     corr_data = json.load(f)
@@ -853,7 +853,7 @@ def _ai_cluster_events(articles: list) -> list:
 
         # 텔레그램 수정 사항 재적용 (AI가 무시해도 corrections으로 덮어쓰기)
         try:
-            corr_path = Path(__file__).resolve().parent.parent.parent / "data" / "side_corrections.json"
+            corr_path = LEGACY_DATA / "side_corrections.json"
             if corr_path.exists():
                 with open(corr_path) as _cf:
                     corr_data = json.load(_cf)
@@ -998,7 +998,7 @@ def _collect_cluster_reactions(clusters: list) -> dict:
 
     # 커스텀 키워드 추가 (텔레그램에서 등록)
     try:
-        custom_kw_path = Path(__file__).resolve().parent.parent.parent / "data" / "custom_keywords.json"
+        custom_kw_path = LEGACY_DATA / "custom_keywords.json"
         if custom_kw_path.exists():
             with open(custom_kw_path) as f:
                 custom_kws = json.load(f)
