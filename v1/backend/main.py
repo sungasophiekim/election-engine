@@ -114,6 +114,43 @@ def trigger_collect():
     return {"status": "수집 시작됨"}
 
 
+@app.get("/api/admin/backup")
+def download_backup():
+    """전체 학습데이터 백업 다운로드 (ZIP)"""
+    import zipfile, io, os
+    from fastapi.responses import StreamingResponse
+    from v1config.settings import LEGACY_DATA
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        # 핵심 파일들
+        targets = [
+            "indices_history.json",
+            "enrichment_snapshot.json",
+            "cluster_history.json",
+            "monitor_keywords.json",
+        ]
+        for fname in targets:
+            fp = LEGACY_DATA / fname
+            if fp.exists():
+                zf.write(fp, f"data/{fname}")
+
+        # 디렉토리들
+        for dirname in ["daily_reports", "training_data", "index_history", "strategy_feedback"]:
+            d = LEGACY_DATA / dirname
+            if d.exists():
+                for fp in sorted(d.glob("*.json")):
+                    zf.write(fp, f"data/{dirname}/{fp.name}")
+
+    buf.seek(0)
+    from datetime import datetime
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    return StreamingResponse(
+        buf, media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=election_engine_backup_{ts}.zip"},
+    )
+
+
 @app.post("/api/admin/fix-party")
 def fix_party_labels():
     """여야 표기 일괄 수정 — 국민의힘=야당, 민주당=여당"""

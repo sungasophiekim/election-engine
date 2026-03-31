@@ -1055,11 +1055,11 @@ def _cb_sys_admin(chat_id, msg_id, base, back):
         "수동 수집: 즉시 데이터 수집 실행",
         "스케줄러 재시작: 스레드 재시작",
         "재배포: Render 서버 재배포",
-        "최근 로그: 에러 로그 확인",
+        "백업: 전체 학습데이터 다운로드",
     ]
     buttons = [
         [{"text": "🔄 수동 수집", "callback_data": "sys_collect"}, {"text": "♻️ 스케줄러 재시작", "callback_data": "sys_restart"}],
-        [{"text": "🚀 재배포", "callback_data": "sys_deploy"}, {"text": "📋 최근 로그", "callback_data": "sys_log"}],
+        [{"text": "🚀 재배포", "callback_data": "sys_deploy"}, {"text": "💾 백업 다운로드", "url": f"{DASHBOARD_URL}/api/admin/backup"}],
         back[0],
     ]
     _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)

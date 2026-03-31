@@ -1692,6 +1692,28 @@ def _daily_snapshot():
             )
         except Exception:
             pass
+
+        # 매주 월요일 백업 알림
+        try:
+            if datetime.now().weekday() == 0:  # 월요일
+                from telegram_bot import send_alert
+                import os
+                # data 디렉토리 총 용량 계산
+                total_size = 0
+                for dirpath, _, filenames in os.walk(str(LEGACY_DATA)):
+                    for fname in filenames:
+                        total_size += os.path.getsize(os.path.join(dirpath, fname))
+                size_mb = round(total_size / 1024 / 1024, 1)
+                send_alert(
+                    f"💾 <b>주간 백업 알림</b>\n\n"
+                    f"학습데이터 {size_mb}MB 축적 중\n"
+                    f"백업을 권장합니다.\n\n"
+                    f"시스템 관리 → 백업 다운로드",
+                    [[{"text": "💾 백업 다운로드", "url": f"https://election-engine.onrender.com/api/admin/backup"},
+                      {"text": "◀ 메뉴", "callback_data": "menu"}]]
+                )
+        except Exception:
+            pass
     except Exception as e:
         print(f"[{_now()}] 스냅샷 오류: {e}", flush=True)
 
