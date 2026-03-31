@@ -1574,9 +1574,9 @@ def _scheduler_loop():
     tick = 0
     consecutive_errors = 0
 
-    # 시작 시 즉시 첫 갱신 (2분 대기 후 — 서버 안정화)
+    # 시작 시 즉시 첫 갱신 (30초 대기 후 — 서버 안정화)
     try:
-        time.sleep(120)
+        time.sleep(30)
         print(f"[{_now()}] 시작 시 즉시 갱신 실행", flush=True)
         _update_all()
         print(f"[{_now()}] 초기 갱신 완료", flush=True)
