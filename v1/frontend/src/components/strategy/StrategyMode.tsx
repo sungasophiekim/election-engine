@@ -1067,18 +1067,47 @@ function TrainingPage({ training }: { training: any }) {
         <div className="space-y-4">
           <div className="text-sm font-bold text-[#0D1B2A]">{selected.date} <span className="text-gray-500 font-normal text-xs">D-{selected.d_day}</span></div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "이슈지수", val: selected.indices?.issue_index, color: "#1A7A4A" },
-              { label: "반응지수", val: selected.indices?.reaction_index, color: "#C8922A" },
-              { label: "판세지수", val: selected.indices?.pandse_index, color: "#2457A4" },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-                <div className="text-[10px] text-gray-500">{label}</div>
-                <div className="text-xl font-bold" style={{ color }}>{val?.toFixed(1) || "—"}<span className="text-xs text-gray-400">pt</span></div>
-              </div>
-            ))}
-          </div>
+          {/* 24h 지수 추세 (신규 구조) */}
+          {selected.indices_trend ? (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "이슈지수", t: selected.indices_trend?.issue, color: "#1A7A4A" },
+                { label: "반응지수", t: selected.indices_trend?.reaction, color: "#C8922A" },
+                { label: "판세지수", t: selected.indices_trend?.pandse, color: "#2457A4" },
+              ].map(({ label, t, color }) => (
+                <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 text-center">
+                  <div className="text-[10px] text-gray-500">{label}</div>
+                  <div className="text-xl font-bold" style={{ color }}>{t?.avg?.toFixed(1) || "—"}<span className="text-xs text-gray-400">pt</span></div>
+                  <div className="text-[9px] text-gray-400 mt-1">
+                    {t?.min?.toFixed(1)}~{t?.max?.toFixed(1)} · {t?.start?.toFixed(1)}→{t?.end?.toFixed(1)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : selected.indices ? (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "이슈지수", val: selected.indices?.issue_index, color: "#1A7A4A" },
+                { label: "반응지수", val: selected.indices?.reaction_index, color: "#C8922A" },
+                { label: "판세지수", val: selected.indices?.pandse_index, color: "#2457A4" },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 text-center">
+                  <div className="text-[10px] text-gray-500">{label}</div>
+                  <div className="text-xl font-bold" style={{ color }}>{val?.toFixed(1) || "—"}<span className="text-xs text-gray-400">pt</span></div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {/* 수집 품질 표시 */}
+          {selected.hours_collected != null && (
+            <div className={`text-[10px] px-3 py-1.5 rounded-lg ${
+              selected.hours_collected >= 20 ? "bg-emerald-50 text-emerald-700" :
+              selected.hours_collected >= 10 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
+            }`}>
+              📡 수집: {selected.hours_collected}/24건 ({selected.hours_collected >= 20 ? "정상" : selected.hours_collected >= 10 ? "불안정" : "누락 심각"})
+            </div>
+          )}
 
           {selected.ai_summary?.issue && (
             <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -1088,12 +1117,60 @@ function TrainingPage({ training }: { training: any }) {
             </div>
           )}
 
-          {selected.top_issues?.length > 0 && (
-            <Card title="TOP 이슈" sub={selected.date}>
-              {selected.top_issues.map((iss: any, i: number) => (
-                <IssueRow key={i} rank={i + 1} name={iss.name} count={iss.count} side={iss.side} sentiment={iss.sentiment} />
+          {/* 24h 누적 TOP 이슈 (신규) or 기존 top_issues */}
+          {(selected.top_issues_24h || selected.top_issues)?.length > 0 && (
+            <Card title={selected.top_issues_24h ? "24시간 누적 TOP 이슈" : "TOP 이슈"} sub={selected.date}>
+              {(selected.top_issues_24h || selected.top_issues).map((iss: any, i: number) => (
+                <div key={i} className="flex items-start gap-2 py-2 border-b border-gray-100 last:border-0">
+                  <IssueRow rank={i + 1} name={iss.name} count={iss.accumulated_count || iss.count} side={iss.side} sentiment={iss.sentiment} />
+                  {iss.hours_appeared && <span className="text-[8px] text-gray-400 shrink-0">{iss.hours_appeared}h</span>}
+                </div>
               ))}
             </Card>
+          )}
+
+          {/* 지역별 반응 (신규) */}
+          {selected.regional_24h && Object.keys(selected.regional_24h).length > 0 && (
+            <Card title="지역별 반응 (24시간)" sub="맘카페 기반">
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(selected.regional_24h).map(([region, data]: [string, any]) => {
+                  const tColor = data.tone === "긍정" ? "text-emerald-600" : data.tone === "부정" ? "text-red-600" : "text-gray-500";
+                  return (
+                    <div key={region} className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200">
+                      <span className="text-[11px] font-bold text-gray-700">📍 {region}</span>
+                      <div className="text-right">
+                        <span className={`text-[11px] font-bold ${tColor}`}>{data.tone}</span>
+                        <span className="text-[9px] text-gray-400 ml-1">{data.mentions}건</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
+          {/* 여론조사 vs 지수 비교 */}
+          {selected.poll?.president_approval > 0 && (
+            <div className="rounded-xl border border-[#2457A4]/30 bg-[#EFF6FF] p-4">
+              <div className="text-[11px] font-bold text-[#2457A4] mb-2">📊 여론조사 vs 지수 비교</div>
+              <div className="grid grid-cols-2 gap-4 text-[11px]">
+                <div>
+                  <div className="text-gray-500 text-[9px] mb-1">여론조사</div>
+                  <div className="text-gray-700">대통령 {selected.poll.president_approval}% · 민주 {selected.poll.dem_support}% · 국힘 {selected.poll.ppp_support}%</div>
+                  <div className="text-[#2457A4] font-bold mt-0.5">정당격차: +{selected.poll.party_gap}%p</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-[9px] mb-1">당일 지수 {selected.indices_trend ? "(24h 평균)" : ""}</div>
+                  <div className="text-gray-700">
+                    이슈 {(selected.indices_trend?.issue?.avg || selected.indices?.issue_index || 50).toFixed(1)} · 반응 {(selected.indices_trend?.reaction?.avg || selected.indices?.reaction_index || 50).toFixed(1)} · 판세 {(selected.indices_trend?.pandse?.avg || selected.indices?.pandse_index || 50).toFixed(1)}
+                  </div>
+                  <div className="text-[9px] text-gray-400 mt-0.5">
+                    {(selected.indices_trend?.issue?.avg || selected.indices?.issue_index || 50) > 52 ? "이슈 우세 → 여론 선행 가능성" :
+                     (selected.indices_trend?.issue?.avg || selected.indices?.issue_index || 50) < 48 ? "이슈 열세 → 여론 하락 주의" : "이슈 중립"}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {selected.pandse_factors?.length > 0 && (
@@ -1108,15 +1185,6 @@ function TrainingPage({ training }: { training: any }) {
                 </div>
               ))}
             </Card>
-          )}
-
-          {selected.poll?.president_approval > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <div className="text-[11px] font-bold text-[#0D1B2A] mb-1">여론조사</div>
-              <div className="text-[11px] text-gray-700">
-                대통령 {selected.poll.president_approval}% · 민주 {selected.poll.dem_support}% · 국힘 {selected.poll.ppp_support}%
-              </div>
-            </div>
           )}
         </div>
       )}

@@ -143,6 +143,48 @@ def index_history():
     }
 
 
+@router.get("/regional")
+def regional_reaction():
+    """지역별 반응 현황 — 최근 24시간 히스토리에서 집계"""
+    hist_path = ENRICHMENT_PATH.parent / "indices_history.json"
+    all_hist = []
+    try:
+        with open(hist_path) as f:
+            all_hist = json.load(f)
+    except Exception:
+        pass
+
+    recent = all_hist[-24:]
+    regions = {}
+    for h in recent:
+        for region, data in h.get("regional", {}).items():
+            if region not in regions:
+                regions[region] = {"mentions": 0, "sentiments": [], "hourly": []}
+            regions[region]["mentions"] += data.get("mentions", 0)
+            s = data.get("avg_sentiment", 0)
+            if s != 0:
+                regions[region]["sentiments"].append(s)
+            regions[region]["hourly"].append({
+                "time": h.get("date", ""),
+                "mentions": data.get("mentions", 0),
+                "sentiment": data.get("avg_sentiment", 0),
+            })
+
+    items = []
+    for region, v in sorted(regions.items(), key=lambda x: -x[1]["mentions"]):
+        sents = v["sentiments"]
+        avg = sum(sents) / len(sents) if sents else 0
+        items.append({
+            "region": region,
+            "mentions": v["mentions"],
+            "avg_sentiment": round(avg, 3),
+            "tone": "긍정" if avg > 0.05 else "부정" if avg < -0.05 else "중립",
+            "hourly": v["hourly"][-12:],  # 최근 12시간
+        })
+
+    return {"regions": items, "hours": len(recent)}
+
+
 @router.get("/collection-status")
 def collection_status():
     """수집 상태 — 최근 7일 수집 건수 + API 상태"""

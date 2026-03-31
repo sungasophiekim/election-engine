@@ -1,11 +1,21 @@
 "use client";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { fmtTs } from "@/lib/format";
+import { getRegionalReaction } from "@/lib/api";
 
 export default function ReactionSidebar() {
   const reactionRadar = useStore((s) => s.reactionRadar);
   const indices = useStore((s) => s.indices);
   const enrichTs = indices?.reaction?.updated_at || "";
+  const [viewMode, setViewMode] = useState<"issue" | "region">("issue");
+  const [regional, setRegional] = useState<any>(null);
+
+  useEffect(() => {
+    if (viewMode === "region" && !regional) {
+      getRegionalReaction().then(setRegional).catch(() => {});
+    }
+  }, [viewMode, regional]);
 
   const sideColor = (s: string) =>
     s?.includes("우리") ? "border-l-blue-500" : s?.includes("상대") ? "border-l-red-500" : "border-l-gray-600";
@@ -29,9 +39,47 @@ export default function ReactionSidebar() {
           <span className="text-[7px] text-amber-500/60 font-normal normal-case tracking-normal">beta</span>
           <span className="w-1.5 h-1.5 rounded-full bg-purple-500 live-dot" />
         </div>
-        <span className="timestamp normal-case tracking-normal font-normal">{fmtTs(enrichTs)}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded overflow-hidden border border-[#1a2844]">
+            <button onClick={() => setViewMode("issue")}
+              className={`text-[8px] px-2 py-0.5 transition-colors ${viewMode === "issue" ? "bg-purple-900/40 text-purple-300" : "text-gray-500 hover:text-gray-300"}`}>
+              이슈별
+            </button>
+            <button onClick={() => setViewMode("region")}
+              className={`text-[8px] px-2 py-0.5 transition-colors ${viewMode === "region" ? "bg-purple-900/40 text-purple-300" : "text-gray-500 hover:text-gray-300"}`}>
+              지역별
+            </button>
+          </div>
+          <span className="timestamp normal-case tracking-normal font-normal">{fmtTs(enrichTs)}</span>
+        </div>
       </div>
 
+      {viewMode === "region" ? (
+        <div className="p-2 space-y-1.5">
+          {regional?.regions?.length > 0 ? regional.regions.map((r: any, i: number) => {
+            const toneColor = r.tone === "긍정" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
+              r.tone === "부정" ? "text-red-400 border-red-500/30 bg-red-500/10" :
+              "text-gray-400 border-gray-600/30 bg-gray-700/10";
+            const sentColor = r.avg_sentiment > 0.05 ? "text-emerald-400" : r.avg_sentiment < -0.05 ? "text-red-400" : "text-gray-400";
+            return (
+              <div key={i} className="rounded-lg px-3 py-2 bg-[#080d16] border-l-2 border-purple-500/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-white">📍 {r.region}</span>
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded border ${toneColor}`}>{r.tone}</span>
+                </div>
+                <div className="flex items-center gap-3 mt-1 text-[9px]">
+                  <span className="text-gray-500">{r.mentions}건</span>
+                  <span className={sentColor}>감성 {r.avg_sentiment > 0 ? "+" : ""}{r.avg_sentiment.toFixed(3)}</span>
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="p-6 text-center text-gray-500 text-xs">지역 데이터 수집 중...</div>
+          )}
+          <div className="text-[7px] text-gray-600 px-2">24시간 경남 맘카페 기반 · {regional?.hours || 0}시간 분석</div>
+        </div>
+      ) : (
+      <>
       <div className="px-3 py-1.5 text-[7px] text-gray-600 leading-relaxed border-b border-[#0e1825] space-y-0.5">
         <div>이슈별 시민 반응 · 기사수 기반 관심도 정렬 · 세그먼트 커뮤니티 기반</div>
         <div className="flex items-center gap-2">
@@ -165,6 +213,8 @@ export default function ReactionSidebar() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

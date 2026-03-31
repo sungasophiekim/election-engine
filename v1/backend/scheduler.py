@@ -1288,6 +1288,30 @@ def _ai_classify_batch(articles: list) -> int:
         return 0
 
 
+def _aggregate_regional(hourly_data: list) -> dict:
+    """시간별 히스토리에서 지역별 반응 24시간 추세 집계"""
+    regions = {}
+    for h in hourly_data:
+        for region, data in h.get("regional", {}).items():
+            if region not in regions:
+                regions[region] = {"mentions_total": 0, "sentiments": [], "hours": 0}
+            regions[region]["mentions_total"] += data.get("mentions", 0)
+            s = data.get("avg_sentiment", 0)
+            if s != 0:
+                regions[region]["sentiments"].append(s)
+            regions[region]["hours"] += 1
+    result = {}
+    for region, v in regions.items():
+        sents = v["sentiments"]
+        result[region] = {
+            "mentions": v["mentions_total"],
+            "avg_sentiment": round(sum(sents) / len(sents), 3) if sents else 0,
+            "tone": "긍정" if sents and sum(sents)/len(sents) > 0.05 else "부정" if sents and sum(sents)/len(sents) < -0.05 else "중립",
+            "hours_active": v["hours"],
+        }
+    return result
+
+
 def _save_indices_history(snap: dict):
     """3개 지수 히스토리 저장 (indices_history.json에 append) — 1시간마다"""
     hist_path = LEGACY_DATA / "indices_history.json"
@@ -1329,6 +1353,27 @@ def _save_indices_history(snap: dict):
         for rx in rx_details[:10]
     ]
 
+    # 지역별 반응 집계 (커뮤니티 breakdown에서 추출)
+    region_reactions = {}
+    for rx in rx_details:
+        comm = rx.get("sources", {}).get("community", {})
+        for bd in comm.get("breakdown", []):
+            region = bd.get("region", "")
+            if not region:
+                continue
+            if region not in region_reactions:
+                region_reactions[region] = {"mentions": 0, "sentiment_sum": 0.0, "count": 0}
+            region_reactions[region]["mentions"] += bd.get("mentions", 0)
+            region_reactions[region]["sentiment_sum"] += bd.get("sentiment", 0)
+            region_reactions[region]["count"] += 1
+    regional = {
+        region: {
+            "mentions": v["mentions"],
+            "avg_sentiment": round(v["sentiment_sum"] / v["count"], 3) if v["count"] > 0 else 0,
+        }
+        for region, v in region_reactions.items()
+    }
+
     entry = {
         "timestamp": datetime.now().isoformat(),
         "date": datetime.now().strftime("%m.%d %H:%M"),
@@ -1337,6 +1382,7 @@ def _save_indices_history(snap: dict):
         "pandse": pandse,
         "top_clusters": top_clusters,
         "top_reactions": top_reactions,
+        "regional": regional,
         "ai_issue_summary": snap.get("ai_issue_summary", ""),
         "ai_reaction_summary": snap.get("ai_reaction_summary", ""),
         # 하위 호환
@@ -1599,6 +1645,9 @@ def _daily_snapshot():
 
             # 24시간 누적 TOP 10 반응
             "top_reactions_24h": accumulated_reactions,
+
+            # 24시간 지역별 반응 추세
+            "regional_24h": _aggregate_regional(hourly_data),
 
             # 판세 팩터 (현재 시점)
             "pandse_factors": corr.get("factors", []),
