@@ -6,7 +6,6 @@
 *.db
 
 # Data — 대용량/임시 파일 제외, 핵심 스냅샷은 포함
-/data/index_history/
 /data/monitor_keywords.json
 /data/*.db
 

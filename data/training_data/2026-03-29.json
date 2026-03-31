@@ -1,0 +1,1428 @@
+{
+  "date": "2026-03-29",
+  "timestamp": "2026-03-29T08:00:54.249460",
+  "d_day": 66,
+  "indices": {
+    "issue_index": 52.0,
+    "reaction_index": 54.3,
+    "pandse_index": 51.9
+  },
+  "issue_detail": {
+    "kim_count": 68,
+    "park_count": 36,
+    "kim_score": 680,
+    "park_score": 360
+  },
+  "reaction_detail": {
+    "total_mentions": 4053575,
+    "sources_collected": [
+      "community",
+      "cafe",
+      "youtube",
+      "news_comments",
+      "blog"
+    ],
+    "kim_sentiment": 28,
+    "park_sentiment": 16
+  },
+  "pandse_factors": [
+    {
+      "name": "대통령 효과 전이율",
+      "value": 1.5,
+      "confidence": "high",
+      "reason": "지지율67.0% 정당격차+26%p 클러스터1건(+0)"
+    },
+    {
+      "name": "후보 네거티브",
+      "value": 0.0,
+      "confidence": "medium",
+      "reason": "상대유리 3건(36/246) 강도0 → +0.0"
+    },
+    {
+      "name": "현직 프리미엄",
+      "value": -2.2,
+      "confidence": "medium",
+      "reason": "현직관련: 상대유리25건 우리유리0건 → -2.2"
+    },
+    {
+      "name": "보수 기저 (정당지지율)",
+      "value": 1.1,
+      "confidence": "high",
+      "reason": "민주46.0% 국힘20.0% 격차+26%p → 경남할인 후 +1.1"
+    },
+    {
+      "name": "여당 결집 + 전략적 투표",
+      "value": 0.4,
+      "confidence": "medium",
+      "reason": "이슈지수52.0pt 지지율67.0% → +0.4"
+    },
+    {
+      "name": "보수 결집 (위기감 동원)",
+      "value": -1.3,
+      "confidence": "medium",
+      "reason": "상대유리36/246건 국힘20.0% 위기감0.35 → -1.3"
+    },
+    {
+      "name": "투표율 차등 동원",
+      "value": 0.2,
+      "confidence": "medium",
+      "reason": "탄핵 후 첫 지선. 진보 동원 미약 순효과"
+    },
+    {
+      "name": "후보 프리미엄 (정책)",
+      "value": 0.5,
+      "confidence": "low",
+      "reason": "우리유리 2건 감성+0 평균34건 → +0.5"
+    },
+    {
+      "name": "여론관성",
+      "value": 1.6,
+      "confidence": "medium",
+      "reason": "최신 여론 격차 +10.6%p → 관성 +1.6"
+    }
+  ],
+  "top_issues": [
+    {
+      "name": "선거/공천",
+      "count": 53,
+      "side": "우리 유리",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "기타",
+      "count": 47,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "산업/경제",
+      "count": 40,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "KF-21/방산",
+      "count": 26,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "도정/예산",
+      "count": 25,
+      "side": "상대 유리",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "정당/정치",
+      "count": 17,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "청년/복지",
+      "count": 15,
+      "side": "우리 유리",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "행정통합/메가시티",
+      "count": 8,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "대통령/정부",
+      "count": 7,
+      "side": "상대 유리",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    },
+    {
+      "name": "SOC/교통",
+      "count": 4,
+      "side": "중립",
+      "sentiment": 0,
+      "community_expected": "",
+      "tip": ""
+    }
+  ],
+  "ai_summary": {
+    "issue": "",
+    "reaction": ""
+  },
+  "poll": {
+    "president_approval": 67.0,
+    "dem_support": 46.0,
+    "ppp_support": 20.0,
+    "party_gap": 26.0
+  },
+  "reaction_by_keyword": [
+    {
+      "keyword": "기타",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 21668276,
+          "net_sentiment": 0.0,
+          "titles": [
+            "드디어 이사각! 짐 쌀 걱정 뚝배기 깨부수는 양주포장이사 썰 푼다",
+            "화야산 야생화 탐사 후 들르기 좋은 카페 삼회리 드 모파상... ",
+            "큐카쿠 소금 양배추 타래 양념장 210g x 4개 세트 일본... "
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 38725178,
+          "net_sentiment": -0.467,
+          "titles": [
+            "알파 인더스트리 ma-1 자켓",
+            "010─5598─5948 하이랜드폴드 고양이 분양합니다 전국 당일 이동 분양 가능 추가금x 인천강아지분양 인천고...",
+            "(새상품) 루이 텀블러 핑크 + 티스푼 세트"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 3899474,
+          "net_sentiment": 0.005,
+          "sites_active": 6,
+          "titles": [
+            "통기타 마이너 갤러리 - 커뮤니티 포털 디시인사이드",
+            "일렉트릭기타 마이너 갤러리 - 커뮤니티 포털 디시인사이드",
+            "정보) 통기타 고르는 방법 - 유머/움짤/이슈",
+            "혼란한 와중에 올리는 봇치기타 구별법(깁슨 블랙뷰티) - 오덕양성소",
+            "어쿠스틱 기타 고르는 방법(3)"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 44,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관",
+                "무관"
+              ]
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 652422,
+              "sentiment": 0.03
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 49439,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 206360,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 2991193,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 16,
+              "sentiment": 0.0
+            }
+          ],
+          "ai_posts": 5,
+          "ai_opinions": [
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "클리앙",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "네이트판",
+              "opinion": "무관",
+              "sentiment": 0
+            }
+          ]
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "산업/경제",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 87621,
+          "net_sentiment": 0.3,
+          "titles": [
+            "K2 전차 사막을 가르다 K방산 글로벌 방위 산업의 룰체인저로... ",
+            "AI와 자동화의 미래",
+            "한국의 최후의 수단- 나프탄 전면 수출 금지 시행"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 24288,
+          "net_sentiment": 0.1,
+          "titles": [
+            "공고 3개월 남겨 놓고 CHPS 입찰 변경…“사업 하지 말란 건가” 불만 폭주",
+            "2026학년도 세종대 수시 논술 기출(자유전공)",
+            "투자자라면 북마크 해두면 좋은 사이트 모음"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 35668,
+          "net_sentiment": 0.052,
+          "sites_active": 7,
+          "titles": [
+            "산업은행 경제 - 경제학이론 마이너 갤러리",
+            "[마이더스] 미중 패권 전쟁과 한국 반도체 산업의 미래",
+            "선진국들 산업 전환 힘든 이유.jpg - 미스터리/공포",
+            "한국 자동차산업 발전사, 영욕의 장면들 01 - 미스터리/공포",
+            "한국이 나아가야할 경제산업적 정책과 절망에 관하여"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 36,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관",
+                "무관"
+              ]
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 23802,
+              "sentiment": 0.0
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 6146,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 5630,
+              "sentiment": 0.03
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 45,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 6,
+              "sentiment": 0.0
+            },
+            {
+              "id": "momcafe_gimhae",
+              "name": "김해줌마렐라",
+              "demographic": "3040 여성 (김해)",
+              "region": "김해",
+              "mentions": 3,
+              "sentiment": 0.333
+            }
+          ],
+          "ai_posts": 5,
+          "ai_opinions": [
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "클리앙",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "네이트판",
+              "opinion": "무관",
+              "sentiment": 0
+            }
+          ]
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "선거/공천",
+      "side": "우리 유리",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 200131,
+          "net_sentiment": -0.166,
+          "titles": [
+            "오늘의 정치 뉴스 요약 2026년 3월 29일 7시 주요 정치 이슈... ",
+            "국민의힘 이혁재 논란과 주호영 무소속 출마 가능성",
+            "정치평론(政治評論)"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 63587,
+          "net_sentiment": 0.134,
+          "titles": [
+            "국회의원SNS소식20260329일요일",
+            "정청래 당대표는 과연 올해지방선거를 이재명정부의 서포터해줄 인재들을 공천한것인가?",
+            "뉴이재명 된 장동혁? 국힘이 못하는 '이것' (성치훈 봉건우 신현영 정은혜)#끝장뉴스 / '오락가락' 트럼프 ..."
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 1710,
+          "net_sentiment": -0.068,
+          "sites_active": 5,
+          "titles": [
+            "필승 향한 여야 공천전략…벼랑 끝 승부수 vs 세대교체 변화",
+            "민주당, 광주 서구을 또 전략 공천하나…후보·유권자 ‘촉각’ | 연합뉴스",
+            "[필독] 기초의원 뽑을 때 꼭 이렇게 해라 - 정치/시사",
+            "개혁신당 '지방선거' 공천원칙 수립…&quot;기탁금 0원, 능력·도덕성으로 승부&quot; - 정치/시사",
+            "수박 단수공천 수혜자 명단 ㄷㄷ"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 44,
+              "sentiment": -0.1
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 1557,
+              "sentiment": -0.21
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 55,
+              "sentiment": -0.03
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 43,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 11,
+              "sentiment": 0.0
+            }
+          ],
+          "ai_posts": 0,
+          "ai_opinions": []
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "KF-21/방산",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 16860,
+          "net_sentiment": 0.4,
+          "titles": [
+            "2026년 3월 29일 일요일 주요 이슈",
+            "대한민국 하늘의 자부심 KF-21 양산 1호기 출고식…대통령의... ",
+            "방산과 우주를 다 잡았다! 제노코(361390)가 2026년 우주항공... "
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 3918,
+          "net_sentiment": 0.4,
+          "titles": [
+            "정책뉴스20260329일요일",
+            "현대로템(064350) 주가 종합 분석 3월 29일",
+            "KF-21 양산 1호기 출고 뉴스 봤는데"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 285,
+          "net_sentiment": 0.037,
+          "sites_active": 7,
+          "titles": [
+            "공군참모총장, KF-21 시험비행 첫 탑승… 우수성·안정성 인정 / 공군 제공 | BEMIL 군사세계",
+            "“KF-21 무장 거절, 갑질한 미국”이 한국에 무릎 꿇은 이유 | 오버히트",
+            "영국 정부, KF-21 사업 참여를 위한 로비전 가동.jpg - 미스터리/공포",
+            "최근 한국에서 독자개발된 독보적인 방산기술 2가지 - 미스터리/공포",
+            "'KF-21 심장, 우리 손으로'… 국산 항공엔진 개발 박차"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 52,
+              "sentiment": 0.0
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 187,
+              "sentiment": 0.0
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 25,
+              "sentiment": -0.04
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 7,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 5,
+              "sentiment": 0.0
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 4,
+              "sentiment": 0.0
+            },
+            {
+              "id": "momcafe_changwon",
+              "name": "창원줌마렐라",
+              "demographic": "3040 여성 (창원)",
+              "region": "창원",
+              "mentions": 5,
+              "sentiment": 0.3
+            }
+          ],
+          "ai_posts": 0,
+          "ai_opinions": []
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "도정/예산",
+      "side": "상대 유리",
+      "sources": {
+        "blog": {
+          "count": 14,
+          "total": 29073,
+          "net_sentiment": 0.1,
+          "titles": [
+            "사회 1*헤드라인.사건사고.교육.노동.언론.환경=네이버... ",
+            "날씨.KBS.mbc.mbn.ytn.sbs.TV조선.연합뉴스TV.채널A.... ",
+            "재개발·재건축 총회 의결사항 총정리"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 8388,
+          "net_sentiment": 0.5,
+          "titles": [
+            "국회의원SNS소식20260329일요일",
+            "신철상 고양시 대변인, 시 4대 현안 경기도 반박 해명에 “무책임한 변명이다” (2026.03.27/NSP)",
+            "3월멤버십 강의과제 / 서울지역 / 57커스텀"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 109,
+          "net_sentiment": -0.015,
+          "sites_active": 6,
+          "titles": [
+            "김동연 도정의 첫 예산안 분석 - 더불어민주당 마이너 갤러리",
+            "자치단체장 제일 중요한일이 예산 1억이라도 더 따내는거 - 201805~202412 롯데 자이언츠 갤러리",
+            "[속보] 윤 대통령 &quot;국회, 거듭되는 탄핵 입법·예산 농단 즉각 중지 요청&quot; - 유머/움짤/이슈",
+            "[굿모닝충청] [종합] 도정에서 정치까지…할 말 다 한 김태흠 - 정치/시사",
+            "둔촌주공 조합 '도정법 위반' 다수 적발"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 32,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관",
+                "무관"
+              ]
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 43,
+              "sentiment": 0.1
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 11,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 13,
+              "sentiment": -0.08
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 4,
+              "sentiment": -0.3,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "비상계엄 비판"
+              ]
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 6,
+              "sentiment": 0.17
+            }
+          ],
+          "ai_posts": 5,
+          "ai_opinions": [
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "네이트판",
+              "opinion": "비상계엄 비판",
+              "sentiment": -0.3
+            },
+            {
+              "community": "클리앙",
+              "opinion": "무관",
+              "sentiment": 0
+            }
+          ]
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "정당/정치",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 756037,
+          "net_sentiment": 0.134,
+          "titles": [
+            "[양승조·박수현 세대별 지지 비교] 2026 충남지사 민주당... ",
+            "2026년3월29일 일상 일기",
+            "교회가 약자 편에 서서 사역하고, 옹호하려면"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 245020,
+          "net_sentiment": -0.1,
+          "titles": [
+            "징글징글 행정수도 요구 !",
+            "썩은 사과 상자엔 반전이 없다, 궤짝째 통째로 비워라! 오직 창당만이 유일한 구원이다.",
+            "\"국가 수반인 여성 정치인이 먼저 등장했다고 해서 무조건 정치적으로 앞선 나라인가?\" 질문에 대한 AI들의..."
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 32159,
+          "net_sentiment": -0.07,
+          "sites_active": 7,
+          "titles": [
+            "유혹 앞에 선 진보정당, 민주당의 하위 파트너가 될 것인가 | 프레시안",
+            "정치의 미덕 - 진보정치 마이너 갤러리",
+            "[국회연구] 한국의 정치 양극화가 가진 특징 13가지 - 정치/시사",
+            "공무원 정치활동 금지인데 예외조항도 있어요 - 정치/시사",
+            "정당정치를 표방하는 정치인의 도둑질"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 45,
+              "sentiment": 0.03
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 22841,
+              "sentiment": 0.1
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 7489,
+              "sentiment": -0.1
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 1729,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 44,
+              "sentiment": -0.23
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 7,
+              "sentiment": -0.29
+            },
+            {
+              "id": "momcafe_jinju",
+              "name": "진주아지매",
+              "demographic": "3040 여성 (진주)",
+              "region": "진주",
+              "mentions": 4,
+              "sentiment": 0.0
+            }
+          ],
+          "ai_posts": 0,
+          "ai_opinions": []
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "청년/복지",
+      "side": "우리 유리",
+      "sources": {
+        "blog": {
+          "count": 21,
+          "total": 27820,
+          "net_sentiment": 0.9,
+          "titles": [
+            "인천 ‘천원의 아침밥’ 확대… 대학생 삶의 질이 달라진다",
+            "2026년 청년내일저축계좌 조건 가심사 1분 컷 (5월 신청 전 내... ",
+            "\"설마 나도 부결? 청년 월세 지원 거절 사유 4가지와 즉시 해결법\""
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 4535,
+          "net_sentiment": 0.634,
+          "titles": [
+            "군포 문화누리카드 사용처 가맹점 온라인 오프라인 빠르게확인",
+            "민생지원금 3차 지역 명단 및 미환급금 1분 조회 방법 안내",
+            "인천 재직청년 복지포인트 신청 전 이것 모르면 서류 탈락합니다"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 7750,
+          "net_sentiment": 0.064,
+          "sites_active": 9,
+          "titles": [
+            "ㅇㅇㅁㄱㅁㅇ 경기사는 청년바발들 복지 포인트 모르는 바발 없지? - 뮤지컬, 연극 미니 갤러리",
+            "서울시 청년이라면 받을 수 있는 상시 혜택 챙기자",
+            "경기도, 청년 노동자 대상 복지포인트·근로장려금 지급 - 직장/알바/사업",
+            "여성가족부에서 새롭게 제공중이라는 청년복지 - 유머/움짤/이슈",
+            "경기도 청년 복지포인트 - 1. 지원 및 선정 후기"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 47,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관",
+                "무관"
+              ]
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 6236,
+              "sentiment": 0.0
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 41,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 1370,
+              "sentiment": 0.03
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 36,
+              "sentiment": -0.3,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "분노"
+              ]
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 6,
+              "sentiment": 0.0
+            },
+            {
+              "id": "momcafe_gimhae",
+              "name": "김해줌마렐라",
+              "demographic": "3040 여성 (김해)",
+              "region": "김해",
+              "mentions": 4,
+              "sentiment": 0.25
+            },
+            {
+              "id": "momcafe_jinju",
+              "name": "진주아지매",
+              "demographic": "3040 여성 (진주)",
+              "region": "진주",
+              "mentions": 5,
+              "sentiment": -0.222
+            },
+            {
+              "id": "momcafe_yangsan",
+              "name": "러브양산맘",
+              "demographic": "3040 여성 (양산)",
+              "region": "양산",
+              "mentions": 5,
+              "sentiment": 0.5
+            }
+          ],
+          "ai_posts": 5,
+          "ai_opinions": [
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "클리앙",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "네이트판",
+              "opinion": "분노",
+              "sentiment": -0.3
+            }
+          ]
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "행정통합/메가시티",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 8,
+          "total": 7167,
+          "net_sentiment": 0.233,
+          "titles": [
+            "수도권 공간구조 개편과 도시정비 이창무 교수님 기조강연",
+            "광주전남 통합 논의 속 담양 부동산, '빨대 효과'일까 '대박 호재... ",
+            "2026.03.29 전체"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 2813,
+          "net_sentiment": 0.467,
+          "titles": [
+            "우리는 왜~~~`선택을 강요 받아야 하나?",
+            "통합시 출범과 공공기관 이전에 대한 잡생각",
+            "전남광주 통합특별시장...........선택은?, 현안문제는?"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 105,
+          "net_sentiment": 0.096,
+          "sites_active": 8,
+          "titles": [
+            "앞으로 충청도가 진짜 많이 뜰것같음 - 도시 미관 마이너 갤러리",
+            "충청도 현직들 ㅈ됨 - 공무원 현직 미니 갤러리",
+            "부울경 메가시티 TK 행정통합 실패는 좀 아쉽네 - 정치/시사",
+            "&quot;행정수도 앞서 도시다운 도시로&quot;…세종 중심 메가시티 교통망 시급 - 주식",
+            "부산광역시와 경상남도를 행정통합 추진하겠다고 하는데 말이죠."
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 44,
+              "sentiment": 0.04
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 30,
+              "sentiment": -0.1
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 8,
+              "sentiment": 0.0
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 6,
+              "sentiment": -0.17
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 6,
+              "sentiment": 0.0
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 1,
+              "sentiment": 0.0
+            },
+            {
+              "id": "momcafe_changwon",
+              "name": "창원줌마렐라",
+              "demographic": "3040 여성 (창원)",
+              "region": "창원",
+              "mentions": 5,
+              "sentiment": 0.7
+            },
+            {
+              "id": "momcafe_gimhae",
+              "name": "김해줌마렐라",
+              "demographic": "3040 여성 (김해)",
+              "region": "김해",
+              "mentions": 5,
+              "sentiment": 0.3
+            }
+          ],
+          "ai_posts": 0,
+          "ai_opinions": []
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "대통령/정부",
+      "side": "상대 유리",
+      "sources": {
+        "blog": {
+          "count": 30,
+          "total": 3103032,
+          "net_sentiment": 0.233,
+          "titles": [
+            "오늘의 정치 뉴스 요약 2026년 3월 29일 7시 주요 정치 이슈... ",
+            "외국인이 한국 주식시장에서 빠져나가는 이유?",
+            "3월 29일 : 군주에서 시민으로 (대한민국 임시의정원)"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 1027958,
+          "net_sentiment": 0.1,
+          "titles": [
+            "5.18 김대중은 김일성 장학생",
+            "정책뉴스20260329일요일",
+            "국회의원SNS소식20260329일요일"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 75941,
+          "net_sentiment": 0.023,
+          "sites_active": 7,
+          "titles": [
+            "국민의 정부 (김대중) - 국민의 정부 (김대중) 마이너 갤러리",
+            "이재명 국민주권정부에 거는 기대와 우려 - 고려 거란 전쟁 갤러리",
+            "역대 대한민국 대통령 업적과 비판들 (챗지피티) - 유머/움짤/이슈",
+            "대한민국 역대 대통령 평가 O1 버전 - 정치/시사",
+            "📰유시민 “정부가 없는게 아니라 대통령이 일을 안하는 것”"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 30,
+              "sentiment": 0.07
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 21663,
+              "sentiment": 0.0
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 21943,
+              "sentiment": 0.0
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 22405,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 9891,
+              "sentiment": -0.08
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 6,
+              "sentiment": 0.17
+            },
+            {
+              "id": "momcafe_changwon",
+              "name": "창원줌마렐라",
+              "demographic": "3040 여성 (창원)",
+              "region": "창원",
+              "mentions": 3,
+              "sentiment": 0.0
+            }
+          ],
+          "ai_posts": 0,
+          "ai_opinions": []
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    },
+    {
+      "keyword": "SOC/교통",
+      "side": "중립",
+      "sources": {
+        "blog": {
+          "count": 17,
+          "total": 46365,
+          "net_sentiment": 0.467,
+          "titles": [
+            "아스콘아스팔트 콘크리트 관련주 대장주 테마별 옥석 가리는 기준",
+            "부산 동래구 동래 반도유보라, 오늘이 가장 저렴한 최적의 주거... ",
+            "지방선거 67일 전, 민심은 어디로 가나"
+          ]
+        },
+        "cafe": {
+          "count": 0,
+          "total": 17386,
+          "net_sentiment": 0.5,
+          "titles": [
+            "더뉴그랜저 하이브리드 운전 방법 가이드",
+            "부동산+",
+            "GTX-C 공사비 분쟁, 4월 결론 전망… 멈춰 있던 공사 다시 움직일까요?"
+          ]
+        },
+        "youtube": {
+          "videos": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "positive_ratio": 0.0,
+          "negative_ratio": 0.0
+        },
+        "community": {
+          "mentions": 134,
+          "net_sentiment": -0.047,
+          "sites_active": 6,
+          "titles": [
+            "우리나라는 soc 사업이 너무 소극적임 (교통 이야기) - 의과대학 마이너 갤러리",
+            "새만금 SOC 정상화부터 균형발전까지...특별자치시대 기반 다진 전북 | 전북일보",
+            "대중교통의 일대혁신 : 서울 시내버스 대개편 (1) - 미스터리/공포",
+            "[단독]삼성물산, 방글라 알짜 노선 ‘다카 MRT 5호선’ 입찰 나선다 - 주식",
+            "서울교통공사 vs SOC공기업(도로공사,LH,수자원공사) 일반인들 인식차이가 나려나요?"
+          ],
+          "breakdown": [
+            {
+              "id": "dcinside",
+              "name": "DC인사이드",
+              "demographic": "전 연령 남성 중심",
+              "mentions": 36,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관",
+                "무관"
+              ]
+            },
+            {
+              "id": "fmkorea",
+              "name": "에펨코리아",
+              "demographic": "2030 남성",
+              "mentions": 53,
+              "sentiment": -0.03
+            },
+            {
+              "id": "clien",
+              "name": "클리앙",
+              "demographic": "3040 남성, 진보 성향",
+              "mentions": 23,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "theqoo",
+              "name": "더쿠",
+              "demographic": "2030 여성",
+              "mentions": 10,
+              "sentiment": 0.0
+            },
+            {
+              "id": "natepann",
+              "name": "네이트판",
+              "demographic": "전 연령",
+              "mentions": 6,
+              "sentiment": 0.0,
+              "ai_analyzed": true,
+              "sample_opinions": [
+                "무관"
+              ]
+            },
+            {
+              "id": "82cook",
+              "name": "82쿡",
+              "demographic": "3050 여성 (진보 합리주의)",
+              "mentions": 6,
+              "sentiment": -0.17
+            }
+          ],
+          "ai_posts": 5,
+          "ai_opinions": [
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "DC인사이드",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "클리앙",
+              "opinion": "무관",
+              "sentiment": 0
+            },
+            {
+              "community": "네이트판",
+              "opinion": "무관",
+              "sentiment": 0
+            }
+          ]
+        },
+        "news_comments": {
+          "articles": 0,
+          "comments": 0,
+          "net_sentiment": 0.0,
+          "likes": 0,
+          "dislikes": 0,
+          "reaction_grade": "LOW"
+        }
+      }
+    }
+  ]
+}
