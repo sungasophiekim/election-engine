@@ -1302,11 +1302,31 @@ def _save_indices_history(snap: dict):
     cr = snap.get("cluster_reaction", {})
     pandse = snap.get("turnout", {}).get("correction", {}).get("pandse_index", 50)
 
-    # TOP 5 클러스터 요약 (이슈 흐름 추적용)
+    # TOP 10 클러스터 상세 (리포트용 24h 누적 데이터)
     clusters = snap.get("news_clusters", [])
     top_clusters = [
-        {"name": c.get("name", ""), "side": c.get("side", ""), "count": c.get("count", 0), "sentiment": c.get("sentiment", 0)}
-        for c in clusters[:5]
+        {
+            "name": c.get("name", ""), "side": c.get("side", ""), "count": c.get("count", 0),
+            "sentiment": c.get("sentiment", 0), "summary": c.get("summary", ""),
+            "why": c.get("why", ""), "tip": c.get("tip", ""),
+            "community_expected": c.get("community_expected", ""),
+        }
+        for c in clusters[:10]
+    ]
+
+    # 반응 상세 (키워드별 소스 감성 — 리포트용)
+    rx_details = cr.get("details", [])
+    top_reactions = [
+        {
+            "keyword": rx.get("keyword", ""), "side": rx.get("side", ""),
+            "sources": {
+                sname: {"net_sentiment": sdata.get("net_sentiment", 0),
+                         "count": sdata.get("count", 0) or sdata.get("comments", 0) or sdata.get("mentions", 0)}
+                for sname, sdata in rx.get("sources", {}).items()
+                if isinstance(sdata, dict) and (sdata.get("net_sentiment", 0) != 0 or sdata.get("count", 0) or sdata.get("comments", 0) or sdata.get("mentions", 0))
+            },
+        }
+        for rx in rx_details[:10]
     ]
 
     entry = {
@@ -1316,7 +1336,9 @@ def _save_indices_history(snap: dict):
         "reaction_index": cr.get("reaction_index", 50),
         "pandse": pandse,
         "top_clusters": top_clusters,
+        "top_reactions": top_reactions,
         "ai_issue_summary": snap.get("ai_issue_summary", ""),
+        "ai_reaction_summary": snap.get("ai_reaction_summary", ""),
         # 하위 호환
         "issue_kim": ci.get("kim_count", 0),
         "issue_park": ci.get("park_count", 0),

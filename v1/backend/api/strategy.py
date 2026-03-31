@@ -103,37 +103,97 @@ def _filter_history_since(history: list, since_iso: Optional[str]) -> list:
 
 
 def _accumulate_top_clusters(filtered_history: list, current_clusters: list, limit: int = 5) -> list:
-    """이전 리포트 이후 history의 top_clusters를 합산하여 TOP N 반환."""
-    from collections import Counter
+    """24시간 history의 top_clusters를 누적하여 TOP N 반환 — 상세 정보 포함."""
+    from collections import Counter, defaultdict
     cluster_scores: Counter = Counter()
     cluster_sides: dict = {}
+    cluster_hours: Counter = Counter()  # 몇 시간 동안 등장했는지
+    cluster_details: dict = {}  # 가장 최신 상세 정보 보관
 
     # history에서 누적
     for entry in filtered_history:
         for c in entry.get("top_clusters", []):
             name = c.get("name", "")
-            if name:
-                cluster_scores[name] += c.get("count", 1)
-                cluster_sides.setdefault(name, c.get("side", "중립"))
+            if not name:
+                continue
+            cluster_scores[name] += c.get("count", 1)
+            cluster_hours[name] += 1
+            cluster_sides[name] = c.get("side", cluster_sides.get(name, "중립"))
+            # 상세 정보는 최신 것으로 덮어쓰기 (summary/why/tip이 있는 경우만)
+            if c.get("summary") or c.get("why"):
+                cluster_details[name] = {
+                    "summary": c.get("summary", ""), "why": c.get("why", ""),
+                    "tip": c.get("tip", ""), "community_expected": c.get("community_expected", ""),
+                    "sentiment": c.get("sentiment", 0),
+                }
 
     # 현재 클러스터도 반영 (가중치 2배 — 최신 데이터 우선)
     for c in current_clusters:
         name = c.get("name", "")
-        if name:
-            cluster_scores[name] += c.get("count", 1) * 2
-            cluster_sides[name] = c.get("side", "중립")
+        if not name:
+            continue
+        cluster_scores[name] += c.get("count", 1) * 2
+        cluster_hours[name] += 1
+        cluster_sides[name] = c.get("side", "중립")
+        cluster_details[name] = {
+            "summary": c.get("summary", ""), "why": c.get("why", ""),
+            "tip": c.get("tip", ""), "community_expected": c.get("community_expected", ""),
+            "sentiment": c.get("sentiment", 0),
+        }
 
     # TOP N 추출
     top = cluster_scores.most_common(limit)
     result = []
     for name, score in top:
-        # current_clusters에서 상세 정보 가져오기
-        detail = next((c for c in current_clusters if c.get("name") == name), {})
+        detail = cluster_details.get(name, {})
         result.append({
-            **detail,
             "name": name,
             "side": cluster_sides.get(name, "중립"),
             "accumulated_score": score,
+            "hours_appeared": cluster_hours.get(name, 0),
+            "summary": detail.get("summary", ""),
+            "why": detail.get("why", ""),
+            "tip": detail.get("tip", ""),
+            "community_expected": detail.get("community_expected", ""),
+            "sentiment": detail.get("sentiment", 0),
+        })
+    return result
+
+
+def _accumulate_top_reactions(filtered_history: list, limit: int = 5) -> list:
+    """24시간 history의 반응 데이터를 누적하여 TOP N 반환."""
+    from collections import Counter, defaultdict
+    reaction_mentions: Counter = Counter()
+    reaction_sentiments: defaultdict = defaultdict(list)
+    reaction_sides: dict = {}
+    reaction_sources: defaultdict = defaultdict(set)
+
+    for entry in filtered_history:
+        for rx in entry.get("top_reactions", []):
+            kw = rx.get("keyword", "")
+            if not kw:
+                continue
+            reaction_sides[kw] = rx.get("side", reaction_sides.get(kw, "중립"))
+            for sname, sdata in rx.get("sources", {}).items():
+                cnt = sdata.get("count", 0)
+                sent = sdata.get("net_sentiment", 0)
+                reaction_mentions[kw] += cnt
+                if sent != 0:
+                    reaction_sentiments[kw].append(sent)
+                reaction_sources[kw].add(sname)
+
+    top = reaction_mentions.most_common(limit)
+    result = []
+    for kw, total_mentions in top:
+        sents = reaction_sentiments.get(kw, [])
+        avg_sent = sum(sents) / len(sents) if sents else 0
+        result.append({
+            "keyword": kw,
+            "side": reaction_sides.get(kw, "중립"),
+            "total_mentions": total_mentions,
+            "avg_sentiment": round(avg_sent, 3),
+            "tone": "긍정" if avg_sent > 0.05 else "부정" if avg_sent < -0.05 else "중립",
+            "sources": list(reaction_sources.get(kw, [])),
         })
     return result
 
@@ -210,11 +270,9 @@ def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> s
     history = filtered_history[-7:]
     history_24h = filtered_history[-24:] if len(filtered_history) >= 2 else full_history[-24:]
 
-    # 클러스터 누적 TOP 5
-    if since_timestamp:
-        accumulated_clusters = _accumulate_top_clusters(filtered_history, clusters, limit=5)
-    else:
-        accumulated_clusters = clusters[:5]
+    # 24시간 누적 TOP 5 이슈 + 반응 (리포트 핵심 데이터)
+    accumulated_clusters = _accumulate_top_clusters(history_24h, clusters, limit=5)
+    accumulated_reactions = _accumulate_top_reactions(history_24h, limit=5)
 
     # 24시간 지수 흐름 분석
     h24_analysis = ""
@@ -262,10 +320,19 @@ def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> s
         for i, c in enumerate(clusters[:10])
     ) or "없음"
 
-    # 누적 TOP 5 클러스터 (이전 리포트 이후 합산)
+    # 24시간 누적 TOP 5 이슈 (상세 포함)
     accumulated_text = "\n".join(
-        f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | 누적점수 {c.get('accumulated_score',0)}"
+        f"{i+1}. {c.get('name','')} | {c.get('side','중립')} | 누적점수 {c.get('accumulated_score',0)} | {c.get('hours_appeared',0)}시간 지속 | 감성{c.get('sentiment',0):+d}\n"
+        f"   요약: {c.get('summary','없음')}\n"
+        f"   이유: {c.get('why','없음')}\n"
+        f"   시민반응: {c.get('community_expected','?')} | tip: {c.get('tip','없음')}"
         for i, c in enumerate(accumulated_clusters)
+    ) or "없음"
+
+    # 24시간 누적 TOP 5 반응 (민심 감성 누적)
+    accumulated_reaction_text = "\n".join(
+        f"{i+1}. [{rx.get('side','?')}] {rx.get('keyword','')} | 총 {rx.get('total_mentions',0)}건 | 감성 {rx.get('avg_sentiment',0):+.3f} ({rx.get('tone','중립')}) | 소스: {', '.join(rx.get('sources',[]))}"
+        for i, rx in enumerate(accumulated_reactions)
     ) or "없음"
 
     # 이슈지수 (가중지수)
@@ -330,11 +397,17 @@ def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> s
 ### 후보별 버즈 상세 (AI 감성분석)
 {buzz_detail}
 
-### 뉴스 클러스터 TOP 10 (감성·시민반응 포함)
+### 현재 시점 뉴스 클러스터 TOP 10 (최신 1시간)
 {cluster_text}
 
-### 누적 주요 클러스터 TOP 5 (이전 리포트 이후 합산)
+### ★ 24시간 누적 TOP 5 이슈 (리포트 핵심 — 지속성·영향력 기준)
 {accumulated_text}
+
+### ★ 24시간 누적 TOP 5 민심 반응 (리포트 핵심 — 채널별 감성 누적)
+{accumulated_reaction_text}
+
+### 현재 시점 반응지수 상세 (최신 1시간, 이슈별 소스 감성)
+{reaction_detail or "없음"}
 
 ### AI 한줄 해석
 - 이슈: {snap.get('ai_issue_summary', '없음')}
