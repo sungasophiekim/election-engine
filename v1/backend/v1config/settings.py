@@ -15,6 +15,7 @@ os.makedirs(LEGACY_DATA, exist_ok=True)
 os.makedirs(INDEX_HISTORY_DIR, exist_ok=True)
 os.makedirs(LEGACY_DATA / "daily_reports", exist_ok=True)
 os.makedirs(LEGACY_DATA / "training_data", exist_ok=True)
+os.makedirs(LEGACY_DATA / "strategy_feedback", exist_ok=True)
 
 # Render 첫 배포 시: git의 기존 data → Persistent Disk로 복사
 if LEGACY_DATA == _RENDER_DISK and os.environ.get("RENDER"):

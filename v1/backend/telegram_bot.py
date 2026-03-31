@@ -164,7 +164,8 @@ D-{d_day} · 갱신 {ts}"""
         [{"text": "🧠 민심 레이더", "callback_data": "radar"}, {"text": "📈 지수 현황", "callback_data": "indices"}],
         [{"text": "🔧 이슈 수정", "callback_data": "fix_menu"}, {"text": "🔍 키워드 관리", "callback_data": "kw_menu"}],
         [{"text": "📋 데일리 요약", "callback_data": "daily"}, {"text": "📌 규칙 목록", "callback_data": "rules"}],
-        [{"text": "🔧 시스템 상태", "callback_data": "sys_status"}, {"text": "🚀 시스템 관리", "callback_data": "sys_admin"}],
+        [{"text": "✏️ 전략 메모", "callback_data": "memo_menu"}, {"text": "🔧 시스템 상태", "callback_data": "sys_status"}],
+        [{"text": "🚀 시스템 관리", "callback_data": "sys_admin"}],
     ]
     return text, buttons
 
@@ -231,6 +232,20 @@ def _handle_callback(cb_data, chat_id, msg_id, base):
 
     elif cb_data == "sys_log":
         _cb_sys_log(chat_id, msg_id, base, back)
+
+    elif cb_data == "memo_menu":
+        _cb_memo_menu(chat_id, msg_id, base, back)
+
+    elif cb_data.startswith("memo_cat_"):
+        cat = cb_data.replace("memo_cat_", "")
+        _user_state[chat_id] = {"action": "awaiting_memo", "category": cat}
+        cat_labels = {"memo": "자유 메모", "what_worked": "성공 사례", "what_failed": "실패/문제", "correction": "판단 수정"}
+        _send(base, chat_id,
+              f"✏️ <b>{cat_labels.get(cat, '메모')}</b>\n\n내용을 입력하세요:\n(예: 봉암공단 방문 반응 좋았음, 제조업 종사자 호응 높았다)",
+              [[{"text": "◀ 취소", "callback_data": "memo_menu"}]], edit_msg=msg_id)
+
+    elif cb_data == "memo_history":
+        _cb_memo_history(chat_id, msg_id, base, back)
 
 
 def _cb_dashboard(snap, chat_id, msg_id, base, back):
@@ -535,6 +550,56 @@ def _cb_fix_menu(snap, chat_id, msg_id, base):
     _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)
 
 
+def _cb_memo_menu(chat_id, msg_id, base, back):
+    """전략 메모 메뉴 — 카테고리 선택"""
+    text = ("✏️ <b>전략 메모</b>\n\n"
+            "캠프 현장 판단을 기록하면\n"
+            "🧠 다음 AI 리포트에 학습·반영됩니다.\n\n"
+            "카테고리를 선택하세요:")
+    buttons = [
+        [{"text": "📝 자유 메모", "callback_data": "memo_cat_memo"}],
+        [{"text": "✅ 성공 사례", "callback_data": "memo_cat_what_worked"}, {"text": "❌ 실패/문제", "callback_data": "memo_cat_what_failed"}],
+        [{"text": "🔄 판단 수정", "callback_data": "memo_cat_correction"}],
+        [{"text": "📜 최근 메모 보기", "callback_data": "memo_history"}],
+        back[0],
+    ]
+    _send(base, chat_id, text, buttons, edit_msg=msg_id)
+
+
+def _cb_memo_history(chat_id, msg_id, base, back):
+    """최근 3일 메모 조회"""
+    fb_dir = _DATA / "strategy_feedback"
+    lines = ["📜 <b>최근 전략 메모</b>\n"]
+    cat_icons = {"memo": "📝", "what_worked": "✅", "what_failed": "❌", "correction": "🔄"}
+    found = False
+    for i in range(3):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        fp = fb_dir / f"{d}.json"
+        if not fp.exists():
+            continue
+        try:
+            fb = json.load(open(fp))
+            entries = fb.get("entries", [])
+            if entries:
+                found = True
+                lines.append(f"<b>{d}</b>")
+                for e in entries[-5:]:
+                    icon = cat_icons.get(e.get("category", ""), "📝")
+                    src = "📱" if e.get("source") == "telegram" else "💻"
+                    lines.append(f"  {icon}{src} {e.get('text', '')[:80]}")
+                lines.append("")
+        except Exception:
+            pass
+    if not found:
+        lines.append("아직 등록된 메모가 없습니다.\n✏️ 전략 메모를 등록해보세요!")
+    lines.append("🧠 등록된 메모는 AI 리포트 생성 시 자동 반영됩니다.")
+    buttons = [
+        [{"text": "✏️ 메모 추가", "callback_data": "memo_menu"}],
+        back[0],
+    ]
+    _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)
+
+
 def _cb_fix_issue(cb_data, snap, chat_id, msg_id, base):
     idx = int(cb_data.replace("fix_", ""))
     clusters = snap.get("news_clusters", [])
@@ -624,6 +689,41 @@ def _cb_rules(chat_id, msg_id, base, back):
 def _handle_text(text, chat_id, base):
     """텍스트 메시지 처리 — 대화 상태 + 명령어"""
     state = _user_state.get(chat_id, {})
+
+    # 메모 입력 대기 중
+    if state.get("action") == "awaiting_memo":
+        category = state.get("category", "memo")
+        del _user_state[chat_id]
+        today = datetime.now().strftime("%Y-%m-%d")
+        cat_labels = {"memo": "메모", "what_worked": "성공", "what_failed": "실패", "correction": "판단수정"}
+
+        # 피드백 저장
+        fb_dir = _DATA / "strategy_feedback"
+        fb_dir.mkdir(parents=True, exist_ok=True)
+        fp = fb_dir / f"{today}.json"
+        fb_data = {"date": today, "entries": []}
+        if fp.exists():
+            try:
+                fb_data = json.load(open(fp))
+            except Exception:
+                pass
+        fb_data["entries"].append({
+            "category": category,
+            "text": text.strip(),
+            "source": "telegram",
+            "timestamp": datetime.now().isoformat(),
+        })
+        fb_data["entries"] = fb_data["entries"][-50:]
+        with open(fp, "w") as f:
+            json.dump(fb_data, f, ensure_ascii=False, indent=2)
+
+        reply = (f"✅ 전략 메모 저장 완료\n\n"
+                 f"📂 [{cat_labels.get(category, '메모')}] {text.strip()[:100]}\n"
+                 f"📅 {today}\n\n"
+                 f"🧠 다음 데일리 리포트 AI 분석에 반영됩니다.")
+        buttons = [[{"text": "✏️ 추가 메모", "callback_data": "memo_menu"}, {"text": "◀ 메뉴", "callback_data": "menu"}]]
+        _send(base, chat_id, reply, buttons)
+        return
 
     # 이유 입력 대기 중
     if state.get("action") == "awaiting_reason":

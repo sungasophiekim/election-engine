@@ -418,6 +418,9 @@ def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> s
 ### 최근 7회 지표 추이 (일별)
 {trend_text}
 
+### 캠프 피드백 (최근 3일 — 전략팀이 직접 기록한 현장 판단)
+{_build_feedback_context()}
+
 ### 구조적 배경
 - 경남 보수 텃밭. 7대(2018) 투표율 65.8%
 - 연령구조: 2030세대 37.7%(감소), 60+ 39.5%(증가) → 인구만으로 13~14만표 열세
@@ -425,6 +428,30 @@ def _build_daily_context(snap: dict, since_timestamp: Optional[str] = None) -> s
 - 40대 지지율 64.1%로 최고 → 핵심 결집 대상
 - 20대 부동층 44.9% → 설득 아닌 동원 필요 (무관심이 본질)
 - 현직(박완수)은 예산·행정력·미디어 접근성에서 구조적 우위"""
+
+
+def _build_feedback_context() -> str:
+    """최근 3일 캠프 피드백을 AI 컨텍스트 문자열로 변환"""
+    FEEDBACK_DIR = LEGACY_DATA / "strategy_feedback"
+    lines = []
+    category_labels = {"memo": "메모", "what_worked": "성공", "what_failed": "실패", "correction": "판단수정"}
+    for i in range(3):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        fp = FEEDBACK_DIR / f"{d}.json"
+        if not fp.exists():
+            continue
+        try:
+            with open(fp) as f:
+                fb = json.load(f)
+            entries = fb.get("entries", [])
+            if entries:
+                lines.append(f"[{d}]")
+                for e in entries[-5:]:  # 날짜당 최근 5건
+                    cat = category_labels.get(e.get("category", ""), "메모")
+                    lines.append(f"  [{cat}] {e.get('text', '')}")
+        except Exception:
+            pass
+    return "\n".join(lines) if lines else "없음 (피드백 미등록)"
 
 
 def _load_daily_cache(today: str):
@@ -1105,3 +1132,68 @@ def add_side_correction(issue: str = "", side: str = "", reason: str = ""):
     with open(corr_path, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return {"ok": True, "total_corrections": len(data["corrections"])}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 전략 피드백 (학습용 메모/코멘트)
+# ═══════════════════════════════════════════════════════════════
+
+FEEDBACK_DIR = LEGACY_DATA / "strategy_feedback"
+
+
+def _load_feedback(date: str) -> dict:
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    fp = FEEDBACK_DIR / f"{date}.json"
+    if fp.exists():
+        try:
+            with open(fp) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"date": date, "entries": []}
+
+
+def _save_feedback(date: str, data: dict):
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    fp = FEEDBACK_DIR / f"{date}.json"
+    with open(fp, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@router.get("/feedback/{date}")
+def get_feedback(date: str):
+    """특정 날짜의 피드백 조회"""
+    return _load_feedback(date)
+
+
+@router.post("/feedback")
+def add_feedback(date: str = "", category: str = "memo", text: str = "", source: str = "dashboard"):
+    """피드백 추가 — category: memo|what_worked|what_failed|correction"""
+    if not date:
+        date = datetime.now().strftime("%Y-%m-%d")
+    if not text:
+        return {"error": "text 필수"}
+    data = _load_feedback(date)
+    data["entries"].append({
+        "category": category,
+        "text": text,
+        "source": source,
+        "timestamp": datetime.now().isoformat(),
+    })
+    # 최대 50건
+    data["entries"] = data["entries"][-50:]
+    _save_feedback(date, data)
+    return {"ok": True, "date": date, "total": len(data["entries"])}
+
+
+@router.get("/feedback-recent")
+def get_recent_feedback(days: int = 3):
+    """최근 N일 피드백 조회 (AI 컨텍스트용)"""
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    result = []
+    for i in range(days):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        fb = _load_feedback(d)
+        if fb["entries"]:
+            result.append(fb)
+    return {"feedback": result}

@@ -41,3 +41,8 @@ export const generateDailyBriefing = async (): Promise<any> => {
 export const getWeeklyBriefing = (force = false) => f<any>(`/api/strategy/weekly-briefing${force ? "?force=true" : ""}`);
 export const getTrainingData = () => f<any>("/api/strategy/training-data");
 export const getDailyReports = () => f<any>("/api/strategy/daily-reports");
+export const getFeedback = (date: string) => f<any>(`/api/strategy/feedback/${date}`);
+export const addFeedback = async (date: string, category: string, text: string): Promise<any> => {
+  const res = await fetch(`${API_BASE}/api/strategy/feedback?date=${date}&category=${encodeURIComponent(category)}&text=${encodeURIComponent(text)}`, { method: "POST" });
+  return res.json();
+};

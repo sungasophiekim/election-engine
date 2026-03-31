@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { getDailyBriefing, generateDailyBriefing, getWeeklyBriefing, getIndicesCurrent, getIndicesHistory, getNewsClusters, getDailyReports, getTrainingData } from "@/lib/api";
+import { getDailyBriefing, generateDailyBriefing, getWeeklyBriefing, getIndicesCurrent, getIndicesHistory, getNewsClusters, getDailyReports, getTrainingData, getFeedback, addFeedback } from "@/lib/api";
 import { ResearchPage } from "../ResearchTab";
 
 type Page = "daily" | "weekly" | "archive" | "training" | "research";
@@ -863,6 +863,91 @@ function MessageTab({ daily }: { daily: any }) {
             </div>
           </div>
         )}
+
+        {/* Feedback / 전략 메모 */}
+        <FeedbackSection date={daily.date || new Date().toISOString().slice(0, 10)} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Feedback Section ── */
+function FeedbackSection({ date }: { date: string }) {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [text, setText] = useState("");
+  const [category, setCategory] = useState("memo");
+  const [saving, setSaving] = useState(false);
+
+  const catOptions = [
+    { value: "memo", label: "📝 자유 메모" },
+    { value: "what_worked", label: "✅ 성공 사례" },
+    { value: "what_failed", label: "❌ 실패/문제" },
+    { value: "correction", label: "🔄 판단 수정" },
+  ];
+  const catIcons: Record<string, string> = { memo: "📝", what_worked: "✅", what_failed: "❌", correction: "🔄" };
+
+  useEffect(() => {
+    getFeedback(date).then((d: any) => setEntries(d?.entries || [])).catch(() => {});
+  }, [date]);
+
+  const handleSubmit = async () => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await addFeedback(date, category, text.trim());
+      setEntries((prev) => [...prev, { category, text: text.trim(), source: "dashboard", timestamp: new Date().toISOString() }]);
+      setText("");
+    } catch {}
+    setSaving(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-[#C8922A]/40 overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#FFFBEB" }}>
+        <div>
+          <span className="text-[12px] font-bold text-[#92400E]">✏️ 전략 메모</span>
+          <span className="text-[9px] text-[#92400E]/60 ml-2">🧠 AI 리포트에 학습·반영됩니다</span>
+        </div>
+      </div>
+
+      {/* 기존 메모 목록 */}
+      {entries.length > 0 && (
+        <div className="divide-y divide-amber-100 bg-amber-50/30">
+          {entries.map((e, i) => (
+            <div key={i} className="px-4 py-2 text-[11px] flex gap-2">
+              <span>{catIcons[e.category] || "📝"}</span>
+              <span className="text-gray-700 flex-1">{e.text}</span>
+              <span className="text-[9px] text-gray-400 shrink-0">
+                {e.source === "telegram" ? "📱" : "💻"} {e.timestamp?.slice(11, 16)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 입력란 */}
+      <div className="px-4 py-3 bg-white border-t border-amber-100">
+        <div className="flex gap-2 mb-2">
+          {catOptions.map((opt) => (
+            <button key={opt.value} onClick={() => setCategory(opt.value)}
+              className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                category === opt.value ? "bg-amber-100 border-amber-300 font-bold" : "bg-white border-gray-200 text-gray-500 hover:border-amber-200"
+              }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input type="text" value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="현장 판단, 성공/실패 사례, 수정사항을 기록하세요..."
+            className="flex-1 px-3 py-2 text-[11px] border border-gray-200 rounded-lg focus:outline-none focus:border-amber-400"
+          />
+          <button onClick={handleSubmit} disabled={saving || !text.trim()}
+            className="px-4 py-2 text-[11px] font-bold text-white bg-[#C8922A] rounded-lg hover:bg-[#A67B22] disabled:opacity-30 transition-colors">
+            {saving ? "..." : "저장"}
+          </button>
+        </div>
       </div>
     </div>
   );
