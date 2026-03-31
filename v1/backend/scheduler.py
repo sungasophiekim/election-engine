@@ -474,100 +474,71 @@ def _update_all():
                 src_ts["sentiment_updated_at"] = datetime.now().isoformat()
             print(f"[{_now()}] 후보 버즈: {len(buzz)}개", flush=True)
 
-        # ── 4.5 이슈/반응 인덱스 (커뮤니티+소셜+유튜브 포함) ──
+        # ── 4.5 이슈 인덱스 (뉴스 기반만) + 반응 인덱스 (cluster_reaction 재활용) ──
         try:
             from engines.issue_scoring import calculate_issue_score
             from engines.issue_index import compute_issue_index
-            from engines.reaction_index import compute_reaction_index
 
-            # 이슈 키워드로 뉴스 수집 + 스코어링
+            # 이슈 키워드로 뉴스 수집 + 스코어링 (블로그/카페/커뮤니티는 반응 수집에서 처리)
             issue_kws_list = [k["keyword"] for k in kw_data.get("keywords", []) if k.get("type") == "issue" and k.get("priority") in ("high", "medium")][:10]
             if issue_kws_list:
                 issue_signals = collect_issue_signals(issue_kws_list, candidate_name=cfg.candidate_name, opponents=cfg.opponents)
                 issue_scores = sorted([calculate_issue_score(sig, cfg) for sig in issue_signals], key=lambda x: x.score, reverse=True)
                 sig_map = {s.keyword: s for s in issue_signals}
 
-                # 소셜/커뮤니티/유튜브 수집 (상위 5개)
-                from collectors.community_collector import scan_all_communities
-                from collectors.social_collector import search_blogs, search_cafes
-                community_data = {}
-                social_data = {}
-                for kw in issue_kws_list[:5]:
-                    try:
-                        community_data[kw] = scan_all_communities(kw)  # CommunityReport 객체 그대로 저장
-                    except Exception:
-                        community_data[kw] = None
-                    try:
-                        b = search_blogs(kw, display=10)
-                        c = search_cafes(kw, display=10)
-                        social_data[kw] = {
-                            "blogs": b if isinstance(b, list) else getattr(b, 'items', []) if b else [],
-                            "cafes": c if isinstance(c, list) else getattr(c, 'items', []) if c else [],
-                        }
-                    except Exception:
-                        social_data[kw] = {"blogs": [], "cafes": []}
-                    time.sleep(0.3)
-
                 ii_map = {}
-                ri_map = {}
                 for iss in issue_scores:
                     sig = sig_map.get(iss.keyword)
                     if not sig:
                         continue
-                    kw = iss.keyword
-                    soc = social_data.get(kw, {})
-                    comm = community_data.get(kw, [])
-                    # SocialSignal 객체에서 추출
-                    soc_blogs = soc.get("blogs") if isinstance(soc, dict) else None
-                    soc_cafes = soc.get("cafes") if isinstance(soc, dict) else None
-                    blog_c = getattr(soc_blogs, 'total_count', 0) if soc_blogs else 0
-                    cafe_c = getattr(soc_cafes, 'total_count', 0) if soc_cafes else 0
-                    # CommunityReport 객체에서 추출
-                    comm_mentions = getattr(comm, 'total_mentions', 0) if comm else 0
-                    comm_viral = getattr(comm, 'has_any_viral', False) if comm else False
-                    comm_resonance = getattr(comm, 'community_resonance', 0) if comm else 0
-
                     try:
                         ii = compute_issue_index(
-                            keyword=kw, mention_count=sig.mention_count,
+                            keyword=iss.keyword, mention_count=sig.mention_count,
                             media_tier=sig.media_tier, velocity=sig.velocity,
                             candidate_linked=sig.candidate_linked,
-                            blog_count=blog_c, cafe_count=cafe_c,
-                            community_mentions=comm_mentions,
                         )
-                        ii_map[kw] = ii
-                    except Exception:
-                        pass
-                    # CommunitySignal 객체 리스트 직접 전달
-                    comm_signals = comm.signals[:8] if comm and hasattr(comm, 'signals') else []
-                    try:
-                        ri = compute_reaction_index(
-                            keyword=kw,
-                            community_signals=comm_signals,
-                            community_resonance=comm_resonance if comm_resonance else (min(25, comm_mentions * 0.01) if comm_mentions else 0),
-                            community_has_viral=comm_viral,
-                            community_dominant_tone=getattr(comm, 'dominant_tone', '') if comm else '',
-                            blog_count=blog_c, cafe_count=cafe_c,
-                            negative_ratio=sig.negative_ratio,
-                            candidate_linked=sig.candidate_linked,
-                            candidate_name=cfg.candidate_name,
-                            opponents=cfg.opponents,
-                        )
-                        ri_map[kw] = ri
+                        ii_map[iss.keyword] = ii
                     except Exception:
                         pass
 
                 if ii_map:
                     snap["issue_indices"] = {kw: v.to_dict() for kw, v in ii_map.items()}
-                if ri_map:
-                    snap["reaction_indices"] = {kw: v.to_dict() for kw, v in ri_map.items()}
-                _now_iso = datetime.now().isoformat()
-                src_ts["community_updated_at"] = _now_iso
-                src_ts["blog_updated_at"] = _now_iso
-                src_ts["cafe_updated_at"] = _now_iso
-                src_ts["youtube_updated_at"] = _now_iso
-                src_ts["trends_updated_at"] = _now_iso
-                print(f"[{_now()}] 이슈/반응 인덱스: {len(ii_map)}/{len(ri_map)}개", flush=True)
+                print(f"[{_now()}] 이슈 인덱스: {len(ii_map)}개 (뉴스 기반)", flush=True)
+
+            # 반응 인덱스: cluster_reaction.details → reaction_indices로 변환 (중복 수집 제거)
+            cr_details = snap.get("cluster_reaction", {}).get("details", [])
+            if cr_details:
+                ri_items = {}
+                for d in cr_details:
+                    kw = d.get("keyword", "")
+                    if not kw:
+                        continue
+                    sources = d.get("sources", {})
+                    total_mentions = sum(
+                        src.get("count", 0) or src.get("comments", 0) or src.get("mentions", 0)
+                        for src in sources.values() if isinstance(src, dict)
+                    )
+                    sentiments = [src.get("net_sentiment", 0) for src in sources.values() if isinstance(src, dict) and src.get("net_sentiment", 0) != 0]
+                    avg_sent = sum(sentiments) / len(sentiments) if sentiments else 0
+                    # 50pt 스케일 변환
+                    index_val = round(50 + avg_sent * 25, 1)
+                    ri_items[kw] = {
+                        "keyword": kw,
+                        "index": index_val,
+                        "total_mentions": total_mentions,
+                        "sources": list(sources.keys()),
+                        "side": d.get("side", "중립"),
+                    }
+                if ri_items:
+                    snap["reaction_indices"] = ri_items
+
+            _now_iso = datetime.now().isoformat()
+            src_ts["community_updated_at"] = _now_iso
+            src_ts["blog_updated_at"] = _now_iso
+            src_ts["cafe_updated_at"] = _now_iso
+            src_ts["youtube_updated_at"] = _now_iso
+            src_ts["trends_updated_at"] = _now_iso
+            print(f"[{_now()}] 반응 인덱스: {len(cr_details)}개 (cluster_reaction 재활용)", flush=True)
         except Exception as e:
             print(f"[{_now()}] 인덱스 경고: {e}", flush=True)
 
@@ -1589,6 +1560,16 @@ def _scheduler_loop():
         print(f"[{_now()}] 초기 갱신 완료", flush=True)
     except Exception as e:
         print(f"[{_now()}] 초기 갱신 실패: {e}", flush=True)
+        try:
+            from telegram_bot import send_alert
+            send_alert(
+                f"🚨 <b>스케줄러 초기 갱신 실패</b>\n\n"
+                f"서버 시작 후 첫 데이터 수집 실패\n"
+                f"에러: <code>{str(e)[:100]}</code>",
+                [[{"text": "📊 대시보드", "callback_data": "dashboard"}]]
+            )
+        except Exception:
+            pass
 
     while True:
         try:
@@ -1607,6 +1588,19 @@ def _scheduler_loop():
                     print(f"[{_now()}] 정기 갱신 에러 #{consecutive_errors}: {e}", flush=True)
                     import traceback
                     traceback.print_exc()
+                    # 연속 3회 실패 시 텔레그램 알림 (이후 5회마다 반복)
+                    if consecutive_errors == 3 or (consecutive_errors > 3 and consecutive_errors % 5 == 0):
+                        try:
+                            from telegram_bot import send_alert
+                            send_alert(
+                                f"🚨 <b>스케줄러 연속 실패 Alert</b>\n\n"
+                                f"연속 <b>{consecutive_errors}회</b> 갱신 실패\n"
+                                f"마지막 에러: <code>{str(e)[:100]}</code>\n"
+                                f"시각: {_now()}",
+                                [[{"text": "📊 대시보드", "callback_data": "dashboard"}]]
+                            )
+                        except Exception:
+                            pass
                     # 연속 에러 5회 이상이면 10분 대기 후 재시도
                     if consecutive_errors >= 5:
                         print(f"[{_now()}] 연속 에러 {consecutive_errors}회 — 10분 대기", flush=True)

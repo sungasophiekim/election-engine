@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { fmtTs } from "@/lib/format";
 import PollChart from "@/components/PollChart";
 import PredictionBars from "@/components/PredictionBars";
 import IndicesPanel from "@/components/IndicesPanel";
@@ -92,7 +93,7 @@ export default function WarRoom() {
               </button>
             </>
           )}
-          <span className="text-[9px] text-gray-600">마지막 갱신: {lastUpdated}</span>
+          <span className="text-[9px] text-gray-600">{fmtTs(lastUpdated)}</span>
           <span className="text-[10px] text-gray-500">경남도지사 선거 · Election Engine v1</span>
           <span className="text-[9px] text-gray-600 border-l border-[#1a2844] pl-3">
             {username} <span className="text-gray-700">({label})</span>

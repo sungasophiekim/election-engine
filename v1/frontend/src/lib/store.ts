@@ -63,7 +63,7 @@ export const useStore = create<WarRoomState>((set) => ({
       reactionRadar: reaction?.items || [],
       loading: false,
       newPollAlert,
-      lastUpdated: new Date().toLocaleString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      lastUpdated: indices?.server_updated_at || new Date().toISOString(),
     });
   },
 }));

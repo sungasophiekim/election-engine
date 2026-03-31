@@ -101,6 +101,7 @@ def current_indices():
                 "pandse_updated_at": src_ts.get("pandse_updated_at"),
             },
         },
+        "server_updated_at": enrichment_ts,
         "cluster_updated_at": cluster_ts,
         "issue_alert": snap.get("issue_alert"),
         "reaction_alert": snap.get("reaction_alert"),
