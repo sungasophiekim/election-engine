@@ -29,7 +29,7 @@ export default function NewsTop() {
       </div>
 
       <div className="px-3 py-1 text-[7px] text-gray-600 leading-relaxed border-b border-[#0e1825]">
-        11개 채널 · {items.reduce((s: number, c: any) => s + (c.count || 0), 0)}건 뉴스분석 · 매 10분 갱신
+        11개 채널 · {items.reduce((s: number, c: any) => s + (c.count || 0), 0)}건 뉴스분석 · 매 60분 갱신
       </div>
       <div className="overflow-hidden" style={{ maxHeight: "45vh" }}>
         {items.length === 0 ? (
