@@ -418,33 +418,108 @@ def _cb_daily(chat_id, msg_id, base, back):
         _send(base, chat_id, "📋 리포트 로드 실패", back, edit_msg=msg_id)
         return
 
-    summary = rpt.get("executive_summary", "요약 없음")[:400]
+    summary = rpt.get("executive_summary", "요약 없음")
     theme = rpt.get("daily_theme", {})
+    situation = rpt.get("situation_diagnosis", {})
+    decision = rpt.get("decision_layer", {})
+    strategies = rpt.get("strategies", [])
     urgent = [e for e in rpt.get("execution", []) if "즉시" in e.get("when", "") or "오늘" in e.get("when", "")]
     schedule = rpt.get("field_schedule", rpt.get("messages", []))
+    risks = rpt.get("risk_management", [])
 
     lines = [f"📋 <b>데일리 전략 요약</b> ({rpt.get('date', '')})\n"]
+
+    # 테마 + D-day
+    d_day = rpt.get("d_day", "")
     if theme:
-        lines.append(f"🏷 테마: <b>{theme.get('keyword', '')}</b>\n")
-    lines.append(summary)
+        lines.append(f"🏷 테마: <b>{theme.get('keyword', theme.get('theme', ''))}</b>" + (f" · D-{d_day}" if d_day else ""))
 
+    # 핵심 진단
+    lines.append(f"\n🔍 <b>핵심 진단</b>")
+    # 요약을 문장 단위로 불렛
+    for sent in summary.split(". "):
+        sent = sent.strip().rstrip(".")
+        if sent:
+            lines.append(f"  • {sent}")
+
+    # 국면 판단
+    moment = decision.get("moment_type", decision.get("phase", ""))
+    if moment:
+        lines.append(f"\n🎯 <b>국면: {moment}</b>")
+    protect = decision.get("must_protect", decision.get("defend", ""))
+    push = decision.get("can_push", decision.get("push", ""))
+    if protect:
+        lines.append(f"  🛡 지켜야 할 것: {protect}")
+    if push:
+        lines.append(f"  🗡 밀어볼 것: {push}")
+
+    # 긴급 액션
     if urgent:
-        lines.append("\n⚡ <b>긴급 액션</b>")
-        for i, e in enumerate(urgent[:3], 1):
-            lines.append(f"{'①②③'[i-1]} {e.get('what','')}")
+        lines.append(f"\n⚡ <b>긴급 액션</b>")
+        nums = "①②③④⑤"
+        for i, e in enumerate(urgent[:3]):
+            lines.append(f"  {nums[i]} {e.get('what','')}")
 
+    # TOP 이슈 (상위 5개)
+    issues = situation.get("issue_state", [])
+    if issues:
+        lines.append(f"\n📡 <b>TOP 이슈</b>")
+        for iss in issues[:5]:
+            side_icon = "🔵" if "우리" in str(iss.get("side", "")) else "🔴" if "상대" in str(iss.get("side", "")) else "⚪"
+            lines.append(f"  {side_icon} {iss.get('name','')} ({iss.get('count',0)}건) — {iss.get('spreading','')}")
+
+    # 전략 요약
+    if strategies:
+        lines.append(f"\n📐 <b>대응 전략</b>")
+        for i, s in enumerate(strategies[:3], 1):
+            timeline = s.get("timeline", "")
+            is_urgent = "즉시" in timeline or "오늘" in timeline
+            icon = "🔴" if is_urgent else "🔵"
+            lines.append(f"  {icon} <b>{s.get('title','')}</b>")
+            if s.get("action"):
+                lines.append(f"     → {s['action']}")
+            if s.get("target"):
+                lines.append(f"     🎯 {s['target']}")
+
+    # 현장 일정
     if schedule:
-        lines.append("\n📍 <b>현장 일정</b>")
-        for s in schedule[:2]:
+        lines.append(f"\n📍 <b>현장 일정</b>")
+        for s in schedule[:3]:
             region = s.get("region", "")
+            loc = s.get("location", "")
             msg = s.get("message", "")
-            lines.append(f"• {region}: \"{msg}\"")
+            target = s.get("target_segment", s.get("target", ""))
+            time_str = s.get("when", s.get("time", ""))
+            lines.append(f"  • <b>{region}</b> {time_str}")
+            if loc:
+                lines.append(f"     📍 {loc}")
+            if msg:
+                lines.append(f"     💬 \"{msg}\"")
+            if target:
+                lines.append(f"     🎯 {target}")
+
+    # 위기 관리
+    if risks:
+        lines.append(f"\n⛔ <b>위기 관리</b>")
+        for r in risks[:3]:
+            lines.append(f"  • {r.get('risk','')}: {r.get('response','')}")
 
     buttons = [
         [{"text": "🔗 전체 리포트", "url": f"{DASHBOARD_URL}"}],
         back[0],
     ]
-    _send(base, chat_id, "\n".join(lines), buttons, edit_msg=msg_id)
+    full_text = "\n".join(lines)
+    # 텔레그램 4096자 제한: 초과 시 분할 전송
+    if len(full_text) > 4000:
+        # 첫 메시지: 핵심 진단 + 국면 + 긴급 액션 (edit)
+        split_idx = full_text.find("\n📡 ")
+        if split_idx == -1:
+            split_idx = 3900
+        _send(base, chat_id, full_text[:split_idx], None, edit_msg=msg_id)
+        # 두 번째 메시지: 나머지 + 버튼 (새 메시지)
+        _send(base, chat_id, full_text[split_idx:], buttons)
+    else:
+        _send(base, chat_id, full_text, buttons, edit_msg=msg_id)
 
 
 def _cb_fix_menu(snap, chat_id, msg_id, base):
