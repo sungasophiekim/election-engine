@@ -1492,59 +1492,116 @@ def _daily_snapshot():
         with open(fp, "w") as f:
             json.dump(snapshot, f, ensure_ascii=False, indent=2)
 
-        # ── 2. 학습데이터 (일별 전체 컨텍스트 저장) ──
+        # ── 2. 학습데이터 (전일 24시간 추세 기반) ──
         TRAINING_DIR = LEGACY_DATA / "training_data"
         TRAINING_DIR.mkdir(parents=True, exist_ok=True)
+
+        # indices_history.json에서 전일 24시간분 추출
+        hist_path = LEGACY_DATA / "indices_history.json"
+        hourly_data = []
+        try:
+            with open(hist_path) as _hf:
+                all_hist = json.load(_hf)
+            # 어제 00:00 ~ 오늘 08:00 범위 (전일 24시간)
+            from datetime import timedelta
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%m.%d")
+            hourly_data = [h for h in all_hist if h.get("date", "").startswith(yesterday)]
+            if not hourly_data:
+                # 최근 24건 폴백
+                hourly_data = all_hist[-24:]
+        except Exception:
+            pass
+
+        # 24시간 지수 추세 계산
+        issue_vals = [h.get("issue_index", 50) for h in hourly_data] or [50]
+        reaction_vals = [h.get("reaction_index", 50) for h in hourly_data] or [50]
+        pandse_vals = [h.get("pandse", 50) for h in hourly_data] or [50]
+
+        # 24시간 누적 TOP 이슈 (시간별 클러스터 합산)
+        from collections import Counter
+        cluster_scores = Counter()
+        cluster_meta = {}  # 최신 상세 보관
+        for h in hourly_data:
+            for c in h.get("top_clusters", []):
+                name = c.get("name", "")
+                if name:
+                    cluster_scores[name] += c.get("count", 1)
+                    if c.get("summary") or c.get("why") or name not in cluster_meta:
+                        cluster_meta[name] = {
+                            "side": c.get("side", ""), "sentiment": c.get("sentiment", 0),
+                            "summary": c.get("summary", ""), "why": c.get("why", ""),
+                            "community_expected": c.get("community_expected", ""),
+                        }
+
+        accumulated_issues = []
+        for name, score in cluster_scores.most_common(10):
+            meta = cluster_meta.get(name, {})
+            hours = sum(1 for h in hourly_data if name in [c.get("name", "") for c in h.get("top_clusters", [])])
+            accumulated_issues.append({
+                "name": name, "accumulated_count": score, "hours_appeared": hours,
+                **meta,
+            })
+
+        # 24시간 누적 반응 (키워드별 소스 감성)
+        from collections import defaultdict
+        rx_mentions = Counter()
+        rx_sentiments = defaultdict(list)
+        rx_sides = {}
+        for h in hourly_data:
+            for rx in h.get("top_reactions", []):
+                kw = rx.get("keyword", "")
+                if not kw:
+                    continue
+                rx_sides[kw] = rx.get("side", "")
+                for sname, sdata in rx.get("sources", {}).items():
+                    rx_mentions[kw] += sdata.get("count", 0)
+                    s = sdata.get("net_sentiment", 0)
+                    if s != 0:
+                        rx_sentiments[kw].append(s)
+
+        accumulated_reactions = []
+        for kw, total in rx_mentions.most_common(10):
+            sents = rx_sentiments.get(kw, [])
+            accumulated_reactions.append({
+                "keyword": kw, "side": rx_sides.get(kw, ""),
+                "total_mentions": total,
+                "avg_sentiment": round(sum(sents) / len(sents), 3) if sents else 0,
+            })
 
         training = {
             "date": today,
             "timestamp": datetime.now().isoformat(),
             "d_day": corr.get("d_day", 0),
+            "hours_collected": len(hourly_data),
 
-            # 3개 지수
-            "indices": {
-                "issue_index": ci.get("issue_index", 50),
-                "reaction_index": cr.get("reaction_index", 50),
-                "pandse_index": corr.get("pandse_index", 50),
+            # 24시간 지수 추세
+            "indices_trend": {
+                "issue": {"min": round(min(issue_vals), 1), "max": round(max(issue_vals), 1),
+                          "avg": round(sum(issue_vals) / len(issue_vals), 1),
+                          "start": round(issue_vals[0], 1), "end": round(issue_vals[-1], 1)},
+                "reaction": {"min": round(min(reaction_vals), 1), "max": round(max(reaction_vals), 1),
+                             "avg": round(sum(reaction_vals) / len(reaction_vals), 1),
+                             "start": round(reaction_vals[0], 1), "end": round(reaction_vals[-1], 1)},
+                "pandse": {"min": round(min(pandse_vals), 1), "max": round(max(pandse_vals), 1),
+                           "avg": round(sum(pandse_vals) / len(pandse_vals), 1),
+                           "start": round(pandse_vals[0], 1), "end": round(pandse_vals[-1], 1)},
             },
 
-            # 이슈 상세
-            "issue_detail": {
-                "kim_count": ci.get("kim_count", 0),
-                "park_count": ci.get("park_count", 0),
-                "kim_score": ci.get("kim_score", 0),
-                "park_score": ci.get("park_score", 0),
-            },
-
-            # 반응 상세
-            "reaction_detail": {
-                "total_mentions": cr.get("total_mentions", 0),
-                "sources_collected": cr.get("sources_collected", []),
-                "kim_sentiment": cr.get("kim_sentiment", 0),
-                "park_sentiment": cr.get("park_sentiment", 0),
-            },
-
-            # 판세 팩터
-            "pandse_factors": corr.get("factors", []),
-
-            # 뉴스 클러스터 TOP 10
-            "top_issues": [
-                {
-                    "name": c.get("name", ""),
-                    "count": c.get("count", 0),
-                    "side": c.get("side", ""),
-                    "sentiment": c.get("sentiment", 0),
-                    "community_expected": c.get("community_expected", ""),
-                    "tip": c.get("tip", ""),
-                }
-                for c in clusters[:10]
+            # 시간별 raw 데이터 (차트용)
+            "hourly": [
+                {"time": h.get("date", ""), "issue": h.get("issue_index", 50),
+                 "reaction": h.get("reaction_index", 50), "pandse": h.get("pandse", 50)}
+                for h in hourly_data
             ],
 
-            # AI 해석
-            "ai_summary": {
-                "issue": snap.get("ai_issue_summary", ""),
-                "reaction": snap.get("ai_reaction_summary", ""),
-            },
+            # 24시간 누적 TOP 10 이슈
+            "top_issues_24h": accumulated_issues,
+
+            # 24시간 누적 TOP 10 반응
+            "top_reactions_24h": accumulated_reactions,
+
+            # 판세 팩터 (현재 시점)
+            "pandse_factors": corr.get("factors", []),
 
             # 여론조사
             "poll": {
@@ -1554,8 +1611,11 @@ def _daily_snapshot():
                 "party_gap": np_data.get("party_gap", 0),
             },
 
-            # 반응 수집 키워드별 상세 (학습용)
-            "reaction_by_keyword": cr.get("details", []),
+            # AI 해석
+            "ai_summary": {
+                "issue": snap.get("ai_issue_summary", ""),
+                "reaction": snap.get("ai_reaction_summary", ""),
+            },
         }
 
         tp = TRAINING_DIR / f"{today}.json"
