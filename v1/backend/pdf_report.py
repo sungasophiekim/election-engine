@@ -52,7 +52,7 @@ class ReportPDF(FPDF):
         self.set_font("NotoSans", "", 9)
         self.set_text_color(50, 50, 50)
         self.set_x(self.l_margin + indent)
-        self.multi_cell(0, 5, f"• {text}")
+        self.multi_cell(0, 5, f"- {text}")
 
     def badge(self, text: str, color: tuple = (36, 87, 164)):
         self.set_font("NotoSans", "B", 8)
@@ -63,8 +63,17 @@ class ReportPDF(FPDF):
         self.set_text_color(50, 50, 50)
 
 
+def _sanitize(text: str) -> str:
+    """폰트에 없는 글리프 대체"""
+    return text.replace("\u2022", "-").replace("\u2014", "-").replace("\u2013", "-")
+
+
 def generate_pdf(rpt: dict) -> bytes:
     """리포트 JSON → PDF bytes"""
+    # 전체 텍스트에서 문제 글리프 제거
+    import json as _json
+    rpt = _json.loads(_sanitize(_json.dumps(rpt, ensure_ascii=False)))
+
     pdf = ReportPDF()
     pdf.add_page()
 
@@ -88,7 +97,7 @@ def generate_pdf(rpt: dict) -> bytes:
     pdf.ln(4)
 
     # 1. 핵심 진단
-    pdf.section_title("1. 핵심 진단 — 종합 브리핑")
+    pdf.section_title("1. 핵심 진단 -종합 브리핑")
     summary = rpt.get("executive_summary", "")
     pdf.body_text(summary)
 
@@ -130,7 +139,7 @@ def generate_pdf(rpt: dict) -> bytes:
     # 2. 이슈 분석
     issues = sd.get("issue_state", [])
     if issues:
-        pdf.section_title("2. 이슈 분석 — 무엇이 확산되고, 어떻게 반응하는가")
+        pdf.section_title("2. 이슈 분석 -무엇이 확산되고, 어떻게 반응하는가")
         for i, iss in enumerate(issues[:10]):
             side = iss.get("side", "")
             side_mark = "🔵" if "우리" in str(side) else "🔴" if "상대" in str(side) else "⚪"
@@ -140,14 +149,14 @@ def generate_pdf(rpt: dict) -> bytes:
             diagnosis = iss.get("diagnosis", "")
             pdf.set_font("NotoSans", "B", 9)
             pdf.set_text_color(13, 27, 42)
-            pdf.cell(0, 5, f"{i+1}. {name} ({count}건) — {side} · {spreading}", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 5, f"{i+1}. {name} ({count}건) -{side} · {spreading}", new_x="LMARGIN", new_y="NEXT")
             if diagnosis:
                 pdf.body_text(f"   {diagnosis}", indent=5)
 
     # 3. 대응 전략
     strategies = rpt.get("strategies", [])
     if strategies:
-        pdf.section_title("3. 대응 전략 — 조건 기반 실행 방안")
+        pdf.section_title("3. 대응 전략 -조건 기반 실행 방안")
 
         dl = rpt.get("decision_layer", {})
         moment = dl.get("moment_type", dl.get("phase", ""))
@@ -170,7 +179,7 @@ def generate_pdf(rpt: dict) -> bytes:
             color = (192, 57, 43) if is_urgent else (36, 87, 164)
             pdf.set_text_color(*color)
             label = "긴급" if is_urgent else "중장기"
-            pdf.cell(0, 6, f"[{label}] {s.get('title', '')} — {timeline}", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 6, f"[{label}] {s.get('title', '')} -{timeline}", new_x="LMARGIN", new_y="NEXT")
             if s.get("condition"):
                 pdf.body_text(f"조건: {s['condition']}", indent=3)
             if s.get("action"):
