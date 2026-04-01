@@ -1861,12 +1861,13 @@ def _scheduler_loop():
                         print(f"[{_now()}] 연속 에러 {consecutive_errors}회 — 10분 대기", flush=True)
                         time.sleep(600)
 
-            # 매일 08:00 학습데이터 + 데일리 리포트 자동 생성
-            # minute < 5로 체크 — sleep(60) 루프가 정확히 :00을 놓쳐도 08:01~08:04에 잡힘
+            # 매일 한국 08:00 (UTC 23:00) 학습데이터 + 데일리 리포트 자동 생성
             try:
-                now = datetime.now()
-                if now.hour == 8 and now.minute < 5:
-                    today_tp = LEGACY_DATA / "training_data" / f"{now.strftime('%Y-%m-%d')}.json"
+                from datetime import timezone, timedelta as _td
+                kst_now = datetime.now(timezone(_td(hours=9)))
+                if kst_now.hour == 8 and kst_now.minute < 5:
+                    today_kst = kst_now.strftime('%Y-%m-%d')
+                    today_tp = LEGACY_DATA / "training_data" / f"{today_kst}.json"
                     if not today_tp.exists():  # 오늘 이미 실행했으면 스킵
                         _daily_snapshot()
                         _auto_generate_daily_report()
