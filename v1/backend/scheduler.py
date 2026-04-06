@@ -1514,7 +1514,8 @@ def _daily_snapshot():
     """일일 학습데이터 스냅샷 (08:00) — 3개 지수 + 이슈 클러스터 + 반응 상세 + 여론조사"""
     try:
         snap = _load_snap()
-        today = datetime.now().strftime("%Y-%m-%d")
+        from datetime import timezone, timedelta as _td
+        today = datetime.now(timezone(_td(hours=9))).strftime("%Y-%m-%d")  # KST 기준
 
         ci = snap.get("cluster_issue", {})
         cr = snap.get("cluster_reaction", {})
@@ -1705,7 +1706,8 @@ def _daily_snapshot():
 def _auto_generate_daily_report():
     """08:00 자동 데일리 리포트 생성 + 텔레그램 요약 발송"""
     try:
-        today = datetime.now().strftime("%Y-%m-%d")
+        from datetime import timezone, timedelta as _td
+        today = datetime.now(timezone(_td(hours=9))).strftime("%Y-%m-%d")  # KST 기준 오늘
         report_path = LEGACY_DATA / "daily_reports" / f"{today}.json"
 
         # 이미 오늘 리포트가 있으면 스킵

@@ -482,10 +482,16 @@ import threading
 _generating = {"daily": False, "weekly": False}
 
 
+def _kst_today() -> str:
+    """한국 시간 기준 오늘 날짜"""
+    from datetime import timezone
+    return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
+
+
 def _generate_daily_sync():
     """백그라운드에서 데일리 리포트 생성 — report_meta 기반 누적 필터링"""
     global _generating
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = _kst_today()
     try:
         print(f"[Strategy] 데일리 생성 시작 ({today})", flush=True)
         snap = _load_snap()
@@ -595,7 +601,7 @@ def generate_daily_briefing():
         return {"status": "generating", "message": "이미 생성 중입니다."}
 
     # 1일 1회 제한: 오늘 이미 성공적으로 생성된 리포트가 있으면 차단
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = _kst_today()
     if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
         return {"status": "already_generated", "message": f"오늘({today}) 리포트가 이미 생성되었습니다. 내일 다시 시도해주세요."}
     # 파일 아카이브도 확인
@@ -936,8 +942,9 @@ def _build_weekly_context_from_dailies(dailies: list) -> str:
 
 @router.get("/weekly-briefing")
 def weekly_briefing(force: bool = False):
-    today = datetime.now().strftime("%Y-%m-%d")
-    week_key = datetime.now().strftime("%Y-W%W")
+    today = _kst_today()
+    from datetime import timezone
+    week_key = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-W%W")
 
     # 1. 메모리 캐시
     if not force and _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
