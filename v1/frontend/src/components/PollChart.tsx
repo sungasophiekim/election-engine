@@ -73,16 +73,12 @@ export function NationalTrendChart() {
             const isLast = i === n - 1;
             return (
               <g key={i}>
-                <circle cx={pl + i * xs} cy={Y(d.president)} r={isLast ? 4 : 2} fill={isLast ? "#f59e0b" : "#4a3800"} className="nt-dot" style={{ animationDelay: delay }} />
-                <circle cx={pl + i * xs} cy={Y(d.dem)} r={isLast ? 4 : 2} fill={isLast ? "#2563eb" : "#1e3a5f"} className="nt-dot" style={{ animationDelay: delay }} />
-                <circle cx={pl + i * xs} cy={Y(d.ppp)} r={isLast ? 4 : 2} fill={isLast ? "#ef4444" : "#5b2130"} className="nt-dot" style={{ animationDelay: delay }} />
-                {isLast && (
-                  <>
-                    <text x={pl + i * xs + 6} y={Y(d.president) + 3} fill="#f59e0b" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.president}%</text>
-                    <text x={pl + i * xs + 6} y={Y(d.dem) + 3} fill="#2563eb" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.dem}%</text>
-                    <text x={pl + i * xs + 6} y={Y(d.ppp) + 3} fill="#ef4444" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.ppp}%</text>
-                  </>
-                )}
+                <circle cx={pl + i * xs} cy={Y(d.president)} r={isLast ? 4 : 2.5} fill={isLast ? "#f59e0b" : "#4a3800"} className="nt-dot" style={{ animationDelay: delay }} />
+                <circle cx={pl + i * xs} cy={Y(d.dem)} r={isLast ? 4 : 2.5} fill={isLast ? "#2563eb" : "#1e3a5f"} className="nt-dot" style={{ animationDelay: delay }} />
+                <circle cx={pl + i * xs} cy={Y(d.ppp)} r={isLast ? 4 : 2.5} fill={isLast ? "#ef4444" : "#5b2130"} className="nt-dot" style={{ animationDelay: delay }} />
+                <text x={pl + i * xs} y={Y(d.president) - 7} fill="#f59e0b" fontSize={isLast ? "9" : "7"} fontWeight="bold" textAnchor="middle" fontFamily="monospace" className="nt-dot" style={{ animationDelay: delay }}>{d.president}</text>
+                <text x={pl + i * xs} y={Y(d.dem) - 7} fill="#2563eb" fontSize={isLast ? "9" : "7"} fontWeight="bold" textAnchor="middle" fontFamily="monospace" className="nt-dot" style={{ animationDelay: delay }}>{d.dem}</text>
+                <text x={pl + i * xs} y={Y(d.ppp) + 12} fill="#ef4444" fontSize={isLast ? "9" : "7"} fontWeight="bold" textAnchor="middle" fontFamily="monospace" className="nt-dot" style={{ animationDelay: delay }}>{d.ppp}</text>
                 <text x={pl + i * xs} y={h - 6} fill="#6b7280" fontSize="7" textAnchor="middle" fontFamily="monospace" className="nt-dot" style={{ animationDelay: delay }}>{d.date}</text>
               </g>
             );
