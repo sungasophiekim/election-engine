@@ -6,7 +6,7 @@ export function NationalTrendChart() {
   if (!data || data.length < 2) return null;
 
   const n = data.length;
-  const w = 900, h = 160, pl = 35, pr = 10, pt = 16, pb = 32;
+  const w = 900, h = 160, pl = 35, pr = 50, pt = 16, pb = 32;
   const xs = (w - pl - pr) / (n - 1);
   const mn = 10, mx = 75, rng = mx - mn;
   const Y = (v: number) => pt + (1 - (v - mn) / rng) * (h - pt - pb);
