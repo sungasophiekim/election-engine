@@ -3,6 +3,7 @@ import * as api from "./api";
 
 interface WarRoomState {
   polls: any[];
+  nationalTrend: any[];
   prediction: any;
   indices: any;
   history: any[];
@@ -19,6 +20,7 @@ interface WarRoomState {
 
 export const useStore = create<WarRoomState>((set) => ({
   polls: [],
+  nationalTrend: [],
   prediction: null,
   indices: null,
   history: [],
@@ -54,6 +56,7 @@ export const useStore = create<WarRoomState>((set) => ({
     }
     set({
       polls: newPolls,
+      nationalTrend: polls?.national_trend || [],
       prediction,
       indices,
       history: hist?.trend || [],

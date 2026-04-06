@@ -1,6 +1,108 @@
 "use client";
 import { useStore } from "@/lib/store";
 
+export function NationalTrendChart() {
+  const data = useStore((s) => s.nationalTrend);
+  if (!data || data.length < 2) return null;
+
+  const n = data.length;
+  const w = 900, h = 160, pl = 35, pr = 10, pt = 16, pb = 32;
+  const xs = (w - pl - pr) / (n - 1);
+  const mn = 10, mx = 75, rng = mx - mn;
+  const Y = (v: number) => pt + (1 - (v - mn) / rng) * (h - pt - pb);
+
+  const presVals = data.map((d: any) => d.president || 0);
+  const demVals = data.map((d: any) => d.dem || 0);
+  const pppVals = data.map((d: any) => d.ppp || 0);
+
+  const calcLen = (vals: number[]) => {
+    let l = 0;
+    for (let i = 1; i < vals.length; i++) l += Math.sqrt(xs * xs + (Y(vals[i]) - Y(vals[i - 1])) ** 2);
+    return Math.ceil(l);
+  };
+
+  const latest = data[n - 1];
+  const gap = (latest.dem || 0) - (latest.ppp || 0);
+
+  return (
+    <div className="wr-card anim-in" style={{ animationDelay: "0.15s" }}>
+      <div className="wr-card-header flex justify-between">
+        <div className="flex items-center gap-2">
+          <span>전국 정당 지지율 · 대통령 지지율</span>
+          <span className="text-[8px] text-gray-500 font-normal normal-case tracking-normal">한국갤럽</span>
+        </div>
+        <div className="flex gap-3 text-[8px] normal-case tracking-normal font-normal">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /><span className="text-gray-400">대통령</span></span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-gray-400">민주당</span></span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-gray-400">국힘</span></span>
+        </div>
+      </div>
+      <div className="p-3">
+        <svg width="100%" viewBox={`0 0 ${w} ${h}`}>
+          <style>{`
+            .nt-pres { stroke-dasharray:${calcLen(presVals)}; stroke-dashoffset:${calcLen(presVals)}; animation:drawLine 1.5s ease-out forwards; }
+            .nt-dem { stroke-dasharray:${calcLen(demVals)}; stroke-dashoffset:${calcLen(demVals)}; animation:drawLine 1.5s ease-out 0.2s forwards; }
+            .nt-ppp { stroke-dasharray:${calcLen(pppVals)}; stroke-dashoffset:${calcLen(pppVals)}; animation:drawLine 1.5s ease-out 0.4s forwards; }
+            .nt-dot { opacity:0; animation:fadeInUp 0.3s ease-out forwards; }
+            @keyframes drawLine { to { stroke-dashoffset:0; } }
+            @keyframes fadeInUp { to { opacity:1; } }
+          `}</style>
+
+          {[20, 30, 40, 50, 60, 70].map(v => (
+            <g key={v}>
+              <line x1={pl} y1={Y(v)} x2={w - pr} y2={Y(v)} stroke="#111d30" strokeWidth="0.5" />
+              <text x={pl - 4} y={Y(v) + 3} fill="#4b6a9b" fontSize="7" textAnchor="end" fontFamily="monospace">{v}</text>
+            </g>
+          ))}
+
+          {/* 격차 영역 */}
+          <polygon
+            points={demVals.map((v: number, i: number) => `${pl + i * xs},${Y(v)}`).join(" ") + " " + [...pppVals].reverse().map((v: number, i: number) => `${pl + (n - 1 - i) * xs},${Y(v)}`).join(" ")}
+            fill="rgba(37,99,235,0.06)"
+            className="nt-dot" style={{ animationDelay: "1s" }}
+          />
+
+          {/* Lines */}
+          <polyline points={presVals.map((v: number, i: number) => `${pl + i * xs},${Y(v)}`).join(" ")} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinejoin="round" strokeDasharray="6,3" className="nt-pres" />
+          <polyline points={demVals.map((v: number, i: number) => `${pl + i * xs},${Y(v)}`).join(" ")} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" className="nt-dem" />
+          <polyline points={pppVals.map((v: number, i: number) => `${pl + i * xs},${Y(v)}`).join(" ")} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round" className="nt-ppp" />
+
+          {/* Dots + Labels */}
+          {data.map((d: any, i: number) => {
+            const delay = `${0.8 + i * 0.1}s`;
+            const isLast = i === n - 1;
+            return (
+              <g key={i}>
+                <circle cx={pl + i * xs} cy={Y(d.president)} r={isLast ? 4 : 2} fill={isLast ? "#f59e0b" : "#4a3800"} className="nt-dot" style={{ animationDelay: delay }} />
+                <circle cx={pl + i * xs} cy={Y(d.dem)} r={isLast ? 4 : 2} fill={isLast ? "#2563eb" : "#1e3a5f"} className="nt-dot" style={{ animationDelay: delay }} />
+                <circle cx={pl + i * xs} cy={Y(d.ppp)} r={isLast ? 4 : 2} fill={isLast ? "#ef4444" : "#5b2130"} className="nt-dot" style={{ animationDelay: delay }} />
+                {isLast && (
+                  <>
+                    <text x={pl + i * xs + 6} y={Y(d.president) + 3} fill="#f59e0b" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.president}%</text>
+                    <text x={pl + i * xs + 6} y={Y(d.dem) + 3} fill="#2563eb" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.dem}%</text>
+                    <text x={pl + i * xs + 6} y={Y(d.ppp) + 3} fill="#ef4444" fontSize="9" fontWeight="bold" fontFamily="monospace" className="nt-dot" style={{ animationDelay: "1.5s" }}>{d.ppp}%</text>
+                  </>
+                )}
+                <text x={pl + i * xs} y={h - 6} fill="#6b7280" fontSize="7" textAnchor="middle" fontFamily="monospace" className="nt-dot" style={{ animationDelay: delay }}>{d.date}</text>
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* 하단 요약 */}
+        <div className="flex items-center justify-between mt-1 px-1">
+          <div className="flex items-center gap-3 text-[9px]">
+            <span className="text-amber-400 font-bold">대통령 {latest.president}%</span>
+            <span className="text-blue-400 font-bold">민주 {latest.dem}%</span>
+            <span className="text-red-400 font-bold">국힘 {latest.ppp}%</span>
+          </div>
+          <span className="text-[10px] font-black text-blue-400">격차 +{gap}%p</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PollChart() {
   const polls = useStore((s) => s.polls);
   if (!polls.length) return null;

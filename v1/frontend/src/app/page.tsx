@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { fmtTs } from "@/lib/format";
-import PollChart from "@/components/PollChart";
+import PollChart, { NationalTrendChart } from "@/components/PollChart";
 import PredictionBars from "@/components/PredictionBars";
 import IndicesPanel from "@/components/IndicesPanel";
 import NewsTop from "@/components/NewsTop";
@@ -122,6 +122,7 @@ export default function WarRoom() {
         {/* 왼쪽 메인 */}
         <div className="col-span-9 space-y-3">
           <PollChart />
+          <NationalTrendChart />
           <PredictionBars />
           <IndicesPanel />
 </div>

@@ -21,3 +21,14 @@ POLL_DATA = [
 
 def get_latest_poll() -> dict:
     return POLL_DATA[-1]
+
+
+# 한국갤럽 전국 정당 지지율 + 대통령 지지율
+NATIONAL_POLL_TREND = [
+    {"date": "25.07", "label": "25년7월", "president": 64, "dem": 45, "ppp": 20},
+    {"date": "25.12", "label": "25년12월", "president": 58, "dem": 41, "ppp": 25},
+    {"date": "26.01", "label": "26년1월1주", "president": 60, "dem": 45, "ppp": 26},
+    {"date": "26.02", "label": "26년2월2주", "president": 63, "dem": 44, "ppp": 22},
+    {"date": "26.03", "label": "26년3월1주", "president": 65, "dem": 46, "ppp": 21},
+    {"date": "26.04", "label": "26년4월1주", "president": 67, "dem": 48, "ppp": 18},
+]
