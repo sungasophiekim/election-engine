@@ -42,7 +42,6 @@ function Bar({ kim, park, label, source, updatedAt, variant = "default", delay =
 export default function PredictionBars() {
   const pred = useStore((s) => s.prediction);
   const indices = useStore((s) => s.indices);
-  const lastUpdated = useStore((s) => s.lastUpdated);
   if (!pred) return null;
 
   const poll = pred.poll || {};
@@ -58,7 +57,7 @@ export default function PredictionBars() {
           kim={poll.kim || 0} park={poll.park || 0}
           label={`여론조사 (${poll.label || "최신"})`}
           source={`출처: ${poll.label || ""} (${poll.date || ""})`}
-          updatedAt={poll.date ? `마지막업데이트: ${poll.date}` : undefined}
+          updatedAt={poll.date ? `${poll.label || ""} (${poll.date})` : undefined}
           delay={0.3}
         />
         <Bar
