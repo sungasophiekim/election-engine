@@ -32,4 +32,7 @@ NATIONAL_POLL_TREND = [
     {"date": "26.02", "label": "26년2월2주", "president": 63, "dem": 44, "ppp": 22},
     {"date": "26.03", "label": "26년3월1주", "president": 65, "dem": 46, "ppp": 21},
     {"date": "26.04", "label": "26년4월1주", "president": 67, "dem": 48, "ppp": 18},
+    {"date": "26.04", "label": "26년4월2주", "president": 67, "dem": 48, "ppp": 20},
+    {"date": "26.04", "label": "26년4월3주", "president": 66, "dem": 48, "ppp": 19},
+    {"date": "26.04", "label": "26년4월4주", "president": 67, "dem": 48, "ppp": 20},
 ]
