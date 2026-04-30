@@ -17,6 +17,9 @@ export const POLL_DATA = [
   { label: "KNN(서던포스트)", date: "26.03", kim: 36.0, park: 34.0, type: "poll" as const },
   { label: "경남일보(리얼미터)", date: "26.03", kim: 38.1, park: 38.3, type: "poll" as const },
   { label: "여론조사꽃", date: "26.03", kim: 44.0, park: 33.4, type: "poll" as const },
+  { label: "세계일보(한국갤럽)", date: "26.04", kim: 44.0, park: 40.0, type: "poll" as const },
+  { label: "KBS창원(한국리서치)", date: "26.04", kim: 37.0, park: 27.0, type: "poll" as const },
+  { label: "MBC경남(KSOI)", date: "26.04", kim: 46.9, park: 35.7, type: "poll" as const },
 ];
 
 export type PollEntry = typeof POLL_DATA[0];
