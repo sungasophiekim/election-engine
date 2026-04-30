@@ -372,7 +372,7 @@ def _update_all():
         # 이슈지수 변동 감지 (3pt 이상)
         prev_issue = snap.get("cluster_issue", {}).get("issue_index", 50)
         issue_delta = round(issue_index - prev_issue, 1)
-        if abs(issue_delta) >= 3.0:
+        if abs(issue_delta) >= 5.0:
             alert = _ai_issue_alert(prev_issue, issue_index, issue_delta, scored_clusters)
             snap["issue_alert"] = alert
             print(f"[{_now()}] 이슈 ALERT: {issue_delta:+.1f}pt — {alert['memo'][:50]}", flush=True)
@@ -416,7 +416,7 @@ def _update_all():
         # 반응지수 변동 감지 (3pt 이상)
         new_reaction = snap.get("cluster_reaction", {}).get("reaction_index", 50)
         reaction_delta = round(new_reaction - prev_reaction, 1)
-        if abs(reaction_delta) >= 3.0:
+        if abs(reaction_delta) >= 5.0:
             alert = _ai_reaction_alert(prev_reaction, new_reaction, reaction_delta, snap.get("cluster_reaction", {}))
             snap["reaction_alert"] = alert
             print(f"[{_now()}] 반응 ALERT: {reaction_delta:+.1f}pt — {alert['memo'][:50]}", flush=True)
@@ -574,8 +574,8 @@ def _update_all():
             src_ts["pandse_updated_at"] = datetime.now().isoformat()
             print(f"[{_now()}] 판세: {new_pandse}pt (변동 {delta:+.1f})", flush=True)
 
-            # 1pt 이상 변동 시 Alert + AI 원인분석
-            if abs(delta) >= 1.0:
+            # 2pt 이상 변동 시 Alert + AI 원인분석
+            if abs(delta) >= 2.0:
                 alert = _ai_pandse_alert(prev_pandse, new_pandse, delta, corr.get("factors", []))
                 snap["pandse_alert"] = alert
                 print(f"[{_now()}] 판세 ALERT: {delta:+.1f}pt — {alert.get('memo','')[:50]}", flush=True)
