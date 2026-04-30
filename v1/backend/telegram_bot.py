@@ -984,7 +984,7 @@ def start_telegram_bot():
     t = threading.Thread(target=_poll, daemon=True)
     t.start()
 
-    # 자동 헬스체크 — 60분 이상 갱신 없으면 알림
+    # 자동 헬스체크 — 180분(120분 주기 + 60분 마진) 이상 갱신 없으면 알림
     def _health_monitor():
         while True:
             time.sleep(3600)  # 60분마다 체크
@@ -996,7 +996,7 @@ def start_telegram_bot():
                 from datetime import datetime
                 last = datetime.fromisoformat(ts.replace("Z", "+00:00").replace("+00:00", ""))
                 diff = (datetime.now() - last).total_seconds()
-                if diff > 3600:  # 60분 이상
+                if diff > 10800:  # 180분 이상 (120분 주기 정상, 60분 마진)
                     mins = int(diff / 60)
                     send_alert(f"⚠️ <b>시스템 경고</b>\n\n스케줄러 {mins}분째 갱신 없음.\n마지막: {ts[:16]}\n\n/상태 로 확인하세요.")
             except Exception:
