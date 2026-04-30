@@ -989,9 +989,9 @@ def _collect_cluster_reactions(clusters: list) -> dict:
     _ensure_env()
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    # 상위 10개 클러스터 키워드 추출
+    # 상위 5개 클러스터 키워드 추출 (비용 통제: AI 감성분석 호출 50% 감소)
     keywords = []
-    for c in clusters[:10]:
+    for c in clusters[:5]:
         name = c.get("name", "")
         if name:
             keywords.append({"keyword": name, "side": c.get("side", "중립"), "source": "cluster"})
