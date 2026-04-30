@@ -27,8 +27,6 @@ INITIAL_POLLS = [
     {"date": "2026-02-10", "pollster": "케이스탯리서치/KBS (nesdc:17373)", "our_support": 30.0, "opponent_support": {"박완수": 29.0}, "margin_of_error": 3.5, "sample_size": 805},
     # 출처: nesdc.go.kr 등록번호 15497 — 서던포스트/KNN
     {"date": "2026-03-03", "pollster": "서던포스트/KNN (nesdc:17574)", "our_support": 36.4, "opponent_support": {"박완수": 34.0}, "margin_of_error": 3.1, "sample_size": 1007},
-    # 출처: 톱스타뉴스/여론조사꽃 — Trend Report 수집
-    {"date": "2026-01-28", "pollster": "여론조사꽃/톱스타뉴스", "our_support": 47.7, "opponent_support": {"박완수": 37.4}, "margin_of_error": 3.1, "sample_size": 1005},
     # 출처: 오마이뉴스 — 가상대결 (단수공천 이후)
     {"date": "2026-03-17", "pollster": "리얼미터/경남일보 (단수공천후)", "our_support": 38.1, "opponent_support": {"박완수": 38.3}, "margin_of_error": 3.1, "sample_size": 1001},
     # 출처: 한국갤럽/세계일보 — 전화면접(CATI), 양자 가상대결, 응답률 15.4%
