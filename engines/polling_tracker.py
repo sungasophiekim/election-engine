@@ -31,6 +31,12 @@ INITIAL_POLLS = [
     {"date": "2026-01-28", "pollster": "여론조사꽃/톱스타뉴스", "our_support": 47.7, "opponent_support": {"박완수": 37.4}, "margin_of_error": 3.1, "sample_size": 1005},
     # 출처: 오마이뉴스 — 가상대결 (단수공천 이후)
     {"date": "2026-03-17", "pollster": "리얼미터/경남일보 (단수공천후)", "our_support": 38.1, "opponent_support": {"박완수": 38.3}, "margin_of_error": 3.1, "sample_size": 1001},
+    # 출처: 한국갤럽/세계일보 — 전화면접(CATI), 양자 가상대결, 응답률 15.4%
+    {"date": "2026-04-08", "pollster": "한국갤럽/세계일보 (면접)", "our_support": 44.0, "opponent_support": {"박완수": 40.0}, "margin_of_error": 3.5, "sample_size": 806},
+    # 출처: 한국리서치/KBS창원 — 전화면접, 다자대결, 응답률 20.6%
+    {"date": "2026-04-16", "pollster": "한국리서치/KBS창원 (면접)", "our_support": 37.0, "opponent_support": {"박완수": 27.0, "전희영": 1.0}, "margin_of_error": 3.5, "sample_size": 800},
+    # 출처: KSOI/MBC경남 — ARS(무선100%), 다자대결, 응답률 5.8%
+    {"date": "2026-04-21", "pollster": "KSOI/MBC경남 (ARS)", "our_support": 46.9, "opponent_support": {"박완수": 35.7, "전희영": 3.3}, "margin_of_error": 3.1, "sample_size": 1001},
 ]
 
 
