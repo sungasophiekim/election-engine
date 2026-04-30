@@ -16,6 +16,9 @@ POLL_DATA = [
     {"label": "KBS(케이스텟)", "date": "26.02", "kim": 29.5, "park": 29.5, "type": "poll"},
     {"label": "KNN(서던포스트)", "date": "26.03", "kim": 36.0, "park": 34.0, "type": "poll"},
     {"label": "여론조사꽃", "date": "26.03", "kim": 44.0, "park": 33.4, "type": "poll"},
+    {"label": "세계일보(한국갤럽)", "date": "26.04", "kim": 44.0, "park": 40.0, "type": "poll"},
+    {"label": "KBS창원(한국리서치)", "date": "26.04", "kim": 37.0, "park": 27.0, "type": "poll"},
+    {"label": "MBC경남(KSOI)", "date": "26.04", "kim": 46.9, "park": 35.7, "type": "poll"},
 ]
 
 
