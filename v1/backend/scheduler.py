@@ -1804,7 +1804,7 @@ def _auto_generate_daily_report():
 
 def _scheduler_loop():
     """메인 루프 — 절대 죽지 않는 구조"""
-    print(f"[{_now()}] === 스케줄러 v2 시작 (60분 주기) ===", flush=True)
+    print(f"[{_now()}] === 스케줄러 v2 시작 (120분 주기) ===", flush=True)
 
     tick = 0
     consecutive_errors = 0
@@ -1833,8 +1833,8 @@ def _scheduler_loop():
             time.sleep(60)
             tick += 1
 
-            # 60분마다 전체 갱신
-            if tick % 60 == 0:
+            # 120분마다 전체 갱신
+            if tick % 120 == 0:
                 try:
                     print(f"[{_now()}] 정기 갱신 시작 (tick={tick})", flush=True)
                     _update_all()
@@ -1873,6 +1873,16 @@ def _scheduler_loop():
                     if not today_tp.exists():  # 오늘 이미 실행했으면 스킵
                         _daily_snapshot()
                         _auto_generate_daily_report()
+                    # 매주 일요일 08:00 KST 위클리 리포트 자동 생성 (weekday: 일=6)
+                    if kst_now.weekday() == 6:
+                        try:
+                            _v1 = str(Path(__file__).resolve().parent)
+                            if _v1 not in sys.path:
+                                sys.path.insert(0, _v1)
+                            from api.strategy import _generate_weekly_sync
+                            _generate_weekly_sync()
+                        except Exception as we:
+                            print(f"[{_now()}] 위클리 리포트 생성 실패: {we}", flush=True)
             except Exception:
                 pass
 

@@ -596,31 +596,11 @@ def daily_briefing():
 
 @router.post("/daily-briefing/generate")
 def generate_daily_briefing():
-    """데일리 리포트 AI 생성 (수동 트리거) — 1일 1회 제한, 생성 후 아카이브 저장"""
-    if _generating.get("daily"):
-        return {"status": "generating", "message": "이미 생성 중입니다."}
-
-    # 1일 1회 제한: 오늘 이미 성공적으로 생성된 리포트가 있으면 차단
-    today = _kst_today()
-    if _cache["daily"]["date"] == today and _cache["daily"]["data"] and not _cache["daily"]["data"].get("error"):
-        return {"status": "already_generated", "message": f"오늘({today}) 리포트가 이미 생성되었습니다. 내일 다시 시도해주세요."}
-    # 파일 아카이브도 확인
-    today_file = LEGACY_DATA / "daily_reports" / f"{today}.json"
-    if today_file.exists():
-        try:
-            with open(today_file) as _f:
-                existing = json.load(_f)
-            if not existing.get("error"):
-                # 캐시에도 로드
-                _cache["daily"]["date"] = today
-                _cache["daily"]["data"] = existing
-                return {"status": "already_generated", "message": f"오늘({today}) 리포트가 이미 생성되었습니다. 내일 다시 시도해주세요."}
-        except Exception:
-            pass
-
-    _generating["daily"] = True
-    threading.Thread(target=_generate_daily_sync, daemon=True).start()
-    return {"status": "generating", "message": "리포트 생성 시작 (1~2분 소요)"}
+    """수동 트리거 비활성화 — 매일 08:00 KST 자동 생성만 운영. 비용 통제 목적."""
+    return {
+        "status": "disabled",
+        "message": "수동 생성은 비활성화되었습니다. 매일 08:00 KST에 자동 생성됩니다."
+    }
 
 
 @router.get("/daily-reports")
@@ -940,32 +920,31 @@ def _build_weekly_context_from_dailies(dailies: list) -> str:
     return "\n\n".join(parts)
 
 
-@router.get("/weekly-briefing")
-def weekly_briefing(force: bool = False):
+def _generate_weekly_sync():
+    """위클리 리포트 자동 생성 — 매주 일요일 08:00 KST 스케줄러에서 호출."""
     today = _kst_today()
     from datetime import timezone
     week_key = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-W%W")
 
-    # 1. 메모리 캐시
-    if not force and _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
-        return _cache["weekly"]["data"]
-
-    # 2. 파일 캐시
     weekly_dir = LEGACY_DATA / "weekly_reports"
     weekly_dir.mkdir(parents=True, exist_ok=True)
     weekly_fp = weekly_dir / f"{week_key}.json"
-    if not force and weekly_fp.exists():
+
+    # 이미 이번 주 리포트가 있으면 스킵
+    if weekly_fp.exists():
         try:
             with open(weekly_fp) as f:
                 cached = json.load(f)
             if not cached.get("error"):
                 _cache["weekly"]["date"] = week_key
                 _cache["weekly"]["data"] = cached
+                print(f"[Strategy] 위클리 리포트 이미 존재: {week_key}", flush=True)
                 return cached
         except Exception:
             pass
 
     _ensure_env()
+    print(f"[Strategy] 위클리 리포트 자동 생성 시작 ({week_key})", flush=True)
 
     # 데일리 기반 위클리 시도
     dailies = _load_week_dailies(week_key)
@@ -1084,6 +1063,38 @@ def weekly_briefing(force: bool = False):
         import traceback
         traceback.print_exc()
         return {"error": str(e), "generated_at": datetime.now().isoformat()}
+
+
+@router.get("/weekly-briefing")
+def weekly_briefing():
+    """캐시된 위클리 리포트 조회. AI 생성은 매주 일요일 08:00 KST 자동만 운영."""
+    from datetime import timezone
+    week_key = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-W%W")
+
+    # 1. 메모리 캐시
+    if _cache["weekly"]["date"] == week_key and _cache["weekly"]["data"] and not _cache["weekly"]["data"].get("error"):
+        return _cache["weekly"]["data"]
+
+    # 2. 파일 캐시
+    weekly_dir = LEGACY_DATA / "weekly_reports"
+    if weekly_dir.exists():
+        weekly_fp = weekly_dir / f"{week_key}.json"
+        if weekly_fp.exists():
+            try:
+                with open(weekly_fp) as f:
+                    cached = json.load(f)
+                if not cached.get("error"):
+                    _cache["weekly"]["date"] = week_key
+                    _cache["weekly"]["data"] = cached
+                    return cached
+            except Exception:
+                pass
+
+    return {
+        "status": "pending",
+        "message": "이번 주 위클리 리포트가 아직 생성되지 않았습니다. 매주 일요일 08:00 KST 자동 생성됩니다.",
+        "week": week_key,
+    }
 
 
 @router.get("/training-data")

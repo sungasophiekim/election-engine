@@ -31,7 +31,7 @@ export default function NewsTop() {
       <div className="px-3 py-1.5 border-b border-[#0e1825] flex items-center gap-2">
         <span className="text-[9px] font-bold text-cyan-400">{items.reduce((s: number, c: any) => s + (c.count || 0), 0)}건</span>
         <span className="text-[8px] text-gray-500">11개 채널 뉴스분석</span>
-        <span className="text-[7px] text-gray-600 border-l border-[#1a2844] pl-2">60분 주기 갱신</span>
+        <span className="text-[7px] text-gray-600 border-l border-[#1a2844] pl-2">120분 주기 갱신</span>
       </div>
       <div className="overflow-hidden" style={{ maxHeight: "45vh" }}>
         {items.length === 0 ? (
