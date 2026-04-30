@@ -276,7 +276,7 @@ export function StrategyPage() {
           {/* SWOT */}
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { icon: "✅", title: "강점", items: ["대통령 효과 67%", "정당 우위 +12%p"], color: "border-emerald-800/30 bg-emerald-950/10", textColor: "text-emerald-400", source: "출처: 대통령 지지율", page: "research" },
+              { icon: "✅", title: "강점", items: ["대통령 효과 67%", "정당 우위 +28%p"], color: "border-emerald-800/30 bg-emerald-950/10", textColor: "text-emerald-400", source: "출처: 대통령 지지율", page: "research" },
               { icon: "⚠", title: "약점", items: ["투표율 구조 열세", "사법리스크 프레임"], color: "border-rose-800/30 bg-rose-950/10", textColor: "text-rose-400", source: "출처: 투표율 모델", page: "research" },
               { icon: "🎯", title: "기회", items: ["3040 맘카페 활성화", "청년정책 반응 양호"], color: "border-cyan-800/30 bg-cyan-950/10", textColor: "text-cyan-400", source: "출처: 세그먼트 분석", page: "issues" },
               { icon: "🔴", title: "위협", items: ["상대 단수공천 확정", "민생지원금 선점 실패"], color: "border-amber-800/30 bg-amber-950/10", textColor: "text-amber-400", source: "출처: Pre-Trigger", page: "opponent" },
@@ -607,7 +607,7 @@ export function StrategyPage() {
               {[
                 {
                   title: "대통령 효과 지속",
-                  detail: "이재명 대통령 67% 지지율. 민주당 39% vs 국힘 27% (+12%p). 대통령효과 점수 +16.3 → 선행지수에 양(+) 반영.",
+                  detail: "이재명 대통령 67% 지지율 (4월 4주차, 정부 출범 후 최고 동률). 민주당 48% vs 국힘 20% (+28%p, 4주 연속 정부 출범 후 최고 격차). 대통령 효과 + 정당 우위 모두 강세 → 선행지수에 양(+) 반영.",
                   meaning: "대통령 효과가 유지되는 한 지방선거 여당 후보에게 유리한 환경.",
                   source: "대통령 지지율 (갤럽 주간)", page: "research",
                 },

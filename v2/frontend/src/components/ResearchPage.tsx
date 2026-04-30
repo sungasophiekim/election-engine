@@ -16,7 +16,7 @@ const FACTORS = [
     subtitle: "대통령·정당 프리미엄",
     impact: 5,
     impactLabel: "매우 큼",
-    brief: "이재명 67% → 대통령 효과 강세. 민주 39% vs 국힘 27% (+12%p). 우리에게 유리한 환경.",
+    brief: "이재명 67% → 대통령 효과 강세. 민주 48% vs 국힘 20% (+28%p). 우리에게 유리한 환경.",
     direction: "favorable" as const,
     description: "지방선거 판세의 약 50%는 중앙정치가 결정한다. 새 정부 임기 초반의 '대통령 효과'가 여당 후보를 견인하며, 대통령 지지율과 지방선거 득표율의 상관계수는 0.7~0.9 수준.",
     evidence: [
@@ -26,7 +26,7 @@ const FACTORS = [
     ],
     mechanism: "대통령 지지율 ↑ → 여당 정당 지지율 ↑ → 여당 후보 지지율 ↑ (대통령효과/역풍 연동)",
     ourEngine: "national_poll_collector → Leading Index 대통령효과(8%)",
-    weeklyDetail: "이재명 대통령 직무 긍정 67%(갤럽 3월 3주). 민주당 39% vs 국힘 27%로 정당 격차 +12%p. 대통령 효과 지속 중이나 취임 3개월차 진입으로 하락 추세 모니터링 필요. 대통령효과 점수 +16.3 → Leading Index에 양(+) 반영.",
+    weeklyDetail: "이재명 대통령 직무 긍정 67%(갤럽 4월 4주, 4월 4주 연속 66~67% 유지). 민주당 48% vs 국힘 20%로 정당 격차 +28%p (4주 연속 정부 출범 후 최고). 국힘 지지율은 5년여 만의 최저권. 대통령 효과 + 정당 우위 모두 강세 → Leading Index에 양(+) 반영.",
     sources: [
       { title: "제9대 경남도지사 선거 승리 전략 보고서", url: "", type: "캠프 내부" },
       { title: "한국갤럽 — 대통령 직무수행 평가", url: "https://www.gallup.co.kr/gallupdb/reportContent.asp?seqNo=1559", type: "조사기관" },
@@ -391,7 +391,7 @@ export function ResearchPage() {
           <div className="bg-[#080d16] rounded-lg p-3">
             <div className="text-[10px] text-amber-300 font-bold mb-1.5">🎯 금주 핵심 판단</div>
             <div className="text-[10px] text-gray-300 leading-relaxed">
-              대통령 효과(67%)와 정당 우위(+12%p)가 최대 자산이나, 투표율 구조(42:58)와 사법리스크 프레임이 상쇄.
+              대통령 효과(67%)와 정당 우위(+28%p)가 최대 자산이나, 투표율 구조(42:58)와 사법리스크 프레임이 상쇄.
               여론조사 38:38 초박빙은 실제 투표 시 약 15만표 열세를 의미.
               <span className="text-cyan-400 font-bold"> 승부처: 50대 지지율 확보 + 3040 투표율 극대화 + 지역 프레임 전환.</span>
             </div>
