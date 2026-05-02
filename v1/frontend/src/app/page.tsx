@@ -19,6 +19,14 @@ export default function WarRoom() {
   const [reportOpen, setReportOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // 모바일 디바이스(< 768px) 자동 리다이렉트 → /mobile
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 768) {
+      window.location.replace("/mobile");
+    }
+  }, []);
+
   useEffect(() => {
     checkSession().finally(() => setAuthChecked(true));
   }, [checkSession]);
